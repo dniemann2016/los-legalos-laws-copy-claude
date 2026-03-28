@@ -30,15 +30,12 @@ const AuthenticatedApp = () => {
   if (authError) {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
     }
   }
 
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
+      <Route path="/" element={<Modules />} />
       <Route path="/modules" element={<Modules />} />
       <Route path="/lexara" element={<LexaraDashboard />} />
       <Route path="/lexara/case" element={<CaseDetail />} />
