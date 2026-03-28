@@ -42,7 +42,7 @@ export default function RichterDetail({ profile, cases, onBack, onUpdate }) {
     setKiLoading(true);
     const res = await base44.integrations.Core.InvokeLLM({
       add_context_from_internet: true,
-      model: "gemini_3_pro",
+      model: "gemini_3_flash",
       prompt: `Du bist ein juristischer Strategieberater und Rechtsrecherche-Experte. Deine Aufgabe ist eine vollständige Analyse des folgenden Richters.
 
 Richterprofil:
