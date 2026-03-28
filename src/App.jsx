@@ -15,6 +15,7 @@ import RichterProfile from './pages/RichterProfile';
 import PlattformAgent from './pages/PlattformAgent';
 import KanzleiCockpit from './pages/KanzleiCockpit';
 import FallAssistentChat from './pages/FallAssistentChat';
+import DsgvoBanner from './components/DsgvoBanner';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -35,7 +36,7 @@ const AuthenticatedApp = () => {
   }
 
   return (
-    <Routes>
+    <>
       <Route path="/" element={<Modules />} />
       <Route path="/modules" element={<Modules />} />
       <Route path="/lexara" element={<LexaraDashboard />} />
@@ -49,6 +50,8 @@ const AuthenticatedApp = () => {
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    <DsgvoBanner />
+    </>
   );
 };
 
