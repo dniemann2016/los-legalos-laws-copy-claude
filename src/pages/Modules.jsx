@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Scale, Users } from "lucide-react";
+import { ChevronRight, Scale, Users, Bot } from "lucide-react";
 
 const MODULES = [
   {
@@ -15,6 +15,13 @@ const MODULES = [
     description: "Statistische Richterprofile mit Klägerquote, Vergleichsrate und Verfahrensdauer – verknüpft mit laufenden Fällen.",
     icon: <Users className="w-10 h-10 text-indigo-600" />,
     path: "/richterprofile",
+  },
+  {
+    category: "KI-AGENT · PLATTFORM",
+    title: "Plattform-Optimierer",
+    description: "KI-Agent der kontinuierlich Lücken erkennt, Richterprofile ergänzt, Argumente stärkt und die Kanzlei auf Großkanzlei-Niveau hebt.",
+    icon: <Bot className="w-10 h-10 text-emerald-600" />,
+    path: "/plattform-agent",
   },
 ];
 

@@ -12,6 +12,7 @@ import CaseDetail from './pages/CaseDetail';
 import Zeitleiste from './pages/Zeitleiste';
 import MandantenView from './pages/MandantenView';
 import RichterProfile from './pages/RichterProfile';
+import PlattformAgent from './pages/PlattformAgent';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -43,6 +44,7 @@ const AuthenticatedApp = () => {
       <Route path="/zeitleiste" element={<Zeitleiste />} />
       <Route path="/mandant" element={<MandantenView />} />
       <Route path="/richterprofile" element={<RichterProfile />} />
+      <Route path="/plattform-agent" element={<PlattformAgent />} />
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
