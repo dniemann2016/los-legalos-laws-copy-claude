@@ -1,7 +1,14 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Scale, Users, Bot, LayoutDashboard } from "lucide-react";
+import { ChevronRight, Scale, Users, Bot, LayoutDashboard, MessageSquare } from "lucide-react";
 
 const MODULES = [
+  {
+    category: "KI-ASSISTENT · FALLVERWALTUNG",
+    title: "Lex · Fall-Assistent",
+    description: "Juristischer KI-Assistent: Fälle analysieren, Fristen überwachen, Argumente verwalten und Strategien entwickeln per Chat.",
+    icon: <MessageSquare className="w-10 h-10 text-violet-600" />,
+    path: "/chat/fall-assistent",
+  },
   {
     category: "KANZLEI · FALLMANAGEMENT",
     title: "Anwalts-Tool",

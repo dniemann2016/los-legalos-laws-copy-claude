@@ -14,6 +14,7 @@ import MandantenView from './pages/MandantenView';
 import RichterProfile from './pages/RichterProfile';
 import PlattformAgent from './pages/PlattformAgent';
 import KanzleiCockpit from './pages/KanzleiCockpit';
+import FallAssistentChat from './pages/FallAssistentChat';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -44,6 +45,7 @@ const AuthenticatedApp = () => {
       <Route path="/richterprofile" element={<RichterProfile />} />
       <Route path="/plattform-agent" element={<PlattformAgent />} />
       <Route path="/cockpit" element={<KanzleiCockpit />} />
+      <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
