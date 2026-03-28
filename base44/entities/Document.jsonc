@@ -1,0 +1,41 @@
+{
+  "name": "Document",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "title": {
+      "type": "string",
+      "title": "Titel"
+    },
+    "file_url": {
+      "type": "string",
+      "title": "Datei URL"
+    },
+    "file_type": {
+      "type": "string",
+      "title": "Dateityp"
+    },
+    "description": {
+      "type": "string",
+      "title": "Beschreibung"
+    },
+    "ai_summary": {
+      "type": "string",
+      "title": "KI-Zusammenfassung"
+    },
+    "extracted_arguments": {
+      "type": "array",
+      "title": "Extrahierte Argumente",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "case_id",
+    "title"
+  ]
+}

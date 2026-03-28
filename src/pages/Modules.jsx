@@ -1,5 +1,5 @@
-import { useNavigate } from "react-router-dom";
-import { ChevronRight, TrendingUp, Scale, BarChart2, FileText } from "lucide-react";
+import { useNavigate, Link } from "react-router-dom";
+import { ChevronRight, TrendingUp, Scale, BarChart2, FileText, Calendar, ShieldAlert, LineChart, Gavel } from "lucide-react";
 
 const MODULES = [
   {
@@ -12,21 +12,42 @@ const MODULES = [
   {
     category: "KANZLEI · FALLMANAGEMENT",
     title: "Anwalts-Tool",
-    description: "Argumentketten, Beweisführung, Strategie & Prognose für laufende Mandantenakten.",
+    description: "Argumentketten, Beweisführung, Strategie & Prognose für laufende Mandantenakten – mit Dokument-Upload und KI-Analyse.",
     icon: <Scale className="w-10 h-10 text-gray-700" />,
     path: "/lexara",
   },
   {
-    category: "ENTERPRISE · 9-SCHRITT-ANALYSE",
+    category: "FRISTEN · ÜBERSICHT",
+    title: "Fristen-Zeitleiste",
+    description: "Alle anstehenden Fristen über sämtliche Fälle hinweg aggregiert – nach Dringlichkeit gefiltert und chronologisch sortiert.",
+    icon: <Calendar className="w-10 h-10 text-indigo-500" />,
+    path: "/zeitleiste",
+  },
+  {
+    category: "RISIKO MANAGEMENT · BEWERTUNG",
+    title: "Risikoanalyse",
+    description: "Systematische Bewertung rechtlicher Risiken: Identifikation, Quantifizierung und Priorisierung potenzieller Haftungsfälle und Vertragsrisiken.",
+    icon: <ShieldAlert className="w-10 h-10 text-red-500" />,
+    path: "/lexara",
+  },
+  {
+    category: "RISIKO MANAGEMENT · MODELLE",
     title: "Business Risk Management",
-    description: "Rechtliche Risiken strukturiert durchdenken, mit 8 mathematischen Modellen durchrechnen und fundierte Entscheidungen treffen.",
+    description: "Rechtliche Risiken mit 8 mathematischen Modellen durchrechnen – Erwartungswert, Monte-Carlo-Simulation und Sensitivitätsanalyse.",
     icon: <BarChart2 className="w-10 h-10 text-green-600" />,
+    path: "/lexara",
+  },
+  {
+    category: "RISIKO MANAGEMENT · PROGNOSE",
+    title: "Litigation Intelligence",
+    description: "KI-gestützte Outcome-Prognosen auf Basis historischer Gerichtsentscheidungen, Richterprofile und Fallmuster.",
+    icon: <LineChart className="w-10 h-10 text-purple-500" />,
     path: "/lexara",
   },
   {
     category: "KI-DOKUMENTENPRÜFUNG",
     title: "Dokument-Analyse",
-    description: "KI-gestützte Analyse von Verträgen, Klageschriften und juristischen Dokumenten.",
+    description: "KI-gestützte Analyse von Verträgen, Klageschriften und juristischen Dokumenten – automatische Argument-Extraktion inklusive.",
     icon: <FileText className="w-10 h-10 text-gray-500" />,
     path: "/lexara",
   },

@@ -9,6 +9,7 @@ import Home from './pages/Home';
 import Modules from './pages/Modules';
 import LexaraDashboard from './pages/LexaraDashboard';
 import CaseDetail from './pages/CaseDetail';
+import Zeitleiste from './pages/Zeitleiste';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -37,6 +38,7 @@ const AuthenticatedApp = () => {
       <Route path="/modules" element={<Modules />} />
       <Route path="/lexara" element={<LexaraDashboard />} />
       <Route path="/lexara/case" element={<CaseDetail />} />
+      <Route path="/zeitleiste" element={<Zeitleiste />} />
       {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
