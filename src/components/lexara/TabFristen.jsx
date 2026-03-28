@@ -119,40 +119,41 @@ export default function TabFristen({ caseId, onCountChange }) {
       {fristen.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-100 p-4">
           <p className="text-xs font-semibold text-gray-500 mb-4">📅 Fristen-Zeitleiste</p>
-          <div className="relative">
-            <div className="absolute left-3 top-0 bottom-0 w-px bg-gray-200" />
-            <div className="space-y-4">
+          <div className="relative pl-6">
+            <div className="absolute left-2.5 top-2 bottom-2 w-px bg-gray-200" />
+            <div className="space-y-3">
               {fristen.map(f => {
                 const days = daysUntil(f.due_date);
-                const dateStr = f.due_date ? new Date(f.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'short',year:'numeric'}) : "";
-                const dotColor = f.status==="erledigt" ? "bg-green-400" : f.status==="versaeumt" ? "bg-gray-300" : days===null ? "bg-gray-300" : days>14 ? "bg-green-500" : days>=3 ? "bg-orange-400" : "bg-red-500";
-                const isPast = f.due_date && new Date(f.due_date) < new Date();
+                const dateStr = f.due_date ? new Date(f.due_date).toLocaleDateString('de-DE',{day:'2-digit',month:'long',year:'numeric'}) : "";
                 return (
-                  <div key={f.id} className="flex items-start gap-4 pl-1">
-                    <div className={`w-5 h-5 rounded-full border-2 border-white shadow flex-shrink-0 relative z-10 ${dotColor}`} />
-                    <div className={`flex-1 rounded-xl p-3 border text-xs ${
-                      f.status==="erledigt" ? "bg-green-50 border-green-100" :
-                      f.status==="versaeumt" ? "bg-gray-50 border-gray-100 opacity-60" :
-                      isPast ? "bg-red-50 border-red-100" :
-                      days !== null && days <= 14 ? "bg-amber-50 border-amber-100" :
-                      "bg-gray-50 border-gray-100"
-                    }`}>
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="font-semibold text-gray-800">{f.title}</span>
+                  <div key={f.id} className="relative">
+                    <div className="absolute -left-[18px] top-4"><FristDot days={days} status={f.status} /></div>
+                    <div className={`bg-white border rounded-xl p-4 ${f.status==="erledigt"?"border-green-100 opacity-70":f.status==="versaeumt"?"border-red-100":"border-gray-100"}`}>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-start gap-2">
+                          <div>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-semibold text-sm text-gray-900">{f.title}</span>
+                              {f.paragraph && <span className="text-[10px] bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">{f.paragraph}</span>}
+                              <span className={`text-[10px] rounded-full px-2 py-0.5 ${f.side==="Eigene"?"bg-blue-100 text-blue-700":"bg-red-100 text-red-700"}`}>{f.side}</span>
+                            </div>
+                            <div className="flex items-center gap-2 mt-1 text-xs text-gray-500">
+                              <span>{dateStr}</span>
+                              {days!==null && days>0 && f.status==="offen" && <span className={`font-medium ${days>14?"text-green-600":days>=3?"text-orange-500":"text-red-600"}`}>{days} Tage verbleibend</span>}
+                              {days!==null && days<=0 && f.status==="offen" && <span className="text-red-600 font-medium">Überfällig!</span>}
+                            </div>
+                            {f.responsible && <p className="text-xs text-gray-400">Verantwortlich: {f.responsible}</p>}
+                            {f.prognoseabzug && <p className="text-xs text-gray-400">Prognoseabzug bei Versäumnis: {f.prognoseabzug}</p>}
+                          </div>
+                        </div>
                         <span className={`text-[10px] font-medium flex-shrink-0 ${
-                          f.status==="erledigt" ? "text-green-600" :
-                          f.status==="versaeumt" ? "text-gray-400" :
-                          isPast ? "text-red-600" :
-                          days !== null && days <= 14 ? "text-amber-600" : "text-gray-500"
-                        }`}>{dateStr}</span>
-                      </div>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        {f.paragraph && <span className="bg-white border border-gray-200 rounded px-1.5 py-0.5 text-[10px] text-gray-500">{f.paragraph}</span>}
-                        <span className={`text-[10px] rounded-full px-1.5 py-0.5 ${f.side==="Eigene" ? "bg-blue-100 text-blue-600" : "bg-red-100 text-red-600"}`}>{f.side}</span>
-                        {f.status==="erledigt" && <span className="text-[10px] text-green-600 font-medium">✓ Erledigt</span>}
-                        {f.status==="versaeumt" && <span className="text-[10px] text-gray-400 font-medium">✗ Versäumt</span>}
-                        {f.status==="offen" && days !== null && days > 0 && <span className={`text-[10px] font-medium ${days > 14 ? "text-green-600" : days >= 3 ? "text-amber-600" : "text-red-600"}`}>{days} Tage</span>}
-                        {f.status==="offen" && days !== null && days <= 0 && <span className="text-[10px] text-red-600 font-bold">Überfällig!</span>}
+                          f.status==="erledigt"?"text-green-600":
+                          f.status==="versaeumt"?"text-gray-400":
+                          days!==null && days<=0?"text-red-600":
+                          days!==null && days<=14?"text-orange-500":"text-gray-400"
+                        }`}>
+                          {f.status==="erledigt"?"✓ Erledigt":f.status==="versaeumt"?"✗ Versäumt":days!==null && days<=0?"Überfällig":""}
+                        </span>
                       </div>
                     </div>
                   </div>
