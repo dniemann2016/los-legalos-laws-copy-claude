@@ -1,0 +1,56 @@
+{
+  "name": "Deadline",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "title": {
+      "type": "string",
+      "title": "Titel"
+    },
+    "frist_type": {
+      "type": "string",
+      "title": "Fristtyp"
+    },
+    "paragraph": {
+      "type": "string",
+      "title": "Paragraph"
+    },
+    "due_date": {
+      "type": "string",
+      "title": "F\u00e4lligkeitsdatum"
+    },
+    "responsible": {
+      "type": "string",
+      "title": "Verantwortlich"
+    },
+    "side": {
+      "type": "string",
+      "title": "Seite",
+      "enum": [
+        "Eigene",
+        "Gegner"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "offen",
+        "erledigt",
+        "versaeumt"
+      ]
+    },
+    "prognoseabzug": {
+      "type": "string",
+      "title": "Prognoseabzug"
+    }
+  },
+  "required": [
+    "case_id",
+    "title",
+    "due_date"
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "name": "Case",
+  "type": "object",
+  "properties": {
+    "fallname": {
+      "type": "string",
+      "title": "Fallname"
+    },
+    "aktenzeichen": {
+      "type": "string",
+      "title": "Aktenzeichen"
+    },
+    "gericht": {
+      "type": "string",
+      "title": "Gericht"
+    },
+    "rechtsgebiet": {
+      "type": "string",
+      "title": "Rechtsgebiet"
+    },
+    "prozessziel": {
+      "type": "string",
+      "title": "Prozessziel"
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "Aktiv",
+        "Vorbereitung",
+        "Abgeschlossen",
+        "Ruhend"
+      ]
+    },
+    "instanz": {
+      "type": "string",
+      "title": "Instanz",
+      "enum": [
+        "Erstinstanz",
+        "Berufung",
+        "Revision"
+      ]
+    },
+    "zentrale_rechtsfrage": {
+      "type": "string",
+      "title": "Zentrale Rechtsfrage"
+    },
+    "prognose": {
+      "type": "number",
+      "title": "Prognose %"
+    },
+    "streitwert": {
+      "type": "number",
+      "title": "Streitwert"
+    },
+    "gebuehrenstufe": {
+      "type": "number",
+      "title": "Geb\u00fchrenstufe"
+    },
+    "sv_kosten": {
+      "type": "number",
+      "title": "SV-Kosten"
+    },
+    "reisekosten": {
+      "type": "number",
+      "title": "Reisekosten"
+    },
+    "vergleichsangebot": {
+      "type": "number",
+      "title": "Vergleichsangebot Gegenseite"
+    },
+    "richter_name": {
+      "type": "string",
+      "title": "Richter Name"
+    },
+    "richter_klaeger_rate": {
+      "type": "number",
+      "title": "Richter Kl\u00e4gerquote %"
+    },
+    "ki_berater_result": {
+      "type": "object",
+      "title": "KI-Berater Ergebnis"
+    },
+    "gegner_profil": {
+      "type": "object",
+      "title": "Gegner Profil"
+    }
+  },
+  "required": [
+    "fallname"
+  ]
+}

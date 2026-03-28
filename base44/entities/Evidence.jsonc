@@ -1,0 +1,38 @@
+{
+  "name": "Evidence",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "argument_id": {
+      "type": "string",
+      "title": "Argument ID"
+    },
+    "title": {
+      "type": "string",
+      "title": "Titel"
+    },
+    "description": {
+      "type": "string",
+      "title": "Beschreibung"
+    },
+    "weight": {
+      "type": "number",
+      "title": "Gewicht (0-10)"
+    },
+    "type": {
+      "type": "string",
+      "title": "Beweistyp"
+    },
+    "source": {
+      "type": "string",
+      "title": "Quelle"
+    }
+  },
+  "required": [
+    "case_id",
+    "title"
+  ]
+}

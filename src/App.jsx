@@ -6,8 +6,9 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Home from './pages/Home';
-import Lexara from './pages/Home';
-import Layout from './components/Layout';
+import Modules from './pages/Modules';
+import LexaraDashboard from './pages/LexaraDashboard';
+import CaseDetail from './pages/CaseDetail';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -34,7 +35,9 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/lexara" element={<Lexara />} />
+        <Route path="/modules" element={<Modules />} />
+        <Route path="/lexara" element={<LexaraDashboard />} />
+        <Route path="/lexara/case" element={<CaseDetail />} />
         {/* Add your page Route elements here */}
       </Route>
       <Route path="*" element={<PageNotFound />} />

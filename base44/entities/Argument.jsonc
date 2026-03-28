@@ -1,0 +1,56 @@
+{
+  "name": "Argument",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "title": {
+      "type": "string",
+      "title": "Titel"
+    },
+    "description": {
+      "type": "string",
+      "title": "Beschreibung"
+    },
+    "side": {
+      "type": "string",
+      "title": "Seite",
+      "enum": [
+        "eigen",
+        "gegner"
+      ]
+    },
+    "strength": {
+      "type": "number",
+      "title": "St\u00e4rke (0-10)"
+    },
+    "type": {
+      "type": "string",
+      "title": "Typ"
+    },
+    "paragraphs": {
+      "type": "array",
+      "title": "Paragraphen",
+      "items": {
+        "type": "string"
+      }
+    },
+    "connections": {
+      "type": "array",
+      "title": "Verbindungen",
+      "items": {
+        "type": "object"
+      }
+    },
+    "is_contradiction": {
+      "type": "boolean",
+      "title": "Widerspruch"
+    }
+  },
+  "required": [
+    "case_id",
+    "title"
+  ]
+}

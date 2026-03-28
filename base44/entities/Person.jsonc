@@ -1,0 +1,62 @@
+{
+  "name": "Person",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "role": {
+      "type": "string",
+      "title": "Rolle",
+      "enum": [
+        "Richter",
+        "Zeuge",
+        "Sachverst\u00e4ndiger",
+        "Partei",
+        "Anwalt",
+        "Gutachter"
+      ]
+    },
+    "organization": {
+      "type": "string",
+      "title": "Organisation"
+    },
+    "aussagen": {
+      "type": "number",
+      "title": "Anzahl Aussagen"
+    },
+    "widersprueche": {
+      "type": "number",
+      "title": "Widerspr\u00fcche"
+    },
+    "glaubwuerdigkeit": {
+      "type": "number",
+      "title": "Glaubw\u00fcrdigkeit %"
+    },
+    "klaeger_rate": {
+      "type": "number",
+      "title": "Kl\u00e4gerquote %"
+    },
+    "vergleich_rate": {
+      "type": "number",
+      "title": "Vergleichsrate %"
+    },
+    "dauer_monate": {
+      "type": "number",
+      "title": "Dauer (Monate)"
+    },
+    "notizen": {
+      "type": "string",
+      "title": "Notizen"
+    }
+  },
+  "required": [
+    "case_id",
+    "name"
+  ]
+}
