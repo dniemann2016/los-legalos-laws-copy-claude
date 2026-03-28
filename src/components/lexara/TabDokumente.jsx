@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, FileText, Trash2, Loader2, Sparkles, File } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Sparkles, File, CheckCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function TabDokumente({ caseId }) {
+  const [imported, setImported] = useState({});
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -39,28 +40,44 @@ export default function TabDokumente({ caseId }) {
   const handleAnalyze = async (doc) => {
     setAnalyzing(doc.id);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Analysiere dieses juristische Dokument und extrahiere:
-1. Eine kurze Zusammenfassung (2-3 Sätze)
-2. Die wichtigsten rechtlichen Argumente (als Liste)
+      prompt: `Du bist juristischer Experte. Erstelle eine Executive Summary dieses Dokuments.
+Extrahiere strukturiert:
+1. Kurze Zusammenfassung (2-3 Sätze)
+2. Wichtigste Argumente
+3. Fristen (Titel, Datum im Format YYYY-MM-DD, Typ)
+4. Beteiligte Personen (Name, Rolle)
+5. Beweisfragen
 
-Dokumenttitel: ${doc.title}
-
-Antworte auf Deutsch im JSON-Format.`,
+Dokument: ${doc.title}`,
       file_urls: [doc.file_url],
       response_json_schema: {
         type: "object",
         properties: {
           summary: { type: "string" },
-          arguments: { type: "array", items: { type: "string" } }
+          arguments: { type: "array", items: { type: "string" } },
+          fristen: { type: "array", items: { type: "object", properties: { titel: {type:"string"}, datum: {type:"string"}, typ: {type:"string"} } } },
+          personen: { type: "array", items: { type: "object", properties: { name: {type:"string"}, rolle: {type:"string"} } } },
+          beweisfragen: { type: "array", items: { type: "string" } }
         }
       }
     });
     await base44.entities.Document.update(doc.id, {
       ai_summary: result.summary,
-      extracted_arguments: result.arguments
+      extracted_arguments: result.arguments,
+      ai_raw: result,
     });
     await loadDocs();
     setAnalyzing(null);
+  };
+
+  const importFrist = async (caseId, frist) => {
+    if (!frist.titel || !frist.datum) return;
+    await base44.entities.Deadline.create({ case_id: caseId, title: frist.titel, due_date: frist.datum, frist_type: frist.typ || "Sonstige", status: "offen", side: "Eigene" });
+  };
+
+  const importPerson = async (caseId, person) => {
+    if (!person.name) return;
+    await base44.entities.Person.create({ case_id: caseId, name: person.name, role: person.rolle || "Partei" });
   };
 
   const handleDelete = async (id) => {
@@ -107,17 +124,53 @@ Antworte auf Deutsch im JSON-Format.`,
                   {doc.file_type && <p className="text-[10px] text-gray-400 mt-0.5">{doc.file_type}</p>}
 
                   {doc.ai_summary && (
-                    <div className="mt-3 bg-blue-50 rounded-xl p-3">
-                      <p className="text-xs font-semibold text-blue-700 mb-1 flex items-center gap-1"><Sparkles className="w-3 h-3" /> KI-Zusammenfassung</p>
+                    <div className="mt-3 bg-blue-50 rounded-xl p-3 space-y-3">
+                      <p className="text-xs font-semibold text-blue-700 flex items-center gap-1"><Sparkles className="w-3 h-3" /> Executive Summary</p>
                       <p className="text-xs text-gray-700 leading-relaxed">{doc.ai_summary}</p>
                       {doc.extracted_arguments?.length > 0 && (
-                        <div className="mt-2">
-                          <p className="text-xs font-semibold text-blue-700 mb-1">Extrahierte Argumente:</p>
-                          <ul className="space-y-0.5">
-                            {doc.extracted_arguments.map((arg, i) => (
-                              <li key={i} className="text-xs text-gray-600 flex gap-1"><span className="text-blue-400">•</span>{arg}</li>
+                        <div>
+                          <p className="text-xs font-semibold text-blue-700 mb-1">Argumente:</p>
+                          <ul className="space-y-0.5">{doc.extracted_arguments.map((arg, i) => <li key={i} className="text-xs text-gray-600 flex gap-1"><span className="text-blue-400">•</span>{arg}</li>)}</ul>
+                        </div>
+                      )}
+                      {doc.ai_raw?.fristen?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-blue-700 mb-1">📅 Extrahierte Fristen</p>
+                          <div className="space-y-1">
+                            {doc.ai_raw.fristen.map((f, i) => (
+                              <div key={i} className="flex items-center justify-between text-xs bg-white rounded-lg px-2 py-1.5">
+                                <span className="text-gray-700">{f.titel} {f.datum ? `· ${new Date(f.datum).toLocaleDateString('de-DE')}` : ''}</span>
+                                {imported[`frist-${doc.id}-${i}`] ? (
+                                  <span className="text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Übernommen</span>
+                                ) : (
+                                  <button onClick={async()=>{ await importFrist(caseId,f); setImported(prev=>({...prev,[`frist-${doc.id}-${i}`]:true})); }} className="text-[10px] border border-blue-200 text-blue-600 rounded px-2 py-0.5 hover:bg-blue-50">→ Fristen-Tab</button>
+                                )}
+                              </div>
                             ))}
-                          </ul>
+                          </div>
+                        </div>
+                      )}
+                      {doc.ai_raw?.personen?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-blue-700 mb-1">👤 Extrahierte Personen</p>
+                          <div className="space-y-1">
+                            {doc.ai_raw.personen.map((p, i) => (
+                              <div key={i} className="flex items-center justify-between text-xs bg-white rounded-lg px-2 py-1.5">
+                                <span className="text-gray-700">{p.name} <span className="text-gray-400">· {p.rolle}</span></span>
+                                {imported[`person-${doc.id}-${i}`] ? (
+                                  <span className="text-green-600 flex items-center gap-1"><CheckCircle className="w-3 h-3" /> Übernommen</span>
+                                ) : (
+                                  <button onClick={async()=>{ await importPerson(caseId,p); setImported(prev=>({...prev,[`person-${doc.id}-${i}`]:true})); }} className="text-[10px] border border-blue-200 text-blue-600 rounded px-2 py-0.5 hover:bg-blue-50">→ Personen-Tab</button>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {doc.ai_raw?.beweisfragen?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-semibold text-blue-700 mb-1">🔍 Beweisfragen</p>
+                          <ul className="space-y-0.5">{doc.ai_raw.beweisfragen.map((b,i) => <li key={i} className="text-xs text-gray-600">• {b}</li>)}</ul>
                         </div>
                       )}
                     </div>

@@ -32,6 +32,10 @@
       "items": {
         "type": "string"
       }
+    },
+    "ai_raw": {
+      "type": "object",
+      "title": "KI-Rohdaten (Fristen, Personen, Beweisfragen)"
     }
   },
   "required": [
