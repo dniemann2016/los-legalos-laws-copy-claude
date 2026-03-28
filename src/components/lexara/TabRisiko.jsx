@@ -52,19 +52,18 @@ export default function TabRisiko({ caseId, caseData, onUpdate }) {
     const richter = persons.find(p => p.role === "Richter");
 
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Prozessanwalt und Risiko-Analyst. Führe eine vollständige Chancen-Risiken-Analyse für folgenden Fall durch:
+      model: "gpt_5",
+      prompt: `Du bist ein erfahrener Prozessanwalt und Risiko-Analyst. Führe eine vollständige Chancen-Risiken-Analyse für folgenden Fall durch und gib ALLE Felder mit echten Werten zurück (keine leeren Strings oder leere Arrays):
 
-FALL: ${caseData?.fallname || ""} | ${caseData?.rechtsgebiet || ""} | Streitwert: ${caseData?.streitwert ? `${caseData.streitwert.toLocaleString("de-DE")}€` : "unbekannt"}
+FALL: ${caseData?.fallname || "Unbekannt"} | ${caseData?.rechtsgebiet || ""} | Streitwert: ${caseData?.streitwert ? `${caseData.streitwert.toLocaleString("de-DE")}€` : "unbekannt"}
 PROGNOSE: ${caseData?.prognose || 0}% | Gericht: ${caseData?.gericht || ""} | Instanz: ${caseData?.instanz || ""}
 ZENTRALE RECHTSFRAGE: ${caseData?.zentrale_rechtsfrage || "nicht definiert"}
-
 ARGUMENTE: Eigene (${eigeneArgs.length}): ${eigeneArgs.map(a => `${a.title} [${a.strength}/10]`).join(", ") || "keine"} | Gegner (${gegnerArgs.length}): ${gegnerArgs.map(a => `${a.title} [${a.strength}/10]`).join(", ") || "keine"}
-BEWEISE: ${evidence.length} gesamt (Ø Gewicht: ${evidence.length ? (evidence.reduce((s, e) => s + (e.weight || 0), 0) / evidence.length).toFixed(1) : 0}/10)
+BEWEISE: ${evidence.length} gesamt
 FRISTEN: ${offeneFristen.length} offen, ${ueberfaellig.length} versäumt
 RICHTER: ${richter ? `${richter.name} (Klägerquote: ${richter.klaeger_rate || "?"}%, Vergleichsrate: ${richter.vergleich_rate || "?"}%)` : "unbekannt"}
 
-Erstelle eine präzise Analyse mit konkreten Prozentzahlen und Handlungsempfehlungen.`,
-      model: "claude_sonnet_4_6",
+WICHTIG: Fülle ALLE Felder mit konkreten, deutschen Texten. Gib für faktoren ALLE 8 Faktoren zurück (beweis_risiko, richter_risiko, rechts_risiko, kosten_risiko, zeit_risiko, gegner_risiko, reputation_risiko, vergleich_chance). Für top_chancen und top_risiken mindestens 3 Einträge. Für szenarien alle drei Szenarien (best_case, base_case, worst_case). Für sofortmassnahmen mindestens 3 Maßnahmen.`,
       response_json_schema: {
         type: "object",
         properties: {
