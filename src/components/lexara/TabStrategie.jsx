@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { Button } from "@/components/ui/button";
 
 function PrognoseCircle({ value }) {
@@ -29,6 +29,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
   const [prognose, setPrognose] = useState(caseData?.prognose || 0);
   const [algorithm, setAlgorithm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [chartView, setChartView] = useState("overlap");
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -71,10 +72,33 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
   const recommendation = prognose>=55?"Streitiges Verfahren — Vollsieg anstreben":prognose>=40?"Vergleich anstreben":"Risiken abwägen — Aufgabe prüfen";
   const recTag = prognose>=55?"Klage":prognose>=40?"Vergleich":"Aufgabe";
 
-  const chartData = [
-    ...eigenArgs.slice(0,6).map((a,i)=>({name:`E${i+1}`,Eigen:(a.strength||5)*10})),
-    ...gegnerArgs.slice(0,6).map((a,i)=>({name:`G${i+1}`,Gegner:(a.strength||5)*10})),
-  ];
+  // Overlapping chart: align eigen vs gegner by index
+  const maxLen = Math.max(eigenArgs.length, gegnerArgs.length, 1);
+  const overlapData = Array.from({length: maxLen}, (_,i) => ({
+    name: `Arg ${i+1}`,
+    Eigene: eigenArgs[i] ? (eigenArgs[i].strength||5)*10 : null,
+    Gegner: gegnerArgs[i] ? (gegnerArgs[i].strength||5)*10 : null,
+    EigenLabel: eigenArgs[i]?.title?.slice(0,12) || "",
+    GegnerLabel: gegnerArgs[i]?.title?.slice(0,12) || "",
+  }));
+
+  // Evidence weights per argument
+  const evidenceData = args.slice(0,8).map(a => ({
+    name: a.title?.slice(0,12) || "?",
+    Stärke: (a.strength||5)*10,
+    Beweise: evidence.filter(e=>e.argument_id===a.id).reduce((s,e)=>s+(e.weight||5),0)*10 || 10,
+    seite: a.side,
+  }));
+
+  // Radar: algorithm factors
+  const radarData = [
+    {subject: "Argumente", Eigen: eigenArgs.length>0?Math.round(eigenArgs.reduce((s,a)=>s+(a.strength||5),0)/eigenArgs.length*10):0, Gegner: gegnerArgs.length>0?Math.round(gegnerArgs.reduce((s,a)=>s+(a.strength||5),0)/gegnerArgs.length*10):0},
+    {subject: "Beweise", Eigen: evidence.filter(e=>eigenArgs.find(a=>a.id===e.argument_id)).length*15, Gegner: evidence.filter(e=>gegnerArgs.find(a=>a.id===e.argument_id)).length*15},
+    {subject: "Prognose", Eigen: prognose, Gegner: 100-prognose},
+    {subject: "Richter", Eigen: caseData?.richter_klaeger_rate||50, Gegner: 100-(caseData?.richter_klaeger_rate||50)},
+    {subject: "Fristen", Eigen: Math.max(0,100-deadlines.filter(d=>d.status==="versaeumt").length*30), Gegner: deadlines.filter(d=>d.status==="versaeumt").length*30},
+    {subject: "Personen", Eigen: persons.filter(p=>p.side!=="Gegner").length*20, Gegner: persons.filter(p=>p.role==="Zeuge"||p.role==="Gutachter").length*15},
+  ].map(d=>({...d, Eigen: Math.min(100,d.Eigen||0), Gegner: Math.min(100,d.Gegner||0)}));
 
   return (
     <div className="space-y-6">
@@ -108,20 +132,86 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
         </div>
       </div>
 
-      {chartData.length > 0 && (
-        <div className="bg-white rounded-2xl border border-gray-100 p-6">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">📈 Zeitabhängige Analyse</h3>
-          <ResponsiveContainer width="100%" height={180}>
-            <LineChart data={chartData}>
-              <XAxis dataKey="name" tick={{fontSize:10}} />
-              <YAxis tick={{fontSize:10}} domain={[0,100]} />
-              <Tooltip />
-              <Line type="monotone" dataKey="Eigen" stroke="#16a34a" strokeWidth={2} dot={false} connectNulls />
-              <Line type="monotone" dataKey="Gegner" stroke="#dc2626" strokeWidth={2} dot={false} connectNulls />
-            </LineChart>
-          </ResponsiveContainer>
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+          <h3 className="text-sm font-semibold text-gray-700">📊 Datenvisualisierung</h3>
+          <div className="flex gap-1 flex-wrap">
+            {[["overlap","↔ Überlappend"],["bar","▦ Balken"],["radar","🕸 Radar"],["evidence","🔍 Beweise"]].map(([v,l]) => (
+              <button key={v} onClick={()=>setChartView(v)} className={`text-xs px-3 py-1 rounded-lg border transition-all ${chartView===v?"bg-gray-900 text-white border-gray-900":"text-gray-500 border-gray-200 hover:bg-gray-50"}`}>{l}</button>
+            ))}
+          </div>
         </div>
-      )}
+
+        {chartView==="overlap" && (
+          <div>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-green-600" /><span className="text-xs text-gray-500">Eigene Argumente</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500" /><span className="text-xs text-gray-500">Gegnerische Argumente</span></div>
+            </div>
+            <ResponsiveContainer width="100%" height={200}>
+              <LineChart data={overlapData}>
+                <XAxis dataKey="name" tick={{fontSize:10}} />
+                <YAxis tick={{fontSize:10}} domain={[0,100]} />
+                <Tooltip formatter={(v,n)=>[`${v}%`,n]} />
+                <Legend wrapperStyle={{fontSize:11}} />
+                <Line type="monotone" dataKey="Eigene" stroke="#16a34a" strokeWidth={2.5} dot={{r:4,fill:"#16a34a"}} connectNulls />
+                <Line type="monotone" dataKey="Gegner" stroke="#dc2626" strokeWidth={2.5} dot={{r:4,fill:"#dc2626"}} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+            <p className="text-[10px] text-gray-400 mt-1 text-center">Stärke je Argument (0–100) — Eigene vs. Gegner überlappend</p>
+          </div>
+        )}
+
+        {chartView==="bar" && (
+          <div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={overlapData} barGap={4}>
+                <XAxis dataKey="name" tick={{fontSize:10}} />
+                <YAxis tick={{fontSize:10}} domain={[0,100]} />
+                <Tooltip formatter={(v,n)=>[`${v}%`,n]} />
+                <Legend wrapperStyle={{fontSize:11}} />
+                <Bar dataKey="Eigene" fill="#16a34a" radius={[4,4,0,0]} />
+                <Bar dataKey="Gegner" fill="#dc2626" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="text-[10px] text-gray-400 mt-1 text-center">Balkenvergleich Argumentstärke — Eigene vs. Gegner</p>
+          </div>
+        )}
+
+        {chartView==="radar" && (
+          <div>
+            <div className="flex items-center gap-4 mb-2">
+              <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-green-600" /><span className="text-xs text-gray-500">Eigene Position</span></div>
+              <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500" /><span className="text-xs text-gray-500">Gegnerposition</span></div>
+            </div>
+            <ResponsiveContainer width="100%" height={260}>
+              <RadarChart data={radarData}>
+                <PolarGrid stroke="#f3f4f6" />
+                <PolarAngleAxis dataKey="subject" tick={{fontSize:10,fill:"#6b7280"}} />
+                <Radar dataKey="Eigen" stroke="#16a34a" fill="#16a34a" fillOpacity={0.25} strokeWidth={2} />
+                <Radar dataKey="Gegner" stroke="#dc2626" fill="#dc2626" fillOpacity={0.15} strokeWidth={2} />
+              </RadarChart>
+            </ResponsiveContainer>
+            <p className="text-[10px] text-gray-400 mt-1 text-center">Alle Faktoren: Argumente · Beweise · Prognose · Richter · Fristen · Personen</p>
+          </div>
+        )}
+
+        {chartView==="evidence" && (
+          <div>
+            <ResponsiveContainer width="100%" height={220}>
+              <BarChart data={evidenceData} barGap={4}>
+                <XAxis dataKey="name" tick={{fontSize:9}} />
+                <YAxis tick={{fontSize:10}} domain={[0,100]} />
+                <Tooltip formatter={(v,n)=>[`${Math.round(v/10)}/10`,n]} />
+                <Legend wrapperStyle={{fontSize:11}} />
+                <Bar dataKey="Stärke" fill="#1d4ed8" radius={[4,4,0,0]} />
+                <Bar dataKey="Beweise" fill="#7c3aed" radius={[4,4,0,0]} />
+              </BarChart>
+            </ResponsiveContainer>
+            <p className="text-[10px] text-gray-400 mt-1 text-center">Argumentstärke vs. Beweisstärke je Argument</p>
+          </div>
+        )}
+      </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <div className="flex items-center gap-4 mb-4">
