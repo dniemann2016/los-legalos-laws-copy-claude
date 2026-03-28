@@ -59,6 +59,40 @@
     "notizen": {
       "type": "string",
       "title": "Notizen"
+    },
+    "erfahrungen": {
+      "type": "array",
+      "title": "Kanzlei-Erfahrungen",
+      "items": {
+        "type": "object",
+        "properties": {
+          "datum": {
+            "type": "string"
+          },
+          "autor": {
+            "type": "string"
+          },
+          "fall_kontext": {
+            "type": "string"
+          },
+          "vergleichsbereitschaft": {
+            "type": "number"
+          },
+          "entscheidungsgeschwindigkeit": {
+            "type": "number"
+          },
+          "sachkompetenz": {
+            "type": "number"
+          },
+          "text": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "ki_analyse": {
+      "type": "object",
+      "title": "KI-Analyse"
     }
   },
   "required": [

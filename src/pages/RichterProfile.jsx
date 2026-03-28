@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Edit, Trash2, X, ArrowLeft, Link } from "lucide-react";
+import { Plus, Edit, Trash2, X, ArrowLeft, Link, ChevronRight } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import RichterDetail from "../components/richter/RichterDetail";
 
 const STILE = ["Neutral","Kooperativ","Streng","Prozessaktiv","Vergleichsorientiert"];
 const EMPTY = { name:"", gericht:"", kammer:"", rechtsgebiet:"", klaeger_rate:50, vergleich_rate:30, durchschnitt_dauer_monate:12, urteile_gesamt:0, stil:"Neutral", bekannt_fuer:"", notizen:"" };
@@ -30,6 +31,7 @@ export default function RichterProfile() {
   const [search, setSearch] = useState("");
   const [linkingId, setLinkingId] = useState(null);
   const [selectedCase, setSelectedCase] = useState("");
+  const [detailProfile, setDetailProfile] = useState(null);
 
   useEffect(() => { load(); }, []);
 
@@ -59,6 +61,11 @@ export default function RichterProfile() {
     setForm({ name:p.name||"", gericht:p.gericht||"", kammer:p.kammer||"", rechtsgebiet:p.rechtsgebiet||"", klaeger_rate:p.klaeger_rate||50, vergleich_rate:p.vergleich_rate||30, durchschnitt_dauer_monate:p.durchschnitt_dauer_monate||12, urteile_gesamt:p.urteile_gesamt||0, stil:p.stil||"Neutral", bekannt_fuer:p.bekannt_fuer||"", notizen:p.notizen||"" });
     setEditing(p.id);
     setShowForm(true);
+  };
+
+  const handleProfileUpdate = (updated) => {
+    setProfiles(prev => prev.map(p => p.id === updated.id ? updated : p));
+    if (detailProfile?.id === updated.id) setDetailProfile(updated);
   };
 
   const linkToCase = async (profileId) => {
@@ -109,6 +116,21 @@ export default function RichterProfile() {
     </div>
   );
 
+  if (detailProfile) {
+    return (
+      <div className="min-h-screen bg-gray-50 font-sans">
+        <div className="max-w-4xl mx-auto px-4 py-8">
+          <RichterDetail
+            profile={detailProfile}
+            cases={cases}
+            onBack={() => setDetailProfile(null)}
+            onUpdate={handleProfileUpdate}
+          />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <div className="max-w-4xl mx-auto px-4 py-8">
@@ -116,7 +138,7 @@ export default function RichterProfile() {
           <button onClick={() => navigate("/modules")} className="text-gray-400 hover:text-gray-600"><ArrowLeft className="w-5 h-5" /></button>
           <div className="flex-1">
             <h1 className="text-xl font-bold text-gray-900">Richterprofile</h1>
-            <p className="text-sm text-gray-500">Statistische Profile für KI-Strategieanalysen</p>
+            <p className="text-sm text-gray-500">Erfahrungen dokumentieren · KI-Taktikanalyse</p>
           </div>
           <input placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-48" />
           <Button onClick={() => { setShowForm(!showForm); setEditing(null); setForm(EMPTY); }} className="bg-gray-900 text-white rounded-xl gap-1 h-9 text-sm">
@@ -148,7 +170,7 @@ export default function RichterProfile() {
                         <p className="text-xs text-gray-500">{p.gericht}{p.kammer ? ` · ${p.kammer}` : ""}</p>
                         {p.rechtsgebiet && <p className="text-[10px] text-gray-400">{p.rechtsgebiet}</p>}
                       </div>
-                      <div className="flex gap-1">
+                      <div className="flex gap-1 items-center">
                         <button onClick={() => startEdit(p)} className="text-gray-300 hover:text-blue-500 p-1"><Edit className="w-3.5 h-3.5" /></button>
                         <button onClick={() => del(p.id)} className="text-gray-300 hover:text-red-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
@@ -166,23 +188,30 @@ export default function RichterProfile() {
                     <div className="flex gap-4 text-xs text-gray-500 mb-3">
                       {p.durchschnitt_dauer_monate > 0 && <span><strong className="text-gray-700">{p.durchschnitt_dauer_monate}</strong> Mo. Ø</span>}
                       {p.urteile_gesamt > 0 && <span><strong className="text-gray-700">{p.urteile_gesamt}</strong> Urteile</span>}
+                      {(p.erfahrungen || []).length > 0 && <span><strong className="text-gray-700">{p.erfahrungen.length}</strong> Erfahrungen</span>}
                     </div>
                     {p.bekannt_fuer && <p className="text-xs text-gray-400 italic mb-3">"{p.bekannt_fuer}"</p>}
-                    {/* Fallverknüpfung */}
-                    {linkingId === p.id ? (
-                      <div className="flex gap-2 mt-2">
-                        <select className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs" value={selectedCase} onChange={e => setSelectedCase(e.target.value)}>
-                          <option value="">Fall auswählen...</option>
-                          {cases.map(c => <option key={c.id} value={c.id}>{c.fallname}</option>)}
-                        </select>
-                        <button onClick={() => linkToCase(p.id)} className="text-xs bg-gray-900 text-white px-2 py-1.5 rounded-lg hover:bg-gray-700">✓</button>
-                        <button onClick={() => { setLinkingId(null); setSelectedCase(""); }} className="text-xs text-gray-400 hover:text-gray-600 px-1"><X className="w-3.5 h-3.5" /></button>
+                    <div className="flex items-center justify-between mt-2">
+                      <div>
+                        {linkingId === p.id ? (
+                          <div className="flex gap-2">
+                            <select className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" value={selectedCase} onChange={e => setSelectedCase(e.target.value)}>
+                              <option value="">Fall auswählen...</option>
+                              {cases.map(c => <option key={c.id} value={c.id}>{c.fallname}</option>)}
+                            </select>
+                            <button onClick={() => linkToCase(p.id)} className="text-xs bg-gray-900 text-white px-2 py-1.5 rounded-lg hover:bg-gray-700">✓</button>
+                            <button onClick={() => { setLinkingId(null); setSelectedCase(""); }} className="text-xs text-gray-400 hover:text-gray-600 px-1"><X className="w-3.5 h-3.5" /></button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setLinkingId(p.id)} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-700 transition-colors">
+                            <Link className="w-3 h-3" /> Mit Fall verknüpfen
+                          </button>
+                        )}
                       </div>
-                    ) : (
-                      <button onClick={() => setLinkingId(p.id)} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-700 transition-colors">
-                        <Link className="w-3 h-3" /> Mit Fall verknüpfen
+                      <button onClick={() => setDetailProfile(p)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 font-medium transition-colors">
+                        Details & KI <ChevronRight className="w-3.5 h-3.5" />
                       </button>
-                    )}
+                    </div>
                     {(() => {
                       const linked = cases.filter(c => c.richter_name === p.name);
                       return linked.length > 0 ? (
@@ -191,6 +220,7 @@ export default function RichterProfile() {
                         </div>
                       ) : null;
                     })()}
+                    {p.ki_analyse && <p className="text-[10px] text-purple-500 mt-2">✓ KI-Analyse vorhanden</p>}
                   </>
                 )}
               </div>
