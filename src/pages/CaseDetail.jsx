@@ -15,12 +15,13 @@ import TabDokumente from "../components/lexara/TabDokumente";
 import TabNotizen from "../components/lexara/TabNotizen";
 import TabVerhandlung from "../components/lexara/TabVerhandlung";
 import TabRisiko from "../components/lexara/TabRisiko";
+import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
   {id:1,label:"Basisdaten"},{id:2,label:"Argumente"},{id:3,label:"Beweise"},
   {id:4,label:"Verkettung"},{id:5,label:"Personen"},{id:6,label:"Fristen"},
-  {id:7,label:"Strategie"},{id:8,label:"KI-Berater"},{id:9,label:"Analyse"},{id:10,label:"Risiken"},{id:11,label:"Dokumente"},{id:12,label:"Notizen"},{id:13,label:"Verhandlung"},
+  {id:7,label:"Strategie"},{id:8,label:"KI-Berater"},{id:9,label:"Analyse"},{id:10,label:"Risiken"},{id:11,label:"Simulation"},{id:12,label:"Dokumente"},{id:13,label:"Notizen"},{id:14,label:"Verhandlung"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -82,7 +83,7 @@ export default function CaseDetail() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin"/></div>;
   if (!caseData) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Fall nicht gefunden.</p></div>;
 
-  const completedTabs = [!!caseData.fallname,counts.args>0,counts.evidence>0,counts.args>1,counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,!!caseData.notes,false];
+  const completedTabs = [!!caseData.fallname,counts.args>0,counts.evidence>0,counts.args>1,counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,false,!!caseData.notes,false];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -124,7 +125,7 @@ export default function CaseDetail() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 13</p>
+        <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 14</p>
         {activeTab===1 && <TabBasisdaten caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===2 && <TabArgumente caseId={caseId} caseData={caseData} onCountChange={loadCase} />}
         {activeTab===3 && <TabBeweise caseId={caseId} />}
@@ -135,9 +136,10 @@ export default function CaseDetail() {
         {activeTab===8 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===9 && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===10 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===11 && <TabDokumente caseId={caseId} />}
-        {activeTab===12 && <TabNotizen caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===13 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
+        {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
+        {activeTab===12 && <TabDokumente caseId={caseId} />}
+        {activeTab===13 && <TabNotizen caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===14 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
 
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">
@@ -146,7 +148,7 @@ export default function CaseDetail() {
           <div className="flex gap-1">
             {TABS.map((_,i) => <div key={i} className={`w-2 h-2 rounded-full transition-all ${activeTab===i+1?"bg-gray-800":completedTabs[i]?"bg-gray-400":"bg-gray-200"}`}/>)}
           </div>
-          <button onClick={() => setActiveTab(t=>Math.min(13,t+1))} disabled={activeTab===13} className="flex items-center gap-1 text-sm text-gray-800 font-medium hover:text-gray-600 disabled:opacity-30">
+          <button onClick={() => setActiveTab(t=>Math.min(14,t+1))} disabled={activeTab===14} className="flex items-center gap-1 text-sm text-gray-800 font-medium hover:text-gray-600 disabled:opacity-30">
             Weiter <ArrowRight className="w-4 h-4"/>
           </button>
         </div>

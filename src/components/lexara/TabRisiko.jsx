@@ -26,7 +26,11 @@ export default function TabRisiko({ caseId, caseData, onUpdate }) {
   const [evidence, setEvidence] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [persons, setPersons] = useState([]);
-  const [result, setResult] = useState(caseData?.ki_berater_result?.risiko_analyse || null);
+  const [result, setResult] = useState(
+    caseData?.ki_berater_result?.risiko_analyse ||
+    (caseData?.ki_berater_result?.gesamtrisiko ? caseData.ki_berater_result : null) ||
+    null
+  );
   const [loading, setLoading] = useState(false);
   const [manualScores, setManualScores] = useState({});
 
@@ -97,6 +101,7 @@ Erstelle eine präzise Analyse mit konkreten Prozentzahlen und Handlungsempfehlu
       }
     });
 
+    if (!res || Object.keys(res).length === 0) { setLoading(false); return; }
     setResult(res);
     const currentKi = caseData?.ki_berater_result || {};
     const updated = await base44.entities.Case.update(caseId, {
