@@ -37,20 +37,21 @@ const AuthenticatedApp = () => {
 
   return (
     <>
-      <Route path="/" element={<Modules />} />
-      <Route path="/modules" element={<Modules />} />
-      <Route path="/lexara" element={<LexaraDashboard />} />
-      <Route path="/lexara/case" element={<CaseDetail />} />
-      <Route path="/zeitleiste" element={<Zeitleiste />} />
-      <Route path="/mandant" element={<MandantenView />} />
-      <Route path="/richterprofile" element={<RichterProfile />} />
-      <Route path="/plattform-agent" element={<PlattformAgent />} />
-      <Route path="/cockpit" element={<KanzleiCockpit />} />
-      <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
-      {/* Add your page Route elements here */}
-      <Route path="*" element={<PageNotFound />} />
-    </Routes>
-    <DsgvoBanner />
+      <Routes>
+        <Route path="/" element={<Modules />} />
+        <Route path="/modules" element={<Modules />} />
+        <Route path="/lexara" element={<LexaraDashboard />} />
+        <Route path="/lexara/case" element={<CaseDetail />} />
+        <Route path="/zeitleiste" element={<Zeitleiste />} />
+        <Route path="/mandant" element={<MandantenView />} />
+        <Route path="/richterprofile" element={<RichterProfile />} />
+        <Route path="/plattform-agent" element={<PlattformAgent />} />
+        <Route path="/cockpit" element={<KanzleiCockpit />} />
+        <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
+        {/* Add your page Route elements here */}
+        <Route path="*" element={<PageNotFound />} />
+      </Routes>
+      <DsgvoBanner />
     </>
   );
 };
