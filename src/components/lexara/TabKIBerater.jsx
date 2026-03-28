@@ -102,12 +102,12 @@ Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad), 
       <div className="bg-white rounded-2xl border border-gray-100 p-4">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">🎯 Analyse-Module</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-4">
-          {[["👤","Psychologisches Profil","Big Five + Dark Triad Assessment der Gegenpartei."],["🎯","Druckmittel-Analyse","Systematische Identifikation aller Schwachstellen."],["⚔️","Strategieempfehlungen","3–5 taktische Optionen von kooperativ bis aggressiv."],["⏰","Timing & Momentum","Optimaler Zeitpunkt für jeden Schritt."],["🔒","Informationsstrategie","Was offenlegen, verbergen oder als Bluff nutzen?"],["💬","Verhandlungsskript","Maßgeschneidertes Skript mit FBI-Taktiken."]].map(([icon,title,desc]) => (
-            <div key={title} className="bg-gray-50 rounded-xl p-3 text-center">
+          {[["👤","Psychologisches Profil","Big Five + Dark Triad Assessment der Gegenpartei. Identifiziert Trigger, Schwachpunkte und optimalen Verhandlungsansatz.",!!result?.psychologisches_profil],["🎯","Druckmittel-Analyse","Systematische Identifikation aller Schwachstellen: Zeitdruck, Finanzen, Reputation, persönliche Risiken.",!!(result?.druckmittel?.length)],["⚔️","Strategieempfehlungen","3–5 taktische Optionen von kooperativ bis aggressiv. Erfolgswahrscheinlichkeit und Risikoabwägung.",!!(result?.strategien?.length)],["⏰","Timing & Momentum","Optimaler Zeitpunkt für jeden Schritt. Identifiziert kritische Zeitfenster und Schwächephasen des Gegners.",!!result?.timing],["🔒","Informationsstrategie","Was offenlegen, verbergen oder als Bluff nutzen? Ethische Klassifizierung jeder Maßnahme.",!!result?.informationsstrategie],["💬","Verhandlungsskript","Maßgeschneidertes Skript mit FBI-Taktiken (Calibrated Questions) und konkreten Formulierungen.",!!result?.verhandlungsskript]].map(([icon,title,desc,done]) => (
+            <div key={title} className="bg-gray-50 rounded-xl p-3">
               <div className="text-2xl mb-1">{icon}</div>
               <p className="text-xs font-semibold text-gray-700">{title}</p>
-              <p className="text-[10px] text-gray-500 mt-0.5">{desc}</p>
-              {result && <p className="text-[10px] text-green-600 mt-1">✓ Ergebnis</p>}
+              <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">{desc}</p>
+              {done && <p className="text-[10px] text-green-600 mt-1.5">✓ Ergebnis</p>}
             </div>
           ))}
         </div>
