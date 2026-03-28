@@ -82,7 +82,7 @@ export default function CaseDetail() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin"/></div>;
   if (!caseData) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Fall nicht gefunden.</p></div>;
 
-  const completedTabs = [!!caseData.fallname,counts.args>0,counts.evidence>0,counts.args>1,counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,false,!!caseData.notes,false];
+  const completedTabs = [!!caseData.fallname,counts.args>0,counts.evidence>0,counts.args>1,counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,!!caseData.notes,false];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -124,7 +124,7 @@ export default function CaseDetail() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 12</p>
+        <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 13</p>
         {activeTab===1 && <TabBasisdaten caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===2 && <TabArgumente caseId={caseId} caseData={caseData} onCountChange={loadCase} />}
         {activeTab===3 && <TabBeweise caseId={caseId} />}
