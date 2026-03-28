@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Scale, Users, Bot } from "lucide-react";
+import { ChevronRight, Scale, Users, Bot, LayoutDashboard } from "lucide-react";
 
 const MODULES = [
   {
@@ -22,6 +22,13 @@ const MODULES = [
     description: "KI-Agent der kontinuierlich Lücken erkennt, Richterprofile ergänzt, Argumente stärkt und die Kanzlei auf Großkanzlei-Niveau hebt.",
     icon: <Bot className="w-10 h-10 text-emerald-600" />,
     path: "/plattform-agent",
+  },
+  {
+    category: "PORTFOLIO · COCKPIT",
+    title: "Kanzlei-Cockpit",
+    description: "Portfolio-Übersicht aller Mandate mit Risikoampel, KPI-Dashboard, Fristenalarm und Chancen-Analyse auf einen Blick.",
+    icon: <LayoutDashboard className="w-10 h-10 text-blue-600" />,
+    path: "/cockpit",
   },
 ];
 
