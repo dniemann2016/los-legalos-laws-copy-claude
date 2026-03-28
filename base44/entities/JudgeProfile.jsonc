@@ -1,0 +1,68 @@
+{
+  "name": "JudgeProfile",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Name"
+    },
+    "gericht": {
+      "type": "string",
+      "title": "Gericht"
+    },
+    "kammer": {
+      "type": "string",
+      "title": "Kammer / Senat"
+    },
+    "rechtsgebiet": {
+      "type": "string",
+      "title": "Rechtsgebiet"
+    },
+    "klaeger_rate": {
+      "type": "number",
+      "title": "Kl\u00e4gerquote %"
+    },
+    "vergleich_rate": {
+      "type": "number",
+      "title": "Vergleichsrate %"
+    },
+    "durchschnitt_dauer_monate": {
+      "type": "number",
+      "title": "\u00d8 Verfahrensdauer (Monate)"
+    },
+    "urteile_gesamt": {
+      "type": "number",
+      "title": "Urteile gesamt"
+    },
+    "stil": {
+      "type": "string",
+      "title": "Verhandlungsstil",
+      "enum": [
+        "Kooperativ",
+        "Streng",
+        "Neutral",
+        "Prozessaktiv",
+        "Vergleichsorientiert"
+      ]
+    },
+    "bekannt_fuer": {
+      "type": "string",
+      "title": "Bekannt f\u00fcr"
+    },
+    "schwerpunkte": {
+      "type": "array",
+      "title": "Rechtliche Schwerpunkte",
+      "items": {
+        "type": "string"
+      }
+    },
+    "notizen": {
+      "type": "string",
+      "title": "Notizen"
+    }
+  },
+  "required": [
+    "name",
+    "gericht"
+  ]
+}

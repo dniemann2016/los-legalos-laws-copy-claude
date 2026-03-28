@@ -25,10 +25,10 @@ export default function TabFristen({ caseId, onCountChange }) {
 
   useEffect(() => { load(); }, [caseId]);
 
-  const load = async () => {
+  const load = async (notify = false) => {
     const data = await base44.entities.Deadline.filter({ case_id: caseId });
     setFristen(data.sort((a,b) => new Date(a.due_date)-new Date(b.due_date)));
-    onCountChange && onCountChange();
+    if (notify) onCountChange && onCountChange();
   };
 
   const save = async () => {
@@ -36,11 +36,11 @@ export default function TabFristen({ caseId, onCountChange }) {
     await base44.entities.Deadline.create({ case_id: caseId, ...form });
     setForm(EMPTY);
     setShowAdd(false);
-    load();
+    load(true);
   };
 
-  const updateStatus = async (id, status) => { await base44.entities.Deadline.update(id, { status }); load(); };
-  const del = async (id) => { await base44.entities.Deadline.delete(id); load(); };
+  const updateStatus = async (id, status) => { await base44.entities.Deadline.update(id, { status }); load(false); };
+  const del = async (id) => { await base44.entities.Deadline.delete(id); load(true); };
 
   return (
     <div className="space-y-4">

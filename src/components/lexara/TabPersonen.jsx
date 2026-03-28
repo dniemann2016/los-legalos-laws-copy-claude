@@ -15,10 +15,10 @@ export default function TabPersonen({ caseId, onCountChange }) {
 
   useEffect(() => { load(); }, [caseId]);
 
-  const load = async () => {
+  const load = async (notify = false) => {
     const data = await base44.entities.Person.filter({ case_id: caseId });
     setPersons(data);
-    onCountChange && onCountChange();
+    if (notify) onCountChange && onCountChange();
   };
 
   const save = async () => {
@@ -26,10 +26,10 @@ export default function TabPersonen({ caseId, onCountChange }) {
     if (editing) { await base44.entities.Person.update(editing, form); setEditing(null); }
     else { await base44.entities.Person.create({ case_id: caseId, ...form }); setShowAdd(false); }
     setForm(EMPTY);
-    load();
+    load(true);
   };
 
-  const del = async (id) => { await base44.entities.Person.delete(id); load(); };
+  const del = async (id) => { await base44.entities.Person.delete(id); load(true); };
   const startEdit = (p) => { setForm({name:p.name||"",role:p.role||"Richter",organization:p.organization||"",aussagen:p.aussagen||0,widersprueche:p.widersprueche||0,glaubwuerdigkeit:p.glaubwuerdigkeit||100,klaeger_rate:p.klaeger_rate||50,vergleich_rate:p.vergleich_rate||30,dauer_monate:p.dauer_monate||12,notizen:p.notizen||""}); setEditing(p.id); setShowAdd(false); };
 
   const PersonForm = () => (

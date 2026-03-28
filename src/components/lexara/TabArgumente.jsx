@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [args, setArgs] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [extractError, setExtractError]= useState(null);
   const [showExtraction, setShowExtraction] = useState(false);
   const [extractMode, setExtractMode] = useState("ki");
   const [dsgvo, setDsgvo] = useState(false);
@@ -19,15 +20,16 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
   useEffect(() => { load(); }, [caseId]);
 
-  const load = async () => {
+  const load = async (notify = false) => {
     const data = await base44.entities.Argument.filter({ case_id: caseId });
     setArgs(data);
-    onCountChange && onCountChange();
+    if (notify) onCountChange && onCountChange();
   };
 
   const handleExtract = async () => {
     if (!dsgvo || (!file && !text.trim())) return;
     setExtracting(true);
+    setExtractError(null);
     let fileUrl = null;
     if (file) {
       const res = await base44.integrations.Core.UploadFile({ file });
@@ -51,13 +53,14 @@ Extrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, 
         }
       }
     });
+    if (!result) { setExtractError("KI-Analyse fehlgeschlagen. Bitte erneut versuchen."); setExtracting(false); return; }
     setExtracted(result);
     setExtracting(false);
   };
 
   const take = async (a, side, argType = "Rechtsargument") => {
     await base44.entities.Argument.create({ case_id: caseId, title: a.titel, description: a.beschreibung||"", side, strength: a.staerke||5, type: argType, paragraphs: a.paragraphen||[] });
-    load();
+    load(true);
   };
 
   const takeAll = async () => {
@@ -65,7 +68,7 @@ Extrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, 
     const all = [...(extracted.eigene_argumente||[]).map(a=>({...a,side:"eigen"})), ...(extracted.gegenseite_argumente||[]).map(a=>({...a,side:"gegner"}))];
     for (const a of all) await base44.entities.Argument.create({ case_id: caseId, title: a.titel, description: a.beschreibung||"", side: a.side, strength: a.staerke||5, type: "Rechtsargument", paragraphs: a.paragraphen||[] });
     setExtracted(null);
-    load();
+    load(true);
   };
 
   const addManual = async () => {
@@ -73,10 +76,10 @@ Extrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, 
     await base44.entities.Argument.create({ case_id: caseId, ...newArg });
     setNewArg({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
     setShowAdd(false);
-    load();
+    load(true);
   };
 
-  const del = async (id) => { await base44.entities.Argument.delete(id); load(); };
+  const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
   const filtered = args.filter(a => filter === "all" || a.side === filter);
 
   return (
@@ -156,8 +159,9 @@ Extrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, 
             <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-[70px]" placeholder="Oder Text manuell einfügen..." value={text} onChange={e=>setText(e.target.value)} />
             <Button onClick={handleExtract} disabled={extracting||(!file&&!text.trim())||(extractMode==="ki"&&!dsgvo)} className="bg-gray-700 text-white hover:bg-gray-800 gap-2 text-sm">
               {extracting ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analysiere...</> : "🔄 Analysieren"}
-              {(file||text) && <span className="text-xs opacity-70">{file?"1":"0"} Datei(en)</span>}
+            {(file||text) && <span className="text-xs opacity-70">{file?"1":"0"} Datei(en)</span>}
             </Button>
+            {extractError && <p className="text-xs text-red-500 mt-2">⚠️ {extractError}</p>}
 
             {extracted && (
               <div className="space-y-4 mt-2">

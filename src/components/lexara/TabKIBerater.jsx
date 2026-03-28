@@ -11,12 +11,14 @@ export default function TabKIBerater({ caseId, caseData, onUpdate }) {
   const [showProfil, setShowProfil] = useState(false);
   const [result, setResult] = useState(caseData?.ki_berater_result || null);
   const [loading, setLoading] = useState(false);
+  const [analysisError, setAnalysisError] = useState(null);
   const [args, setArgs] = useState([]);
 
   useEffect(() => { base44.entities.Argument.filter({case_id:caseId}).then(setArgs); }, [caseId]);
 
   const runAnalysis = async () => {
     setLoading(true);
+    setAnalysisError(null);
     const eigene = args.filter(a=>a.side==="eigen");
     const gegner = args.filter(a=>a.side==="gegner");
     const res = await base44.integrations.Core.InvokeLLM({
@@ -40,6 +42,11 @@ Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad), 
         }
       }
     });
+    if (!res || Object.keys(res).length === 0) {
+      setAnalysisError("KI-Analyse fehlgeschlagen oder kein Ergebnis. Bitte erneut versuchen.");
+      setLoading(false);
+      return;
+    }
     setResult(res);
     const updated = await base44.entities.Case.update(caseId, { ki_berater_result: res, gegner_profil: profil });
     onUpdate(updated);
@@ -107,6 +114,7 @@ Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad), 
         <Button onClick={runAnalysis} disabled={loading} className="w-full bg-gray-900 text-white rounded-xl gap-2">
           {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analysiere mit KI...</> : "🎯 Vollständige Analyse starten"}
         </Button>
+        {analysisError && <p className="text-xs text-red-500 mt-2 text-center">⚠️ {analysisError}</p>}
         <p className="text-[10px] text-amber-600 text-center mt-2">⚠️ Diese Analyse verwendet Claude Sonnet (mehr KI-Credits)</p>
       </div>
 
