@@ -33,13 +33,11 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      <Route element={<Layout />}>
-        <Route path="/" element={<Home />} />
-        <Route path="/modules" element={<Modules />} />
-        <Route path="/lexara" element={<LexaraDashboard />} />
-        <Route path="/lexara/case" element={<CaseDetail />} />
-        {/* Add your page Route elements here */}
-      </Route>
+      <Route path="/" element={<Home />} />
+      <Route path="/modules" element={<Modules />} />
+      <Route path="/lexara" element={<LexaraDashboard />} />
+      <Route path="/lexara/case" element={<CaseDetail />} />
+      {/* Add your page Route elements here */}
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
