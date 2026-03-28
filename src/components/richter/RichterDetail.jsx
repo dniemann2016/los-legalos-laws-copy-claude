@@ -41,7 +41,9 @@ export default function RichterDetail({ profile, cases, onBack, onUpdate }) {
   const runKIAnalyse = async () => {
     setKiLoading(true);
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein juristischer Strategieberater. Analysiere dieses Richterprofil und gib präzise taktische Empfehlungen für Anwälte.
+      add_context_from_internet: true,
+      model: "gemini_3_pro",
+      prompt: `Du bist ein juristischer Strategieberater und Rechtsrecherche-Experte. Deine Aufgabe ist eine vollständige Analyse des folgenden Richters.
 
 Richterprofil:
 - Name: ${profile.name}
@@ -59,11 +61,43 @@ ${erfahrungen.map((e, i) => `${i + 1}. ${e.datum}: Vergleichsbereitschaft ${e.ve
 
 Verknüpfte Fälle: ${linkedCases.map(c => `${c.fallname} (${c.rechtsgebiet}, Prognose ${c.prognose}%)`).join(", ") || "–"}
 
-Erstelle eine vollständige taktische Analyse.`,
+AUFGABE 1 – Internetrecherche: Suche im Internet nach echten Urteilen und Entscheidungen von Richter/in "${profile.name}" am ${profile.gericht}${profile.kammer ? ` (${profile.kammer})` : ""}. Suche in:
+- juris.de, dejure.org, rewis.io, openJur.de
+- Bundesrechtsprechungsdatenbanken
+- Anwaltsblogs und Kommentare zu Entscheidungen
+- Pressemitteilungen des Gerichts
+
+Für jeden gefundenen Fall: Aktenzeichen, Datum, Streitgegenstand, Ergebnis (Urteil/Vergleich), wie der Richter argumentiert hat, welche rechtlichen Maßstäbe angelegt wurden.
+
+AUFGABE 2 – Musteranalyse: Leite aus den gefundenen Fällen + Kanzleierfahrungen ab:
+- Typische Argumentationsmuster des Richters
+- Bevorzugte Rechtsnormen und Auslegungsmethoden
+- Wie er/sie mit Beweismitteln umgeht
+- Wann er/sie zu Vergleichen neigt
+- Typische Fallstricke für Anwälte bei diesem Richter
+
+AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
       response_json_schema: {
         type: "object",
         properties: {
           zusammenfassung: { type: "string" },
+          gefundene_urteile: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                aktenzeichen: { type: "string" },
+                datum: { type: "string" },
+                streitgegenstand: { type: "string" },
+                ergebnis: { type: "string" },
+                argumentationsweise: { type: "string" },
+                quelle: { type: "string" }
+              }
+            }
+          },
+          argumentationsmuster: { type: "array", items: { type: "string" } },
+          bevorzugte_normen: { type: "array", items: { type: "string" } },
+          umgang_beweismittel: { type: "string" },
           staerken_klaeger: { type: "array", items: { type: "string" } },
           risiken_klaeger: { type: "array", items: { type: "string" } },
           verhandlungstipps: { type: "array", items: { type: "object", properties: { tipp: { type: "string" }, begruendung: { type: "string" }, prioritaet: { type: "string" } } } },
@@ -204,12 +238,55 @@ Erstelle eine vollständige taktische Analyse.`,
 
         {ki && (
           <div className="space-y-4">
-            {ki.erstellt && <p className="text-[10px] text-gray-400">Letzte Analyse: {new Date(ki.erstellt).toLocaleString("de-DE")}</p>}
+            {ki.erstellt && <p className="text-[10px] text-gray-400">Letzte Analyse: {new Date(ki.erstellt).toLocaleString("de-DE")} · ⚠️ Diese Analyse verwendet Gemini Pro mit Internetsuche (mehr KI-Credits)</p>}
 
             {ki.zusammenfassung && (
               <div className="bg-gray-50 rounded-xl p-4">
                 <p className="text-xs font-semibold text-gray-600 mb-1">📊 Zusammenfassung</p>
                 <p className="text-sm text-gray-700">{ki.zusammenfassung}</p>
+              </div>
+            )}
+
+            {(ki.gefundene_urteile || []).length > 0 && (
+              <div className="bg-white border border-gray-100 rounded-xl p-4">
+                <p className="text-xs font-semibold text-gray-700 mb-3">🔍 Gefundene Urteile & Entscheidungen ({ki.gefundene_urteile.length})</p>
+                <div className="space-y-3">
+                  {ki.gefundene_urteile.map((u, i) => (
+                    <div key={i} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {u.aktenzeichen && <span className="text-[10px] font-mono bg-gray-200 text-gray-700 px-1.5 py-0.5 rounded">{u.aktenzeichen}</span>}
+                          {u.datum && <span className="text-[10px] text-gray-400">{u.datum}</span>}
+                        </div>
+                        {u.quelle && <a href={u.quelle.startsWith("http") ? u.quelle : undefined} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline truncate max-w-[120px]">{u.quelle}</a>}
+                      </div>
+                      {u.streitgegenstand && <p className="text-xs font-medium text-gray-800 mb-1">{u.streitgegenstand}</p>}
+                      {u.ergebnis && <p className="text-xs text-gray-600 mb-1"><span className="font-medium">Ergebnis:</span> {u.ergebnis}</p>}
+                      {u.argumentationsweise && <p className="text-xs text-gray-500 italic">→ {u.argumentationsweise}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(ki.argumentationsmuster || []).length > 0 && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                <p className="text-xs font-semibold text-amber-700 mb-2">🧠 Typische Argumentationsmuster</p>
+                <ul className="space-y-1">{ki.argumentationsmuster.map((m, i) => <li key={i} className="text-xs text-amber-800">• {m}</li>)}</ul>
+              </div>
+            )}
+
+            {(ki.bevorzugte_normen || []).length > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+                <p className="text-xs font-semibold text-gray-600 mb-2">§ Bevorzugte Rechtsnormen</p>
+                <div className="flex flex-wrap gap-1.5">{ki.bevorzugte_normen.map((n, i) => <span key={i} className="text-[10px] bg-white border border-gray-200 rounded px-2 py-0.5 text-gray-700 font-mono">{n}</span>)}</div>
+              </div>
+            )}
+
+            {ki.umgang_beweismittel && (
+              <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                <p className="text-xs font-semibold text-blue-700 mb-1">📜 Umgang mit Beweismitteln</p>
+                <p className="text-xs text-blue-800">{ki.umgang_beweismittel}</p>
               </div>
             )}
 
