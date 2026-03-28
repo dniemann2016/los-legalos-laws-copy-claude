@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Calendar, AlertTriangle, Clock, Check } from "lucide-react";
+import { ArrowLeft, Calendar, AlertTriangle, Clock, Check, Download } from "lucide-react";
+import { exportIcal } from "@/functions/exportIcal";
 import { Link } from "react-router-dom";
 
 function getStatusColor(deadline) {
@@ -92,6 +93,18 @@ export default function Zeitleiste() {
               </h1>
               <p className="text-xs text-gray-400 mt-0.5">{openCount} offen · {criticalCount} kritisch (≤14 Tage)</p>
             </div>
+            <button
+              onClick={async () => {
+                const res = await exportIcal({});
+                const blob = new Blob([res.data], { type: "text/calendar" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url; a.download = "alle-fristen.ics"; a.click();
+                URL.revokeObjectURL(url);
+              }}
+              className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all">
+              <Download className="w-3.5 h-3.5" /> iCal exportieren
+            </button>
             <div className="flex gap-1">
               {["alle", "offen", "kritisch", "erledigt"].map(f => (
                 <button key={f} onClick={() => setFilter(f)}

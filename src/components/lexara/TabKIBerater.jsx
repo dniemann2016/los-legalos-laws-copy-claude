@@ -162,6 +162,80 @@ Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad), 
             </div>
           )}
 
+          {/* Druckmittel */}
+          {(result.druckmittel||[]).length > 0 && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-4">🎯 Druckmittel-Analyse – Ergebnis</h3>
+              <div className="space-y-3">
+                {result.druckmittel.map((d,i) => (
+                  <div key={i} className="border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-semibold text-sm text-gray-800">{d.titel}</span>
+                      {d.staerke && (
+                        <div className="flex items-center gap-1.5">
+                          <div className="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-red-600 rounded-full" style={{width:`${d.staerke*10}%`}} /></div>
+                          <span className="text-xs text-gray-500">{d.staerke}/10</span>
+                        </div>
+                      )}
+                    </div>
+                    {d.kategorie && <p className="text-[10px] text-gray-400 mb-1">{d.kategorie}</p>}
+                    {d.wie_nutzen && <p className="text-xs text-gray-600">→ {d.wie_nutzen}</p>}
+                    {d.timing && <p className="text-xs text-blue-600 mt-1">⏰ {d.timing}</p>}
+                    {d.risiko && <p className="text-xs text-amber-600 mt-0.5">⚠️ {d.risiko}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Timing & Momentum */}
+          {result.timing && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">⏰ Timing & Momentum – Ergebnis</h3>
+              {result.timing.momentum && (
+                <div className="mb-3">
+                  <div className="flex items-center gap-3 mb-1">
+                    <p className="text-xs text-gray-600 flex-1">{result.timing.momentum}</p>
+                    {result.timing.momentum_pct !== undefined && (
+                      <div className="flex items-center gap-1.5">
+                        <div className="w-20 h-2 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-blue-600 rounded-full" style={{width:`${result.timing.momentum_pct}%`}} /></div>
+                        <span className="text-xs text-gray-500">{result.timing.momentum_pct}%</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+              {(result.timing.zeitfenster||[]).length > 0 && (
+                <div className="space-y-2 mb-3">
+                  <p className="text-xs font-semibold text-gray-600">Kritische Zeitfenster:</p>
+                  {result.timing.zeitfenster.map((z,i) => (
+                    <div key={i} className="bg-gray-50 rounded-lg p-2 text-xs">
+                      {typeof z === "object" ? Object.entries(z).map(([k,v]) => <span key={k} className="mr-3 text-gray-600"><strong>{k}:</strong> {v}</span>) : z}
+                    </div>
+                  ))}
+                </div>
+              )}
+              {result.timing.naechster_schritt && <p className="text-xs text-gray-900 bg-blue-50 rounded-lg p-3">→ <strong>Nächster Schritt:</strong> {result.timing.naechster_schritt}</p>}
+            </div>
+          )}
+
+          {/* Informationsstrategie */}
+          {result.informationsstrategie && (
+            <div className="bg-white rounded-2xl border border-gray-100 p-5">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">🔒 Informationsstrategie – Ergebnis</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {[[["sofort_offenlegen","✅ Sofort offenlegen","bg-green-50 border-green-100 text-green-700"],["verbergen","🔒 Verbergen","bg-red-50 border-red-100 text-red-700"],["als_bluff","🎭 Als Bluff nutzen","bg-amber-50 border-amber-100 text-amber-700"]]].flat().map(([key,label,cls]) => (
+                  (result.informationsstrategie[key]||[]).length > 0 && (
+                    <div key={key} className={`rounded-xl border p-3 ${cls}`}>
+                      <p className="text-xs font-semibold mb-2">{label}</p>
+                      <ul className="space-y-1">{(result.informationsstrategie[key]||[]).map((item,i) => <li key={i} className="text-xs">• {item}</li>)}</ul>
+                    </div>
+                  )
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Strategien */}
           {(result.strategien||[]).length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
