@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Scale, Users, Bot, LayoutDashboard, MessageSquare } from "lucide-react";
+import { ChevronRight, Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2 } from "lucide-react";
 
 const MODULES = [
   {
@@ -36,6 +36,13 @@ const MODULES = [
     description: "Portfolio-Übersicht aller Mandate mit Risikoampel, KPI-Dashboard, Fristenalarm und Chancen-Analyse auf einen Blick.",
     icon: <LayoutDashboard className="w-10 h-10 text-blue-600" />,
     path: "/cockpit",
+  },
+  {
+    category: "ANALYTIK · CHARTS",
+    title: "Kanzlei-Analytik",
+    description: "Interaktive Dashboards mit Recharts: Fallstatistiken, Fristen-Übersichten, Prognoseverteilung und KI-gestützte Fallanalyse.",
+    icon: <BarChart2 className="w-10 h-10 text-purple-600" />,
+    path: "/analytik",
   },
 ];
 

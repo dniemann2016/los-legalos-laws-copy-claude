@@ -16,6 +16,7 @@ import PlattformAgent from './pages/PlattformAgent';
 import KanzleiCockpit from './pages/KanzleiCockpit';
 import FallAssistentChat from './pages/FallAssistentChat';
 import DsgvoBanner from './components/DsgvoBanner';
+import KanzleiAnalytik from './pages/KanzleiAnalytik';
 // Add page imports here
 
 const AuthenticatedApp = () => {
@@ -47,6 +48,7 @@ const AuthenticatedApp = () => {
         <Route path="/richterprofile" element={<RichterProfile />} />
         <Route path="/plattform-agent" element={<PlattformAgent />} />
         <Route path="/cockpit" element={<KanzleiCockpit />} />
+        <Route path="/analytik" element={<KanzleiAnalytik />} />
         <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
         {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
