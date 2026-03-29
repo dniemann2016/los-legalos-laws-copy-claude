@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import FallAbschlussFragebogen from "./FallAbschlussFragebogen";
 
 export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
   const [form, setForm] = useState({
@@ -16,12 +17,17 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
     richter_klaeger_rate: caseData?.richter_klaeger_rate || 50,
   });
   const [saving, setSaving] = useState(false);
+  const [showFragebogen, setShowFragebogen] = useState(false);
 
   const handleSave = async () => {
     setSaving(true);
     const updated = await base44.entities.Case.update(caseId, form);
     onUpdate(updated);
     setSaving(false);
+    // Trigger questionnaire when status set to Abgeschlossen
+    if (form.status === "Abgeschlossen" && caseData?.status !== "Abgeschlossen") {
+      setShowFragebogen(true);
+    }
   };
 
   const f = (label, field, type = "text", options, placeholder) => (
@@ -79,6 +85,14 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
           {saving ? "Speichern..." : "Falldaten speichern"}
         </Button>
       </div>
+
+      {showFragebogen && (
+        <FallAbschlussFragebogen
+          caseData={{ ...caseData, id: caseId }}
+          onClose={() => setShowFragebogen(false)}
+          onSaved={() => setShowFragebogen(false)}
+        />
+      )}
     </div>
   );
 }

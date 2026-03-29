@@ -1,0 +1,69 @@
+{
+  "name": "CaseQuestionnaire",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "case_name": {
+      "type": "string",
+      "title": "Fallname"
+    },
+    "ziel_erreicht": {
+      "type": "boolean",
+      "title": "Prozessziel erreicht?"
+    },
+    "mandant_zufrieden": {
+      "type": "boolean",
+      "title": "Mandant zufrieden?"
+    },
+    "vergleich_geschlossen": {
+      "type": "boolean",
+      "title": "Vergleich geschlossen?"
+    },
+    "kosten_im_rahmen": {
+      "type": "boolean",
+      "title": "Kosten im Rahmen geblieben?"
+    },
+    "fristen_eingehalten": {
+      "type": "boolean",
+      "title": "Alle Fristen eingehalten?"
+    },
+    "ki_prognose_korrekt": {
+      "type": "boolean",
+      "title": "KI-Prognose war zutreffend?"
+    },
+    "ergebnis_urteil": {
+      "type": "string",
+      "title": "Ergebnis / Urteil (Details)"
+    },
+    "abweichung_prognose": {
+      "type": "string",
+      "title": "Abweichung von Prognose (Begr\u00fcndung)"
+    },
+    "lernpunkte": {
+      "type": "string",
+      "title": "Lernpunkte f\u00fcr k\u00fcnftige F\u00e4lle"
+    },
+    "mandanten_feedback": {
+      "type": "string",
+      "title": "Mandanten-Feedback (Freitext)"
+    },
+    "gesamtbewertung": {
+      "type": "number",
+      "title": "Gesamtbewertung (1\u20135)"
+    },
+    "dauer_monate": {
+      "type": "number",
+      "title": "Tats\u00e4chliche Verfahrensdauer (Monate)"
+    },
+    "endkosten": {
+      "type": "number",
+      "title": "Endkosten gesamt (\u20ac)"
+    }
+  },
+  "required": [
+    "case_id"
+  ]
+}
