@@ -132,95 +132,99 @@ export default function RichterProfile() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        <div className="flex items-center gap-3 mb-6 flex-wrap">
-          <button onClick={() => navigate("/modules")} className="text-gray-400 hover:text-gray-600"><ArrowLeft className="w-5 h-5" /></button>
+    <div className="min-h-screen bg-[#F5F6F8] font-sans">
+      <div className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-4">
+          <button onClick={() => navigate("/modules")} className="text-slate-400 hover:text-slate-700 transition-colors"><ArrowLeft className="w-4 h-4" /></button>
+          <div className="w-px h-4 bg-slate-200" />
           <div className="flex-1">
-            <h1 className="text-xl font-bold text-gray-900">Richterprofile</h1>
-            <p className="text-sm text-gray-500">Erfahrungen dokumentieren · KI-Taktikanalyse</p>
+            <h1 className="text-sm font-bold text-slate-900">Richterprofile</h1>
+            <p className="text-[11px] text-slate-400">{profiles.length} Profile · Erfahrungen & KI-Taktikanalyse</p>
           </div>
-          <input placeholder="Suchen..." value={search} onChange={e => setSearch(e.target.value)} className="border border-gray-200 rounded-xl px-3 py-2 text-sm w-48" />
-          <Button onClick={() => { setShowForm(!showForm); setEditing(null); setForm(EMPTY); }} className="bg-gray-900 text-white rounded-xl gap-1 h-9 text-sm">
-            <Plus className="w-4 h-4" /> Richter
-          </Button>
+          <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)}
+            className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-40 bg-slate-50 focus:outline-none focus:border-slate-400" />
+          <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm(EMPTY); }}
+            className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
+            <Plus className="w-3.5 h-3.5" /> Richter
+          </button>
         </div>
-
-        {showForm && !editing && <div className="mb-4"><ProfileForm /></div>}
+      </div>
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {showForm && !editing && <div className="mb-5"><ProfileForm /></div>}
 
         {loading ? (
-          <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" /></div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-16 text-gray-400">
-            <p className="text-lg mb-1">Noch keine Richterprofile</p>
-            <p className="text-sm">Klicken Sie auf „+ Richter" um ein Profil anzulegen</p>
+          <div className="text-center py-20">
+            <p className="text-sm font-medium text-slate-700 mb-1">Noch keine Richterprofile</p>
+            <p className="text-xs text-slate-400">Klicken Sie auf „+ Richter“ um ein Profil anzulegen</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {filtered.map(p => (
-              <div key={p.id} className="bg-white rounded-2xl border border-gray-100 p-5 hover:border-gray-200 transition-all">
+              <div key={p.id} className="bg-white rounded-xl border border-slate-100 p-5 hover:border-slate-200 hover:shadow-sm transition-all">
                 {editing === p.id ? <ProfileForm /> : (
                   <>
-                    <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start justify-between mb-4">
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <h3 className="font-semibold text-gray-900">{p.name}</h3>
-                          {p.stil && <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${STIL_COLOR[p.stil] || "bg-gray-100 text-gray-600"}`}>{p.stil}</span>}
+                          <h3 className="font-semibold text-slate-900 text-sm">{p.name}</h3>
+                          {p.stil && <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold ${STIL_COLOR[p.stil] || "bg-slate-100 text-slate-600"}`}>{p.stil}</span>}
                         </div>
-                        <p className="text-xs text-gray-500">{p.gericht}{p.kammer ? ` · ${p.kammer}` : ""}</p>
-                        {p.rechtsgebiet && <p className="text-[10px] text-gray-400">{p.rechtsgebiet}</p>}
+                        <p className="text-xs text-slate-500">{p.gericht}{p.kammer ? ` · ${p.kammer}` : ""}</p>
+                        {p.rechtsgebiet && <p className="text-[10px] text-slate-400 mt-0.5">{p.rechtsgebiet}</p>}
                       </div>
-                      <div className="flex gap-1 items-center">
-                        <button onClick={() => startEdit(p)} className="text-gray-300 hover:text-blue-500 p-1"><Edit className="w-3.5 h-3.5" /></button>
-                        <button onClick={() => del(p.id)} className="text-gray-300 hover:text-red-400 p-1"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <div className="flex gap-0.5 items-center">
+                        <button onClick={() => startEdit(p)} className="text-slate-300 hover:text-blue-500 p-1.5 rounded-lg hover:bg-blue-50 transition-colors"><Edit className="w-3.5 h-3.5" /></button>
+                        <button onClick={() => del(p.id)} className="text-slate-300 hover:text-red-500 p-1.5 rounded-lg hover:bg-red-50 transition-colors"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>
                     </div>
-                    <div className="space-y-2 mb-3">
+                    <div className="space-y-2.5 mb-4">
                       <div>
-                        <p className="text-[10px] text-gray-400 mb-0.5">Klägerquote</p>
+                        <p className="text-[10px] text-slate-400 mb-1">Klägerquote</p>
                         <GaugeBar value={p.klaeger_rate || 0} color="bg-blue-500" />
                       </div>
                       <div>
-                        <p className="text-[10px] text-gray-400 mb-0.5">Vergleichsrate</p>
-                        <GaugeBar value={p.vergleich_rate || 0} color="bg-purple-500" />
+                        <p className="text-[10px] text-slate-400 mb-1">Vergleichsrate</p>
+                        <GaugeBar value={p.vergleich_rate || 0} color="bg-violet-500" />
                       </div>
                     </div>
-                    <div className="flex gap-4 text-xs text-gray-500 mb-3">
-                      {p.durchschnitt_dauer_monate > 0 && <span><strong className="text-gray-700">{p.durchschnitt_dauer_monate}</strong> Mo. Ø</span>}
-                      {p.urteile_gesamt > 0 && <span><strong className="text-gray-700">{p.urteile_gesamt}</strong> Urteile</span>}
-                      {(p.erfahrungen || []).length > 0 && <span><strong className="text-gray-700">{p.erfahrungen.length}</strong> Erfahrungen</span>}
+                    <div className="flex gap-4 text-xs text-slate-500 mb-3 pt-3 border-t border-slate-50">
+                      {p.durchschnitt_dauer_monate > 0 && <span><strong className="text-slate-800">{p.durchschnitt_dauer_monate}</strong> Mo. Ø</span>}
+                      {p.urteile_gesamt > 0 && <span><strong className="text-slate-800">{p.urteile_gesamt}</strong> Urteile</span>}
+                      {(p.erfahrungen || []).length > 0 && <span><strong className="text-slate-800">{p.erfahrungen.length}</strong> Erfahrungen</span>}
                     </div>
-                    {p.bekannt_fuer && <p className="text-xs text-gray-400 italic mb-3">"{p.bekannt_fuer}"</p>}
-                    <div className="flex items-center justify-between mt-2">
+                    {p.bekannt_fuer && <p className="text-[11px] text-slate-400 italic mb-3">"{p.bekannt_fuer}"</p>}
+                    <div className="flex items-center justify-between">
                       <div>
                         {linkingId === p.id ? (
                           <div className="flex gap-2">
-                            <select className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs" value={selectedCase} onChange={e => setSelectedCase(e.target.value)}>
+                            <select className="border border-slate-200 rounded-lg px-2 py-1.5 text-xs bg-slate-50" value={selectedCase} onChange={e => setSelectedCase(e.target.value)}>
                               <option value="">Fall auswählen...</option>
                               {cases.map(c => <option key={c.id} value={c.id}>{c.fallname}</option>)}
                             </select>
-                            <button onClick={() => linkToCase(p.id)} className="text-xs bg-gray-900 text-white px-2 py-1.5 rounded-lg hover:bg-gray-700">✓</button>
-                            <button onClick={() => { setLinkingId(null); setSelectedCase(""); }} className="text-xs text-gray-400 hover:text-gray-600 px-1"><X className="w-3.5 h-3.5" /></button>
+                            <button onClick={() => linkToCase(p.id)} className="text-xs bg-[#1a3560] text-white px-2 py-1.5 rounded-lg hover:bg-[#142a4d]">✓</button>
+                            <button onClick={() => { setLinkingId(null); setSelectedCase(""); }} className="text-xs text-slate-400 hover:text-slate-600 px-1"><X className="w-3.5 h-3.5" /></button>
                           </div>
                         ) : (
-                          <button onClick={() => setLinkingId(p.id)} className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-gray-700 transition-colors">
+                          <button onClick={() => setLinkingId(p.id)} className="flex items-center gap-1 text-[10px] text-slate-400 hover:text-slate-700 transition-colors">
                             <Link className="w-3 h-3" /> Mit Fall verknüpfen
                           </button>
                         )}
                       </div>
-                      <button onClick={() => setDetailProfile(p)} className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-900 font-medium transition-colors">
+                      <button onClick={() => setDetailProfile(p)} className="flex items-center gap-1 text-[11px] font-semibold text-[#1a3560] hover:opacity-70 transition-opacity">
                         Details & KI <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     {(() => {
                       const linked = cases.filter(c => c.richter_name === p.name);
                       return linked.length > 0 ? (
-                        <div className="mt-2 flex flex-wrap gap-1">
-                          {linked.map(c => <span key={c.id} className="text-[10px] bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{c.fallname}</span>)}
+                        <div className="mt-3 flex flex-wrap gap-1">
+                          {linked.map(c => <span key={c.id} className="text-[10px] bg-slate-100 text-slate-600 rounded-md px-2 py-0.5">{c.fallname}</span>)}
                         </div>
                       ) : null;
                     })()}
-                    {p.ki_analyse && <p className="text-[10px] text-purple-500 mt-2">✓ KI-Analyse vorhanden</p>}
+                    {p.ki_analyse && <p className="text-[10px] text-violet-500 font-medium mt-2">✓ KI-Analyse vorhanden</p>}
                   </>
                 )}
               </div>

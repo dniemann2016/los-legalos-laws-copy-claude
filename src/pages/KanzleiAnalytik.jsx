@@ -11,19 +11,19 @@ import {
 } from "recharts";
 import FallAnalyseModal from "../components/dashboard/FallAnalyseModal";
 
-const COLORS = ["#1f2937", "#6b7280", "#3b82f6", "#10b981", "#f59e0b", "#ef4444"];
+const COLORS = ["#1a3560", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
-function StatCard({ icon: Icon, label, value, sub, color = "text-gray-900" }) {
+function StatCard({ icon: Icon, label, value, sub, color = "text-slate-900", accent }) {
   return (
-    <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
-      <div className="w-11 h-11 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">
-        <Icon className={`w-5 h-5 ${color}`} />
+    <div className="bg-white rounded-xl border border-slate-100 p-5">
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${accent || "bg-slate-50"}`}>
+          <Icon className={`w-4 h-4 ${color}`} />
+        </div>
       </div>
-      <div>
-        <p className="text-xs text-gray-400 font-medium">{label}</p>
-        <p className="text-2xl font-bold text-gray-900">{value}</p>
-        {sub && <p className="text-xs text-gray-400 mt-0.5">{sub}</p>}
-      </div>
+      <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
+      {sub && <p className="text-[11px] text-slate-400 mt-1">{sub}</p>}
     </div>
   );
 }
@@ -110,69 +110,71 @@ export default function KanzleiAnalytik() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans pb-12">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-20">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
+    <div className="min-h-screen bg-[#F5F6F8] font-sans pb-12">
+      <div className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Link to="/" className="text-gray-400 hover:text-gray-600 text-sm flex items-center gap-1">
-              <ArrowLeft className="w-4 h-4" /> Zurück
+            <Link to="/" className="text-slate-400 hover:text-slate-700 transition-colors">
+              <ArrowLeft className="w-4 h-4" />
             </Link>
-            <span className="text-gray-200">·</span>
-            <h1 className="font-bold text-gray-900 text-base">{t.module?.[5]?.title || "Kanzlei-Analytik"}</h1>
+            <div className="w-px h-4 bg-slate-200" />
+            <div>
+              <h1 className="text-sm font-bold text-slate-900">{t.module?.[5]?.title || "Kanzlei-Analytik"}</h1>
+              <p className="text-[11px] text-slate-400">{cases.length} Mandate · {activeCases} aktiv</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
-            <JurisdictionToggle className="mr-1" />
+            <JurisdictionToggle />
             <button onClick={() => setShowModal(true)}
-              className="bg-gray-900 text-white rounded-xl px-4 py-2 text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" /> {t.kiFallanalyse}
+              className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
+              <TrendingUp className="w-3.5 h-3.5" /> {t.kiFallanalyse}
             </button>
-            <button onClick={loadData} className="p-2 text-gray-400 hover:text-gray-700 transition-colors">
+            <button onClick={loadData} className="p-2 text-slate-400 hover:text-slate-700 transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+      <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         {/* KPI Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={jurisdiction === "DE" ? `von ${cases.length} gesamt` : `of ${cases.length} total`} />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <StatCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={jurisdiction === "DE" ? `von ${cases.length} gesamt` : `of ${cases.length} total`} accent="bg-blue-50" color="text-blue-600" />
           <StatCard icon={AlertTriangle} label={t.offeeneFristenLabel} value={openDeadlines}
             sub={overdueDeadlines > 0 ? (jurisdiction === "DE" ? `${overdueDeadlines} überfällig` : `${overdueDeadlines} overdue`) : (jurisdiction === "DE" ? "Alle im Plan" : "All on track")}
-            color={overdueDeadlines > 0 ? "text-red-500" : "text-gray-900"} />
-          <StatCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={jurisdiction === "DE" ? "Erfolgswahrscheinlichkeit" : "Win Probability"} />
-          <StatCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={jurisdiction === "DE" ? "gesamt erfasst" : "total recorded"} />
+            color={overdueDeadlines > 0 ? "text-red-500" : "text-green-600"} accent={overdueDeadlines > 0 ? "bg-red-50" : "bg-green-50"} />
+          <StatCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={jurisdiction === "DE" ? "Erfolgswahrscheinlichkeit" : "Win Probability"} accent="bg-amber-50" color="text-amber-600" />
+          <StatCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={jurisdiction === "DE" ? "gesamt erfasst" : "total recorded"} accent="bg-violet-50" color="text-violet-600" />
         </div>
 
-        {/* Row 1: Rechtsgebiet + Status */}
+        {/* Row 1: Rechtsgebiet + Status */
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.faelleNachRechtsgebiet}</h2>
+          <div className="md:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
+            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.faelleNachRechtsgebiet}</h2>
             {rechtsgebietData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={rechtsgebietData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }} />
-                  <Bar dataKey="count" fill="#1f2937" radius={[4, 4, 0, 0]} name="Fälle" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                  <Bar dataKey="count" fill="#1a3560" radius={[4, 4, 0, 0]} name="Fälle" />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-400 text-sm">Keine Daten</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Keine Daten</div>
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.statusVerteilung}</h2>
+          <div className="bg-white rounded-xl border border-slate-100 p-5">
+            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.statusVerteilung}</h2>
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -180,74 +182,74 @@ export default function KanzleiAnalytik() {
                     dataKey="value" nameKey="name" paddingAngle={3}>
                     {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
                   <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-400 text-sm">Keine Daten</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Keine Daten</div>
             )}
           </div>
         </div>
 
         {/* Row 2: Prognose-Verteilung + Fristen */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.prognoseVerteilung}</h2>
+          <div className="bg-white rounded-xl border border-slate-100 p-5">
+            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.prognoseVerteilung}</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={prognoseRanges} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#9ca3af" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
                 <Bar dataKey="count" name="Fälle" radius={[4, 4, 0, 0]}>
                   {prognoseRanges.map((_, i) => (
-                    <Cell key={i} fill={["#ef4444", "#f59e0b", "#3b82f6", "#10b981"][i]} />
+                    <Cell key={i} fill={["#dc2626", "#d97706", "#3b82f6", "#16a34a"][i]} />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.fristenUebersicht}</h2>
+          <div className="bg-white rounded-xl border border-slate-100 p-5">
+            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.fristenUebersicht}</h2>
             {fristenData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie data={fristenData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" paddingAngle={3}>
                     {fristenData.map((entry, i) => (
                       <Cell key={i} fill={
-                        entry.name === "Überfällig" ? "#ef4444" :
-                        entry.name === "Versäumt" ? "#f59e0b" :
-                        entry.name === "Erledigt" ? "#10b981" : "#3b82f6"
+                        entry.name === "Überfällig" ? "#dc2626" :
+                        entry.name === "Versäumt" ? "#d97706" :
+                        entry.name === "Erledigt" ? "#16a34a" : "#3b82f6"
                       } />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
                   <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-400 text-sm">Keine Fristen erfasst</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Keine Fristen erfasst</div>
             )}
           </div>
         </div>
 
         {/* Row 3: Upcoming deadlines + Instanz */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.naechste14Tage}</h2>
+          <div className="md:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
+            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.naechste14Tage}</h2>
             {upcoming.length > 0 ? (
-              <div className="space-y-2">
+              <div className="divide-y divide-slate-50">
                 {upcoming.map(d => (
-                  <div key={d.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-xl">
+                  <div key={d.id} className="flex items-center justify-between py-2.5">
                     <div>
-                      <p className="text-sm font-medium text-gray-800">{d.title}</p>
-                      <p className="text-xs text-gray-400">{d.frist_type || "Frist"}</p>
+                      <p className="text-xs font-semibold text-slate-800">{d.title}</p>
+                      <p className="text-[10px] text-slate-400">{d.frist_type || "Frist"}</p>
                     </div>
-                    <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
+                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                       d.daysLeft <= 2 ? "bg-red-100 text-red-700" :
-                      d.daysLeft <= 5 ? "bg-orange-100 text-orange-700" :
+                      d.daysLeft <= 5 ? "bg-amber-100 text-amber-700" :
                       "bg-blue-100 text-blue-700"
                     }`}>
                       {d.daysLeft === 0 ? "Heute" : `${d.daysLeft}d`}
@@ -256,24 +258,24 @@ export default function KanzleiAnalytik() {
                 ))}
               </div>
             ) : (
-              <div className="h-32 flex items-center justify-center text-gray-400 text-sm">Keine bevorstehenden Fristen</div>
+              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">Keine bevorstehenden Fristen</div>
             )}
           </div>
 
-          <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.instanzVerteilung}</h2>
+          <div className="bg-white rounded-xl border border-slate-100 p-5">
+            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.instanzVerteilung}</h2>
             {instanzData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie data={instanzData} cx="50%" cy="50%" outerRadius={70} dataKey="value" nameKey="name" paddingAngle={3}>
                     {instanzData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e5e7eb", fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
                   <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-32 flex items-center justify-center text-gray-400 text-sm">Keine Daten</div>
+              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">Keine Daten</div>
             )}
           </div>
         </div>
