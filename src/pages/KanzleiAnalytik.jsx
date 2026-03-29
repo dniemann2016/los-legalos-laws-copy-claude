@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, TrendingUp, AlertTriangle, Users, FileText, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
+import { useJurisdiction } from "../hooks/useJurisdiction";
+import { getT } from "../lib/jurisdictionConfig";
+import JurisdictionToggle from "../components/JurisdictionToggle";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis
@@ -31,6 +34,8 @@ export default function KanzleiAnalytik() {
   const [arguments_, setArguments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const { jurisdiction } = useJurisdiction();
+  const t = getT(jurisdiction);
 
   useEffect(() => { loadData(); }, []);
 
@@ -121,12 +126,13 @@ export default function KanzleiAnalytik() {
               <ArrowLeft className="w-4 h-4" /> Zurück
             </Link>
             <span className="text-gray-200">·</span>
-            <h1 className="font-bold text-gray-900 text-base">Kanzlei-Analytik</h1>
+            <h1 className="font-bold text-gray-900 text-base">{t.module?.[5]?.title || "Kanzlei-Analytik"}</h1>
           </div>
           <div className="flex items-center gap-2">
+            <JurisdictionToggle className="mr-1" />
             <button onClick={() => setShowModal(true)}
               className="bg-gray-900 text-white rounded-xl px-4 py-2 text-sm font-medium hover:bg-gray-800 transition-colors flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" /> KI-Fallanalyse
+              <TrendingUp className="w-4 h-4" /> {t.kiFallanalyse}
             </button>
             <button onClick={loadData} className="p-2 text-gray-400 hover:text-gray-700 transition-colors">
               <RefreshCw className="w-4 h-4" />
@@ -138,18 +144,18 @@ export default function KanzleiAnalytik() {
       <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <StatCard icon={FileText} label="Aktive Fälle" value={activeCases} sub={`von ${cases.length} gesamt`} />
-          <StatCard icon={AlertTriangle} label="Offene Fristen" value={openDeadlines}
-            sub={overdueDeadlines > 0 ? `${overdueDeadlines} überfällig` : "Alle im Plan"}
+          <StatCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={jurisdiction === "DE" ? `von ${cases.length} gesamt` : `of ${cases.length} total`} />
+          <StatCard icon={AlertTriangle} label={t.offeeneFristenLabel} value={openDeadlines}
+            sub={overdueDeadlines > 0 ? (jurisdiction === "DE" ? `${overdueDeadlines} überfällig` : `${overdueDeadlines} overdue`) : (jurisdiction === "DE" ? "Alle im Plan" : "All on track")}
             color={overdueDeadlines > 0 ? "text-red-500" : "text-gray-900"} />
-          <StatCard icon={TrendingUp} label="Ø Prognose" value={`${avgPrognose}%`} sub="Erfolgswahrscheinlichkeit" />
-          <StatCard icon={Users} label="Argumente" value={arguments_.length} sub="gesamt erfasst" />
+          <StatCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={jurisdiction === "DE" ? "Erfolgswahrscheinlichkeit" : "Win Probability"} />
+          <StatCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={jurisdiction === "DE" ? "gesamt erfasst" : "total recorded"} />
         </div>
 
         {/* Row 1: Rechtsgebiet + Status */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Fälle nach Rechtsgebiet</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.faelleNachRechtsgebiet}</h2>
             {rechtsgebietData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <BarChart data={rechtsgebietData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
@@ -166,7 +172,7 @@ export default function KanzleiAnalytik() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Status-Verteilung</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.statusVerteilung}</h2>
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -187,7 +193,7 @@ export default function KanzleiAnalytik() {
         {/* Row 2: Prognose-Verteilung + Fristen */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Prognose-Verteilung</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.prognoseVerteilung}</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={prognoseRanges} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f3f4f6" />
@@ -204,7 +210,7 @@ export default function KanzleiAnalytik() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Fristen-Übersicht</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.fristenUebersicht}</h2>
             {fristenData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -230,7 +236,7 @@ export default function KanzleiAnalytik() {
         {/* Row 3: Upcoming deadlines + Instanz */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Fristen der nächsten 14 Tage</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.naechste14Tage}</h2>
             {upcoming.length > 0 ? (
               <div className="space-y-2">
                 {upcoming.map(d => (
@@ -255,7 +261,7 @@ export default function KanzleiAnalytik() {
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 p-5">
-            <h2 className="text-sm font-semibold text-gray-700 mb-4">Instanz-Verteilung</h2>
+            <h2 className="text-sm font-semibold text-gray-700 mb-4">{t.instanzVerteilung}</h2>
             {instanzData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -274,7 +280,7 @@ export default function KanzleiAnalytik() {
       </div>
 
       {showModal && (
-        <FallAnalyseModal cases={cases} onClose={() => setShowModal(false)} />
+        <FallAnalyseModal cases={cases} jurisdiction={jurisdiction} t={t} onClose={() => setShowModal(false)} />
       )}
     </div>
   );
