@@ -30,6 +30,10 @@
       "type": "number",
       "title": "St\u00e4rke KI (0-10)"
     },
+    "ki_reasoning": {
+      "type": "string",
+      "title": "KI Begr\u00fcndung"
+    },
     "type": {
       "type": "string",
       "title": "Typ"
@@ -37,6 +41,13 @@
     "paragraphs": {
       "type": "array",
       "title": "Paragraphen",
+      "items": {
+        "type": "string"
+      }
+    },
+    "evidence_ids": {
+      "type": "array",
+      "title": "Verkn\u00fcpfte Beweise (IDs)",
       "items": {
         "type": "string"
       }

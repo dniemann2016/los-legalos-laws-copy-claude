@@ -158,26 +158,26 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
 
 export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [args, setArgs] = useState([]);
+  const [evidence, setEvidence] = useState([]);
   const [filter, setFilter] = useState("all");
   const [extractError, setExtractError] = useState(null);
-  const [showExtraction, setShowExtraction] = useState(false);
-  const [extractMode, setExtractMode] = useState("ki");
-  const [dsgvo, setDsgvo] = useState(false);
-  const [file, setFile] = useState(null);
-  const [text, setText] = useState("");
-  const [extracting, setExtracting] = useState(false);
-  const [extracted, setExtracted] = useState(null);
-  const [showAdd, setShowAdd] = useState(false);
-  const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
-  const fileRef = useRef(null);
+  const [batchRating, setBatchRating] = useState(false);
+  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
+  const [selectedArgId, setSelectedArgId] = useState(null);
 
-  useEffect(() => { load(); }, [caseId]);
+  useEffect(() => { loadAll(); }, [caseId]);
 
-  const load = async (notify = false) => {
-    const data = await base44.entities.Argument.filter({ case_id: caseId });
-    setArgs(data);
+  const loadAll = async (notify = false) => {
+    const [args, evs] = await Promise.all([
+      base44.entities.Argument.filter({ case_id: caseId }),
+      base44.entities.Evidence.filter({ case_id: caseId })
+    ]);
+    setArgs(args);
+    setEvidence(evs);
     if (notify) onCountChange && onCountChange();
   };
+
+  const load = loadAll;
 
   const handleExtract = async () => {
     if (extractMode === "ki" && !dsgvo) { setExtractError("Bitte DSGVO-Hinweis akzeptieren"); return; }
@@ -191,19 +191,67 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
         fileUrl = res.file_url;
       }
       const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Rechtsanwalt. Analysiere dieses juristische Dokument und extrahiere alle Argumente.\nFallkontext: ${caseData?.fallname || ""}, Rechtsgebiet: ${caseData?.rechtsgebiet || ""}, Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}\n${!fileUrl ? "TEXT: " + text : ""}\nExtrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, Schwächen, Paragraphen.`,
-      file_urls: fileUrl ? [fileUrl] : undefined,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          zusammenfassung: { type: "string" },
-          eigene_argumente: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, typ: { type: "string" }, staerke: { type: "number" }, paragraphen: { type: "array", items: { type: "string" } } }, required: ["titel"] } },
-          gegenseite_argumente: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, typ: { type: "string" }, staerke: { type: "number" } }, required: ["titel"] } },
-          widersprueche: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, staerke: { type: "number" } }, required: ["titel"] } },
-          druckmittel: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, staerke: { type: "number" } }, required: ["titel"] } },
-          relevante_paragraphen: { type: "array", items: { type: "string" } },
+        prompt: `Du bist ein erfahrener Rechtsanwalt. Analysiere dieses Vertragsdokument gründlich und extrahiere:
+1. EIGENE ARGUMENTE (welche Vertragsklauseln unterstützen unsere Position?)
+2. GEGENSEITE-ARGUMENTE (was könnte der Gegner argumentieren?)
+3. BEWEISE (konkrete Klauseln, Unterschriften, Daten aus dem Vertrag - dies sind die Belege!)
+4. Für JEDES Argument: Welche Beweise aus Punkt 3 unterstützen es?
+
+Fallkontext: ${caseData?.fallname || ""} | ${caseData?.rechtsgebiet || ""}
+Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
+${!fileUrl ? "TEXT: " + text : ""}`,
+        file_urls: fileUrl ? [fileUrl] : undefined,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            zusammenfassung: { type: "string" },
+            beweise: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  titel: { type: "string" },
+                  beschreibung: { type: "string" },
+                  typ: { type: "string", enum: ["Klausel", "Unterschrift", "Daten", "Dokument", "Sonstiges"] },
+                  gewicht: { type: "number", minimum: 1, maximum: 10 }
+                },
+                required: ["titel"]
+              }
+            },
+            eigene_argumente: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  titel: { type: "string" },
+                  beschreibung: { type: "string" },
+                  typ: { type: "string" },
+                  staerke: { type: "number" },
+                  verlinkte_beweise: { type: "array", items: { type: "string" }, description: "Titel der Beweise die dieses Argument stützen" },
+                  paragraphen: { type: "array", items: { type: "string" } }
+                },
+                required: ["titel"]
+              }
+            },
+            gegenseite_argumente: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  titel: { type: "string" },
+                  beschreibung: { type: "string" },
+                  typ: { type: "string" },
+                  staerke: { type: "number" },
+                  verlinkte_beweise: { type: "array", items: { type: "string" } }
+                },
+                required: ["titel"]
+              }
+            },
+            widersprueche: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, staerke: { type: "number" } }, required: ["titel"] } },
+            relevante_paragraphen: { type: "array", items: { type: "string" } }
+          },
+          required: ["beweise", "eigene_argumente"]
         }
-      }
       });
       if (!result) { setExtractError("KI-Analyse fehlgeschlagen. Bitte erneut versuchen."); setExtracting(false); return; }
       setExtracted(result);
@@ -219,9 +267,96 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const takeAll = async () => {
     if (!extracted) return;
     const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
-    for (const a of all) await base44.entities.Argument.create({ case_id: caseId, title: a.titel, description: a.beschreibung || "", side: a.side, strength: a.staerke || 5, type: "Rechtsargument", paragraphs: a.paragraphen || [] });
+    
+    // Erstelle Beweise aus dem Dokument
+    const evidenceMap = {};
+    if (extracted.beweise && Array.isArray(extracted.beweise)) {
+      for (const ev of extracted.beweise) {
+        const evId = await base44.entities.Evidence.create({
+          case_id: caseId,
+          title: ev.titel || "Beweis",
+          description: ev.beschreibung || "",
+          type: ev.typ || "Dokument",
+          source: "Vertrag",
+          weight: ev.gewicht || 5
+        });
+        evidenceMap[ev.titel] = evId;
+      }
+    }
+    
+    // Erstelle Argumente und verlinke Beweise
+    for (const a of all) {
+      const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
+      await base44.entities.Argument.create({
+        case_id: caseId,
+        title: a.titel,
+        description: a.beschreibung || "",
+        side: a.side,
+        strength: a.staerke || 5,
+        type: "Rechtsargument",
+        paragraphs: a.paragraphen || [],
+        evidence_ids: linkedEvidenceIds
+      });
+    }
     setExtracted(null);
-    load(true);
+    loadAll(true);
+  };
+
+  const rateBatch = async () => {
+    if (args.length === 0) return;
+    setBatchRating(true);
+    try {
+      const prompt = `Du bist ein erfahrener Rechtsanwalt. Bewerte die Stärke dieser Argumente und gib für JEDES eine kurze Begründung (1-2 Sätze).
+
+Fall: ${caseData?.fallname || ""}
+Rechtsgebiet: ${caseData?.rechtsgebiet || ""}
+Zentrale Frage: ${caseData?.zentrale_rechtsfrage || ""}
+
+${args.map((a, i) => `${i + 1}. [${a.side === "eigen" ? "EIGEN" : "GEGNER"}] ${a.title}\nBeschreibung: ${a.description || "-"}\nVerknüpfte Beweise: ${a.evidence_ids && a.evidence_ids.length > 0 ? evidence.filter(e => a.evidence_ids.includes(e.id)).map(e => e.title).join(", ") : "-"}`).join("\n\n")}
+
+Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berücksichtigung der Beweise).`;
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            bewertungen: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  index: { type: "integer" },
+                  staerke: { type: "number", minimum: 0, maximum: 10 },
+                  begruendung: { type: "string" }
+                },
+                required: ["index", "staerke", "begruendung"]
+              }
+            }
+          },
+          required: ["bewertungen"]
+        },
+        model: "gemini_3_flash"
+      });
+
+      // Update alle Argumente
+      if (result && result.bewertungen) {
+        for (const bew of result.bewertungen) {
+          if (args[bew.index]) {
+            await base44.entities.Argument.update(args[bew.index].id, {
+              ki_strength: Math.min(10, Math.max(0, bew.staerke)),
+              ki_reasoning: bew.begruendung
+            });
+          }
+        }
+      }
+      await loadAll(true);
+    } catch (error) {
+      console.error("Batch-Bewertung fehler:", error);
+      setExtractError("Fehler bei Batch-Bewertung");
+    } finally {
+      setBatchRating(false);
+    }
   };
 
   const addManual = async () => {
@@ -235,6 +370,12 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
   const filtered = args.filter(a => filter === "all" || a.side === filter);
 
+  const linkedEvidenceForArg = (argId) => {
+    const arg = args.find(a => a.id === argId);
+    if (!arg || !arg.evidence_ids) return [];
+    return evidence.filter(e => arg.evidence_ids.includes(e.id));
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 flex-wrap">
@@ -242,7 +383,10 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
           <button key={f} onClick={() => setFilter(f)}
             className={`px-3 py-1 rounded-full text-xs border transition-all ${filter === f ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>{l}</button>
         ))}
-        <div className="ml-auto">
+        <div className="ml-auto flex gap-2">
+          <Button size="sm" onClick={rateBatch} disabled={batchRating || args.length === 0} className="bg-violet-600 text-white rounded-xl text-xs gap-1">
+            {batchRating ? "Bewerte..." : "⭐ Alle bewerten"}
+          </Button>
           <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1">
             <Plus className="w-3 h-3" /> Argument
           </Button>
@@ -344,9 +488,37 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
       {/* List */}
       <div className="space-y-2">
-        {filtered.map(arg => (
-          <ArgCard key={arg.id} arg={arg} onDelete={del} onSave={() => load()} onKiWeight={arg} />
-        ))}
+        {filtered.map(arg => {
+          const linkedEv = linkedEvidenceForArg(arg.id);
+          return (
+            <div key={arg.id}>
+              <ArgCard arg={arg} onDelete={del} onSave={() => loadAll()} onKiWeight={arg} />
+              {arg.ki_reasoning && (
+                <div className="ml-0 mt-2 bg-violet-50 border border-violet-100 rounded-lg p-3 text-xs">
+                  <p className="font-semibold text-violet-900 mb-1">KI-Begründung (Stärke {arg.ki_strength}/10):</p>
+                  <p className="text-violet-700">{arg.ki_reasoning}</p>
+                </div>
+              )}
+              {linkedEv.length > 0 && (
+                <div className="ml-0 mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs">
+                  <p className="font-semibold text-blue-900 mb-2">📋 Verknüpfte Beweise:</p>
+                  <div className="space-y-1">
+                    {linkedEv.map(ev => (
+                      <div key={ev.id} className="flex items-start gap-2">
+                        <span className="text-blue-600 flex-shrink-0">✓</span>
+                        <div className="flex-1">
+                          <p className="font-medium text-blue-900">{ev.title}</p>
+                          {ev.description && <p className="text-blue-700 text-[10px]">{ev.description}</p>}
+                          <p className="text-blue-600 text-[10px] mt-0.5">Gewicht: {ev.weight || 5}/10</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
         {filtered.length === 0 && (
           <div className="text-center text-gray-400 text-sm py-10">
             Noch keine Argumente. Fügen Sie manuell hinzu oder extrahieren Sie aus einem Dokument.
