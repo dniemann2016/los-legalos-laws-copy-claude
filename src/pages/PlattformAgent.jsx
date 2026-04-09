@@ -6,17 +6,6 @@ import { useUserProfile } from "../hooks/useUserProfile";
 import { ArrowLeft, Bot, Send, Zap, TrendingUp, Target, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
-const STARTER_PROMPTS = [
-  { icon: "⏰", label: "Kritische Fristen identifizieren", prompt: "Analysiere ALLE Fälle in der Datenbank und identifiziere kritische bevorstehende Fristen. Markiere alle Fristen, die in den nächsten 14 Tagen fällig sind oder bereits überfällig sind. Erstelle eine priorisierte Liste und aktualisiere den Status überfälliger Fristen auf 'versaeumt'. Erstelle fehlende Standardfristen für aktive Fälle basierend auf dem Rechtsgebiet (z.B. Berufungsfrist 1 Monat ab Urteil, Revisionsbegründungsfrist etc.)." },
-  { icon: "💡", label: "Argumente aus Verlaufsdaten vorschlagen", prompt: "Analysiere alle vorhandenen Argumente in der Datenbank und identifiziere Muster: Welche Argumenttypen wurden für welche Rechtsgebiete am häufigsten mit hoher Stärke (8+) bewertet? Schlage für jeden aktiven Fall (Status 'Aktiv') 3-5 zusätzliche Argumente vor, die auf historischen Mustern basieren. Erstelle diese Argumente direkt in der Datenbank für die entsprechenden Fälle." },
-  { icon: "🔴", label: "Risiken & Widersprüche aufdecken", prompt: "Führe eine vollständige Risikoanalyse aller aktiven Fälle durch. Suche nach: 1) Widersprüchen zwischen eigenen Argumenten und Beweismitteln, 2) Fällen mit hoher Prognose aber schwachen Beweisen, 3) Fällen wo die Gegenseite mehr starke Argumente hat als wir, 4) Fällen ohne erfasste Schlüsselargumente, 5) Inkonsistenzen in den Fallnotizen. Erstelle einen priorisierten Risikobericht und schlage konkrete Maßnahmen vor." },
-  { icon: "🔍", label: "Plattform-Audit starten", prompt: "Führe einen vollständigen Audit der Plattform durch. Analysiere alle vorhandenen Fälle, Richterprofile und Argumente. Identifiziere die 5 kritischsten Lücken und behebe sie direkt." },
-  { icon: "⚖️", label: "Richterprofile vervollständigen", prompt: "Analysiere alle vorhandenen Fälle und prüfe, ob die zugehörigen Richter vollständige Profile haben. Erstelle fehlende Profile und ergänze Lücken." },
-  { icon: "📊", label: "Wettbewerbsanalyse", prompt: "Vergleiche MachiavelLEX mit den führenden Kanzleisoftware-Systemen (RA-Micro, Datev Anwalt, IKAROS, Wolters Kluwer). Was sind unsere USPs? Was fehlt uns noch? Erstelle einen konkreten Aktionsplan." },
-  { icon: "🎯", label: "Großkanzlei-Readiness prüfen", prompt: "Prüfe ob MachiavelLEX für eine Großkanzlei mit 50+ Anwälten bereit ist. Analysiere: Mandanten-Management, Teamkollaboration, Compliance, Reporting, Datenschutz. Gib Konkrete Empfehlungen." },
-  { icon: "📋", label: "Fristen-Compliance Check", prompt: "Prüfe alle offenen Fälle auf fehlende oder überfällige Fristen. Erstelle alle fehlenden gesetzlichen Standardfristen (Berufungsfristen, Einspruchsfristen etc.) für jeden aktiven Fall." },
-];
-
 function MessageBubble({ message }) {
   const isUser = message.role === "user";
   return (
@@ -83,7 +72,7 @@ export default function PlattformAgent() {
   const startNewConversation = async (initialPrompt) => {
     const conv = await base44.agents.createConversation({
       agent_name: "plattform_optimierer",
-      metadata: { name: initialPrompt ? initialPrompt.slice(0, 50) + "…" : "Neue Sitzung" }
+      metadata: { name: initialPrompt ? initialPrompt.slice(0, 50) + "…" : t.newSession.replace("+ ", "") }
     });
     setActiveConv(conv);
     setMessages(conv.messages || []);
@@ -118,14 +107,14 @@ export default function PlattformAgent() {
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/modules" className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm">
-              <ArrowLeft className="w-4 h-4" /> Module
+              <ArrowLeft className="w-4 h-4" /> {t.backLabel}
             </Link>
             <span className="text-gray-200">·</span>
             <div className="flex items-center gap-2">
               <div className="w-6 h-6 bg-gray-900 rounded-md flex items-center justify-center">
                 <Bot className="w-3.5 h-3.5 text-white" />
               </div>
-              <h1 className="font-bold text-gray-900 text-sm">Plattform-Optimierer</h1>
+              <h1 className="font-bold text-gray-900 text-sm">{t.platformAgentTitle}</h1>
               <span className="text-[10px] bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 font-medium">KI-Agent</span>
             </div>
           </div>
@@ -152,7 +141,7 @@ export default function PlattformAgent() {
                 <button key={c.id} onClick={() => { setActiveConv(c); setMessages(c.messages || []); }}
                   className={`w-full text-left px-3 py-2.5 text-xs border-b border-gray-50 transition-colors flex items-center gap-2 group ${activeConv?.id === c.id ? "bg-gray-50 text-gray-900 font-medium" : "text-gray-600 hover:bg-gray-50"}`}>
                   <ChevronRight className={`w-3 h-3 flex-shrink-0 ${activeConv?.id === c.id ? "text-gray-900" : "text-gray-300 group-hover:text-gray-400"}`} />
-                  <span className="truncate">{c.metadata?.name || "Sitzung"}</span>
+                  <span className="truncate">{c.metadata?.name || t.sessionsLabel}</span>
                 </button>
               ))
             )}
@@ -171,13 +160,20 @@ export default function PlattformAgent() {
                 {t.platformAgentDesc}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl mb-6">
-                {STARTER_PROMPTS.map((s) => (
-                  <button key={s.label} onClick={() => startNewConversation(s.prompt)}
+                {(t.starterPrompts || [
+                  { icon: "⏰", label: language === "EN" ? "Identify critical deadlines" : "Kritische Fristen identifizieren" },
+                  { icon: "💡", label: language === "EN" ? "Suggest arguments from history" : "Argumente aus Verlaufsdaten vorschlagen" },
+                  { icon: "🔴", label: language === "EN" ? "Detect risks & contradictions" : "Risiken & Widersprüche aufdecken" },
+                  { icon: "🔍", label: language === "EN" ? "Start platform audit" : "Plattform-Audit starten" },
+                  { icon: "⚖️", label: language === "EN" ? "Complete judge profiles" : "Richterprofile vervollständigen" },
+                  { icon: "📊", label: language === "EN" ? "Competitive analysis" : "Wettbewerbsanalyse" },
+                  { icon: "🎯", label: language === "EN" ? "Large firm readiness check" : "Großkanzlei-Readiness prüfen" },
+                  { icon: "📋", label: language === "EN" ? "Deadline compliance check" : "Fristen-Compliance Check" },
+                ]).map((s) => (
+                  <button key={s.label} onClick={() => startNewConversation(s.prompt || s.label)}
                     className="flex items-center gap-3 p-3 bg-white border border-gray-100 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all text-left">
                     <span className="text-xl">{s.icon}</span>
-                    <div>
-                      <p className="text-xs font-semibold text-gray-800">{s.label}</p>
-                    </div>
+                    <div><p className="text-xs font-semibold text-gray-800">{s.label}</p></div>
                   </button>
                 ))}
               </div>

@@ -3,8 +3,9 @@ import { base44 } from "@/api/base44Client";
 import { ArrowLeft, TrendingUp, AlertTriangle, Users, FileText, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useJurisdiction } from "../hooks/useJurisdiction";
-import { getT } from "../lib/jurisdictionConfig";
+import { getT, getTByLanguage } from "../lib/jurisdictionConfig";
 import JurisdictionToggle from "../components/JurisdictionToggle";
+import { useUserProfile } from "../hooks/useUserProfile";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis
@@ -37,7 +38,8 @@ export default function KanzleiAnalytik() {
   const [filterLabel, setFilterLabel] = useState(null);
   const [filteredCases, setFilteredCases] = useState([]);
   const { jurisdiction } = useJurisdiction();
-  const t = getT(jurisdiction);
+  const { language } = useUserProfile();
+  const t = language === "EN" || language === "FR" ? getTByLanguage(language) : getT(jurisdiction);
 
   useEffect(() => { loadData(); }, []);
 
@@ -129,7 +131,7 @@ export default function KanzleiAnalytik() {
             <div className="w-px h-4 bg-slate-200" />
             <div>
               <h1 className="text-sm font-bold text-slate-900">{t.module?.[5]?.title || "Kanzlei-Analytik"}</h1>
-              <p className="text-[11px] text-slate-400">{cases.length} Mandate · {activeCases} aktiv</p>
+              <p className="text-[11px] text-slate-400">{t.mandatesSub(cases.length, activeCases)}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -148,12 +150,12 @@ export default function KanzleiAnalytik() {
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <StatCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={jurisdiction === "DE" ? `von ${cases.length} gesamt` : `of ${cases.length} total`} accent="bg-blue-50" color="text-blue-600" />
+          <StatCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={t.ofTotalLabel(cases.length)} accent="bg-blue-50" color="text-blue-600" />
           <StatCard icon={AlertTriangle} label={t.offeeneFristenLabel} value={openDeadlines}
-            sub={overdueDeadlines > 0 ? (jurisdiction === "DE" ? `${overdueDeadlines} überfällig` : `${overdueDeadlines} overdue`) : (jurisdiction === "DE" ? "Alle im Plan" : "All on track")}
+            sub={overdueDeadlines > 0 ? `${overdueDeadlines} ${t.overdueDeadlinesLabel}` : t.allOnTrack}
             color={overdueDeadlines > 0 ? "text-red-500" : "text-green-600"} accent={overdueDeadlines > 0 ? "bg-red-50" : "bg-green-50"} />
-          <StatCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={jurisdiction === "DE" ? "Erfolgswahrscheinlichkeit" : "Win Probability"} accent="bg-amber-50" color="text-amber-600" />
-          <StatCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={jurisdiction === "DE" ? "gesamt erfasst" : "total recorded"} accent="bg-violet-50" color="text-violet-600" />
+          <StatCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={t.winProbabilityLabel} accent="bg-amber-50" color="text-amber-600" />
+          <StatCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={t.totalRecordedLabel} accent="bg-violet-50" color="text-violet-600" />
         </div>
 
         {/* Row 1: Rechtsgebiet + Status */}
@@ -163,7 +165,7 @@ export default function KanzleiAnalytik() {
             {filterLabel && (
               <div className="flex items-center justify-between mb-3 px-1">
                 <p className="text-xs font-medium text-slate-700">Filter: <span className="text-[#1a3560]">{filterLabel}</span> · {filteredCases.length} Fälle</p>
-                <button onClick={() => { setFilterLabel(null); setFilteredCases([]); }} className="text-[10px] text-slate-400 hover:text-slate-700 underline">Zurücksetzen</button>
+                <button onClick={() => { setFilterLabel(null); setFilteredCases([]); }} className="text-[10px] text-slate-400 hover:text-slate-700 underline">{t.filterResetBtn}</button>
               </div>
             )}
             {filterLabel && filteredCases.length > 0 && (
@@ -191,7 +193,7 @@ export default function KanzleiAnalytik() {
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Keine Daten</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">{t.noDataShort}</div>
             )}
           </div>
 
@@ -215,7 +217,7 @@ export default function KanzleiAnalytik() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Keine Daten</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">{t.noDataShort}</div>
             )}
           </div>
         </div>
@@ -258,7 +260,7 @@ export default function KanzleiAnalytik() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">Keine Fristen erfasst</div>
+              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">{t.noDeadlinesShort}</div>
             )}
           </div>
         </div>
@@ -280,13 +282,13 @@ export default function KanzleiAnalytik() {
                       d.daysLeft <= 5 ? "bg-amber-100 text-amber-700" :
                       "bg-blue-100 text-blue-700"
                     }`}>
-                      {d.daysLeft === 0 ? "Heute" : `${d.daysLeft}d`}
+                      {d.daysLeft === 0 ? t.todayShort : `${d.daysLeft}d`}
                     </span>
                   </div>
                 ))}
               </div>
             ) : (
-              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">Keine bevorstehenden Fristen</div>
+              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">{t.noUpcomingShort}</div>
             )}
           </div>
 
@@ -303,7 +305,7 @@ export default function KanzleiAnalytik() {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">Keine Daten</div>
+              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">{t.noDataShort}</div>
             )}
           </div>
         </div>
