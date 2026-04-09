@@ -1,0 +1,41 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "user"
+      ]
+    },
+    "language": {
+      "type": "string",
+      "title": "Sprache"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "title": "Rechtsordnung"
+    },
+    "usState": {
+      "type": "string",
+      "title": "US-Bundesstaat"
+    },
+    "disclaimerAccepted": {
+      "type": "boolean",
+      "title": "NDA akzeptiert"
+    },
+    "onboardingDone": {
+      "type": "boolean",
+      "title": "Onboarding abgeschlossen"
+    },
+    "hasModuleAccess": {
+      "type": "boolean",
+      "title": "Modul-Zugang (Abo)"
+    },
+    "kiCredits": {
+      "type": "number",
+      "title": "KI-Credits"
+    }
+  }
+}

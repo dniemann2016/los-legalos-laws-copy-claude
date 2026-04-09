@@ -2,6 +2,8 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, ArrowRight, Check } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useUserProfile } from "../hooks/useUserProfile";
+import KIPaymentGate from "../components/KIPaymentGate";
 import TabBasisdaten from "../components/lexara/TabBasisdaten";
 import TabArgumente from "../components/lexara/TabArgumente";
 import TabBeweise from "../components/lexara/TabBeweise";
@@ -38,15 +40,28 @@ function PrognoseCircle({ value = 0 }) {
   );
 }
 
+const KI_TABS = [8, 9, 10, 11]; // tabs that require KI credits
+
 export default function CaseDetail() {
   const urlParams = new URLSearchParams(window.location.search);
   const caseId = urlParams.get("id");
   const navigate = useNavigate();
+  const { kiCredits } = useUserProfile();
   const [activeTab, setActiveTab] = useState(1);
   const [caseData, setCaseData] = useState(null);
   const [counts, setCounts] = useState({args:0,evidence:0,persons:0,deadlines:0});
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [unlockedKiTabs, setUnlockedKiTabs] = useState(new Set());
+
+  const handleKiCreditUsed = async (tabId) => {
+    // Deduct 1 credit and unlock tab for this session
+    const user = await base44.auth.me();
+    if (user) {
+      await base44.auth.updateMe({ kiCredits: Math.max(0, (user.kiCredits || 0) - 1) });
+    }
+    setUnlockedKiTabs(prev => new Set([...prev, tabId]));
+  };
 
   const handleExportPDF = async () => {
     setExporting(true);
@@ -133,10 +148,26 @@ export default function CaseDetail() {
         {activeTab===5 && <TabPersonen caseId={caseId} onCountChange={loadCase} />}
         {activeTab===6 && <TabFristen caseId={caseId} onCountChange={loadCase} />}
         {activeTab===7 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===8 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===9 && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===10 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
+        {activeTab===8 && (
+          <KIPaymentGate kiCredits={kiCredits} onCreditUsed={() => handleKiCreditUsed(8)}>
+            {unlockedKiTabs.has(8) && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+          </KIPaymentGate>
+        )}
+        {activeTab===9 && (
+          <KIPaymentGate kiCredits={kiCredits} onCreditUsed={() => handleKiCreditUsed(9)}>
+            {unlockedKiTabs.has(9) && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+          </KIPaymentGate>
+        )}
+        {activeTab===10 && (
+          <KIPaymentGate kiCredits={kiCredits} onCreditUsed={() => handleKiCreditUsed(10)}>
+            {unlockedKiTabs.has(10) && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+          </KIPaymentGate>
+        )}
+        {activeTab===11 && (
+          <KIPaymentGate kiCredits={kiCredits} onCreditUsed={() => handleKiCreditUsed(11)}>
+            {unlockedKiTabs.has(11) && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
+          </KIPaymentGate>
+        )}
         {activeTab===12 && <TabDokumente caseId={caseId} />}
         {activeTab===13 && <TabNotizen caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===14 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
