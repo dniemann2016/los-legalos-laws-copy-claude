@@ -249,7 +249,7 @@ Erstelle eine vollständige Gesamtbewertung mit:
                       {kategorie}
                       <span className="ml-auto text-xs text-gray-400">({steps.length})</span>
                     </button>
-                    <div className="space-y-2 p-3">
+                    <div className={kategorie === "Inhaltliche Fallbewertung" ? "grid grid-cols-2 gap-3 p-3" : "space-y-2 p-3"}>
                       {steps.map((step, i) => (
                         <AlgoStepCard key={i} step={step} index={step.index} />
                       ))}
