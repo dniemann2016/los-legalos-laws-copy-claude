@@ -18,6 +18,7 @@ import FallAssistentChat from './pages/FallAssistentChat';
 import DsgvoBanner from './components/DsgvoBanner';
 import KanzleiAnalytik from './pages/KanzleiAnalytik';
 import OnboardingSetup from './pages/OnboardingSetup';
+import Aufgaben from './pages/Aufgaben';
 import { useUserProfile } from './hooks/useUserProfile';
 // Add page imports here
 
@@ -61,6 +62,7 @@ const AuthenticatedApp = () => {
         <Route path="/analytik" element={<KanzleiAnalytik />} />
         <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
         <Route path="/onboarding" element={<OnboardingSetup />} />
+        <Route path="/aufgaben" element={<Aufgaben />} />
         {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>

@@ -1,0 +1,58 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "case_name": {
+      "type": "string",
+      "title": "Fallname"
+    },
+    "title": {
+      "type": "string",
+      "title": "Aufgabe"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notizen"
+    },
+    "assignee": {
+      "type": "string",
+      "title": "Zust\u00e4ndig (E-Mail)"
+    },
+    "due_date": {
+      "type": "string",
+      "title": "F\u00e4lligkeitsdatum"
+    },
+    "priority": {
+      "type": "string",
+      "title": "Priorit\u00e4t",
+      "enum": [
+        "hoch",
+        "mittel",
+        "niedrig"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "offen",
+        "in_bearbeitung",
+        "erledigt"
+      ]
+    }
+  },
+  "required": [
+    "title",
+    "status"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {},
+    "delete": {}
+  }
+}
