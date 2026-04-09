@@ -160,10 +160,18 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [args, setArgs] = useState([]);
   const [evidence, setEvidence] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [showAdd, setShowAdd] = useState(false);
+  const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
   const [extractError, setExtractError] = useState(null);
   const [batchRating, setBatchRating] = useState(false);
-  const [showEvidenceModal, setShowEvidenceModal] = useState(false);
-  const [selectedArgId, setSelectedArgId] = useState(null);
+  const [showExtraction, setShowExtraction] = useState(false);
+  const [extractMode, setExtractMode] = useState("ki");
+  const [dsgvo, setDsgvo] = useState(false);
+  const [file, setFile] = useState(null);
+  const [text, setText] = useState("");
+  const [extracting, setExtracting] = useState(false);
+  const [extracted, setExtracted] = useState(null);
+  const fileRef = useRef(null);
 
   useEffect(() => { loadAll(); }, [caseId]);
 
