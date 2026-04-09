@@ -1,7 +1,39 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw, Sparkles, Target, Shield, Zap, AlertTriangle } from "lucide-react";
+import { RefreshCw, Sparkles, Target, Shield, Zap, AlertTriangle, Calculator, ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { computePrognose, computeBreakEven } from "@/lib/legalAlgorithms";
+
+function AlgoStepCard({ step, index }) {
+  const [open, setOpen] = useState(false);
+  const wert = typeof step.wert === "number"
+    ? `${step.wert > 0 ? "+" : ""}${step.wert.toFixed(4)} ${step.einheit || ""}`
+    : typeof step.wert === "object" && step.wert?.ciLow !== undefined
+      ? `[${(step.wert.ciLow * 100).toFixed(1)}%, ${(step.wert.ciHigh * 100).toFixed(1)}%]`
+      : "";
+  return (
+    <div className="border border-gray-100 rounded-xl overflow-hidden">
+      <button onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-gray-50 transition-colors text-left">
+        <span className="w-5 h-5 rounded-full bg-gray-900 text-white text-[9px] font-bold flex items-center justify-center flex-shrink-0">{index + 1}</span>
+        <span className="flex-1 text-xs font-medium text-gray-700">{step.label}</span>
+        <code className="text-[10px] text-violet-700 font-mono">{wert}</code>
+        {open ? <ChevronDown className="w-3 h-3 text-gray-400" /> : <ChevronRight className="w-3 h-3 text-gray-400" />}
+      </button>
+      {open && (
+        <div className="px-3 pb-3 bg-gray-50 border-t border-gray-100 space-y-2 pt-2">
+          {step.formel && (
+            <div className="bg-white border border-gray-200 rounded-lg px-3 py-2">
+              <p className="text-[9px] font-bold text-gray-400 mb-0.5">FORMEL</p>
+              <code className="text-[10px] text-blue-800 font-mono break-all">{step.formel}</code>
+            </div>
+          )}
+          <p className="text-xs text-gray-600">{step.erklaerung}</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ScoreBar({ value, max = 10, color = "bg-blue-500" }) {
   return (
@@ -42,19 +74,31 @@ const avg = (arr, field) => {
 export default function TabGesamtbewertung({ caseId, caseData }) {
   const [args, setArgs] = useState([]);
   const [evidence, setEvidence] = useState([]);
+  const [persons, setPersons] = useState([]);
+  const [deadlines, setDeadlines] = useState([]);
   const [kiAnalysis, setKiAnalysis] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
   const [loaded, setLoaded] = useState(false);
+  const [algoResult, setAlgoResult] = useState(null);
+  const [showAlgoSteps, setShowAlgoSteps] = useState(false);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Argument.filter({ case_id: caseId }),
       base44.entities.Evidence.filter({ case_id: caseId }),
-    ]).then(([a, e]) => { setArgs(a); setEvidence(e); setLoaded(true); });
+      base44.entities.Person.filter({ case_id: caseId }),
+      base44.entities.Deadline.filter({ case_id: caseId }),
+    ]).then(([a, e, p, d]) => { setArgs(a); setEvidence(e); setPersons(p); setDeadlines(d); setLoaded(true); });
   }, [caseId]);
 
   const eigeneArgs = args.filter(a => a.side === "eigen");
   const gegnerArgs = args.filter(a => a.side === "gegner");
+
+  // Algorithmus-Prognose
+  const algoPrognose = loaded
+    ? computePrognose({ args, evidence, deadlines, persons, caseData })
+    : null;
+  const breakEven = loaded ? computeBreakEven({ caseData }) : null;
 
   // Manual scores
   const manEigeneArg = avg(eigeneArgs, "strength");
@@ -148,16 +192,72 @@ Erstelle eine vollständige Gesamtbewertung mit:
 
   if (!loaded) return <div className="flex items-center justify-center py-16"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" /></div>;
 
+  const algoScore = algoPrognose?.score ?? 0;
+  const algoCI = algoPrognose ? `[${algoPrognose.ci_low}%–${algoPrognose.ci_high}%]` : "";
+
   const GEFAHR_COLORS = { hoch: "bg-red-50 border-red-200 text-red-700", mittel: "bg-amber-50 border-amber-200 text-amber-700", niedrig: "bg-green-50 border-green-200 text-green-700" };
 
   return (
     <div className="space-y-5">
-      {/* Header */}
+      {/* Header: Algorithmische Prognose */}
       <div className="bg-gray-900 text-white rounded-2xl p-5">
-        <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Gesamtbewertung</p>
-        <h2 className="text-base font-bold mb-1">{caseData?.fallname}</h2>
-        <p className="text-xs text-gray-300">{args.length} Argumente · {evidence.length} Beweise · {eigeneArgs.length} eigen · {gegnerArgs.length} Gegner</p>
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">Gesamtbewertung · {caseData?.fallname}</p>
+            <div className="flex items-end gap-3">
+              <p className="text-5xl font-bold">{algoScore}%</p>
+              <p className="text-sm text-gray-400 pb-1.5">90%-CI: {algoCI}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-1.5 bg-gray-800 rounded-xl px-3 py-2">
+            <Calculator className="w-3.5 h-3.5 text-gray-400" />
+            <span className="text-xs text-gray-300">Algorithmus</span>
+          </div>
+        </div>
+        <p className="text-xs text-gray-500 mt-2">{args.length} Argumente · {evidence.length} Beweise · {eigeneArgs.length} eigen · {gegnerArgs.length} Gegner</p>
       </div>
+
+      {/* Berechnungsschritte aufklappbar */}
+      {algoPrognose && (
+        <div className="bg-white border border-gray-100 rounded-2xl p-4">
+          <button
+            onClick={() => setShowAlgoSteps(o => !o)}
+            className="flex items-center justify-between w-full"
+          >
+            <h3 className="text-sm font-semibold text-gray-700">🧮 Berechnungsschritte (aufklappbar)</h3>
+            <div className="flex items-center gap-2 text-xs text-gray-400">
+              <span>σ={((algoPrognose.sigma || 0)*100).toFixed(1)}% Unsicherheit</span>
+              {showAlgoSteps ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+            </div>
+          </button>
+          {showAlgoSteps && (
+            <div className="mt-3 space-y-2">
+              {(algoPrognose.steps || []).map((step, i) => (
+                <AlgoStepCard key={i} step={step} index={i} />
+              ))}
+            </div>
+          )}
+          {!showAlgoSteps && (
+            <div className="mt-2 flex gap-1 flex-wrap">
+              {(algoPrognose.steps || []).map((s, i) => (
+                <span key={i} className="text-[9px] bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">{i+1}. {s.label}</span>
+              ))}
+            </div>
+          )}
+          {breakEven?.break_even_pct !== null && (
+            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-gray-500">Break-Even-Schwelle</p>
+                <p className="text-[10px] text-gray-400">{breakEven?.formel}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-2xl font-bold text-amber-600">{breakEven?.break_even_pct}%</p>
+                <p className="text-[10px] text-gray-400">Mindest-Erfolgsquote</p>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Score comparison */}
       <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4">
@@ -197,12 +297,15 @@ Erstelle eine vollständige Gesamtbewertung mit:
         </div>
       </div>
 
-      {/* KI Analysis */}
+      {/* KI Analysis (optional) */}
       <div className="bg-white border border-gray-100 rounded-2xl p-5 space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-gray-800">🧠 KI-Gesamtanalyse</h3>
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800">🧠 KI-Strategieanalyse (optional)</h3>
+            <p className="text-[10px] text-gray-400 mt-0.5">Liefert Rspr., Taktiken & Gegnerstrategien – keine eigene Risikoberechnung</p>
+          </div>
           <Button onClick={runKiAnalysis} disabled={analyzing} size="sm"
-            className="bg-violet-700 hover:bg-violet-800 text-white text-xs rounded-xl gap-1.5">
+            className="bg-violet-600 hover:bg-violet-700 text-white text-xs rounded-xl gap-1.5">
             {analyzing ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
             {analyzing ? "Analysiere…" : kiAnalysis ? "Neu analysieren" : "Analyse starten"}
           </Button>

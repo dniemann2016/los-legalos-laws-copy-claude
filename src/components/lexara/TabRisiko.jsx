@@ -1,38 +1,26 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw, AlertTriangle, TrendingUp, Shield, Scale } from "lucide-react";
+import { RefreshCw, Sparkles, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell } from "recharts";
-
-const RISIKO_FAKTOREN = [
-  { key: "beweis_risiko", label: "Beweislage", icon: "📄", desc: "Qualität und Vollständigkeit der Beweise" },
-  { key: "richter_risiko", label: "Richterrisiko", icon: "⚖️", desc: "Klägerquote und Stil des zuständigen Richters" },
-  { key: "rechts_risiko", label: "Rechtsunsicherheit", icon: "§", desc: "Klarheit der Rechtslage und Präzedenzfälle" },
-  { key: "kosten_risiko", label: "Kostenrisiko", icon: "💶", desc: "Verhältnis Streitwert zu Prozesskosten" },
-  { key: "zeit_risiko", label: "Zeitrisiko", icon: "⏰", desc: "Fristdruck und Verfahrensdauer" },
-  { key: "gegner_risiko", label: "Gegnerstärke", icon: "🥊", desc: "Ressourcen und Erfahrung der Gegenseite" },
-  { key: "reputation_risiko", label: "Reputationsrisiko", icon: "📰", desc: "Öffentliche Aufmerksamkeit und Medien" },
-  { key: "vergleich_chance", label: "Vergleichschance", icon: "🤝", desc: "Wahrscheinlichkeit einer außergerichtlichen Einigung" },
-];
-
-const AMPEL_FARBEN = { hoch: "bg-red-100 text-red-700 border-red-200", mittel: "bg-amber-100 text-amber-700 border-amber-200", niedrig: "bg-green-100 text-green-700 border-green-200" };
-
-function AmpelBadge({ level }) {
-  return <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${AMPEL_FARBEN[level] || AMPEL_FARBEN.mittel}`}>{level?.toUpperCase()}</span>;
-}
+import { computeVollanalyse } from "@/lib/legalAlgorithms";
+import { AlgoRisikoPanel } from "./TabRisikoAlgo";
 
 export default function TabRisiko({ caseId, caseData, onUpdate }) {
-  const [args, setArgs] = useState([]);
+  const [args, setArgs]         = useState([]);
   const [evidence, setEvidence] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
-  const [persons, setPersons] = useState([]);
-  const [result, setResult] = useState(
-    caseData?.ki_berater_result?.risiko_analyse ||
-    (caseData?.ki_berater_result?.gesamtrisiko ? caseData.ki_berater_result : null) ||
-    null
+  const [persons, setPersons]   = useState([]);
+  const [loaded, setLoaded]     = useState(false);
+
+  // Algorithmus-Ergebnis (immer berechnet)
+  const [algoResult, setAlgoResult] = useState(null);
+
+  // KI-Ergebnis (optional, manuell auslösbar)
+  const [kiResult, setKiResult] = useState(
+    caseData?.ki_berater_result?.risiko_analyse || null
   );
-  const [loading, setLoading] = useState(false);
-  const [manualScores, setManualScores] = useState({});
+  const [kiLoading, setKiLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState("algo"); // "algo" | "ki"
 
   useEffect(() => {
     Promise.all([
@@ -40,267 +28,265 @@ export default function TabRisiko({ caseId, caseData, onUpdate }) {
       base44.entities.Evidence.filter({ case_id: caseId }),
       base44.entities.Deadline.filter({ case_id: caseId }),
       base44.entities.Person.filter({ case_id: caseId }),
-    ]).then(([a, e, d, p]) => { setArgs(a); setEvidence(e); setDeadlines(d); setPersons(p); });
+    ]).then(([a, e, d, p]) => {
+      setArgs(a); setEvidence(e); setDeadlines(d); setPersons(p);
+      setLoaded(true);
+    });
   }, [caseId]);
 
-  const runAnalyse = async () => {
-    setLoading(true);
-    const offeneFristen = deadlines.filter(d => d.status === "offen");
-    const ueberfaellig = deadlines.filter(d => d.status === "versaeumt");
+  // Algorithmus läuft automatisch nach Datenladen
+  useEffect(() => {
+    if (!loaded) return;
+    const result = computeVollanalyse({ args, evidence, deadlines, persons, caseData });
+    setAlgoResult(result);
+  }, [loaded, args, evidence, deadlines, persons]);
+
+  const runKiAnalyse = async () => {
+    setKiLoading(true);
     const eigeneArgs = args.filter(a => a.side === "eigen");
     const gegnerArgs = args.filter(a => a.side === "gegner");
     const richter = persons.find(p => p.role === "Richter");
+    const offeneFristen = deadlines.filter(d => d.status === "offen");
+    const ueberfaellig = deadlines.filter(d => d.status === "versaeumt");
 
     const res = await base44.integrations.Core.InvokeLLM({
       model: "gpt_5",
-      prompt: `Du bist ein erfahrener Prozessanwalt und Risiko-Analyst. Führe eine vollständige Chancen-Risiken-Analyse für folgenden Fall durch und gib ALLE Felder mit echten Werten zurück (keine leeren Strings oder leere Arrays):
+      prompt: `Du bist Rechtsprechungsexperte und lieferst NUR Informationen zu relevanter Rechtsprechung (BGH, OLG, BVerfG), Literaturhinweise und Taktikempfehlungen. KEINE Risikoberechnung - diese wurde bereits algorithmisch ermittelt.
 
-FALL: ${caseData?.fallname || "Unbekannt"} | ${caseData?.rechtsgebiet || ""} | Streitwert: ${caseData?.streitwert ? `${caseData.streitwert.toLocaleString("de-DE")}€` : "unbekannt"}
-PROGNOSE: ${caseData?.prognose || 0}% | Gericht: ${caseData?.gericht || ""} | Instanz: ${caseData?.instanz || ""}
-ZENTRALE RECHTSFRAGE: ${caseData?.zentrale_rechtsfrage || "nicht definiert"}
-ARGUMENTE: Eigene (${eigeneArgs.length}): ${eigeneArgs.map(a => `${a.title} [${a.strength}/10]`).join(", ") || "keine"} | Gegner (${gegnerArgs.length}): ${gegnerArgs.map(a => `${a.title} [${a.strength}/10]`).join(", ") || "keine"}
-BEWEISE: ${evidence.length} gesamt
-FRISTEN: ${offeneFristen.length} offen, ${ueberfaellig.length} versäumt
-RICHTER: ${richter ? `${richter.name} (Klägerquote: ${richter.klaeger_rate || "?"}%, Vergleichsrate: ${richter.vergleich_rate || "?"}%)` : "unbekannt"}
+Fall: ${caseData?.fallname || "Unbekannt"} | ${caseData?.rechtsgebiet || ""} | Streitwert: ${caseData?.streitwert ? caseData.streitwert.toLocaleString("de-DE") + "€" : "unbekannt"}
+Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || "nicht definiert"}
+Eigene Argumente: ${eigeneArgs.map(a => a.title).join(", ") || "keine"}
+Gegner-Argumente: ${gegnerArgs.map(a => a.title).join(", ") || "keine"}
+Richter: ${richter ? `${richter.name} (Klägerquote: ${richter.klaeger_rate || "?"}%)` : "unbekannt"}
 
-WICHTIG: Fülle ALLE Felder mit konkreten, deutschen Texten. Gib für faktoren ALLE 8 Faktoren zurück (beweis_risiko, richter_risiko, rechts_risiko, kosten_risiko, zeit_risiko, gegner_risiko, reputation_risiko, vergleich_chance). Für top_chancen und top_risiken mindestens 3 Einträge. Für szenarien alle drei Szenarien (best_case, base_case, worst_case). Für sofortmassnahmen mindestens 3 Maßnahmen.`,
+Liefere:
+1. Relevante BGH/OLG-Entscheidungen zum Rechtsgebiet und zur Rechtsfrage
+2. Wichtige Literaturhinweise (Kommentare, Aufsätze)
+3. Typische Taktiken der Gegenseite in diesem Rechtsgebiet
+4. Außergewöhnliche rechtliche Aspekte/Risiken die ein Algorithmus übersehen könnte`,
       response_json_schema: {
         type: "object",
         properties: {
-          gesamtrisiko: { type: "string", enum: ["niedrig", "mittel", "hoch"] },
-          gesamtchance: { type: "number" },
-          executive_summary: { type: "string" },
-          faktoren: {
+          rechtsprechung: {
             type: "array",
             items: {
               type: "object",
               properties: {
-                key: { type: "string" },
-                score: { type: "number" },
-                level: { type: "string" },
-                bewertung: { type: "string" },
-                massnahme: { type: "string" }
+                gericht: { type: "string" },
+                aktenzeichen: { type: "string" },
+                datum: { type: "string" },
+                leitsatz: { type: "string" },
+                relevanz: { type: "string" },
               }
             }
           },
-          top_chancen: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, potenzial_pct: { type: "number" } } } },
-          top_risiken: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, wahrscheinlichkeit_pct: { type: "number" }, schadenspotenzial: { type: "string" } } } },
-          szenarien: {
-            type: "object",
-            properties: {
-              best_case: { type: "object", properties: { wahrscheinlichkeit: { type: "number" }, ergebnis: { type: "string" }, voraussetzungen: { type: "array", items: { type: "string" } } } },
-              base_case: { type: "object", properties: { wahrscheinlichkeit: { type: "number" }, ergebnis: { type: "string" }, voraussetzungen: { type: "array", items: { type: "string" } } } },
-              worst_case: { type: "object", properties: { wahrscheinlichkeit: { type: "number" }, ergebnis: { type: "string" }, voraussetzungen: { type: "array", items: { type: "string" } } } }
+          literatur: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                autor: { type: "string" },
+                relevanz: { type: "string" },
+              }
             }
           },
-          empfohlene_strategie: { type: "string", enum: ["Klage fortsetzen", "Vergleich anstreben", "Verhandlung vorbereiten", "Rechtsmittel prüfen", "Sofortvergleich"] },
-          sofortmassnahmen: { type: "array", items: { type: "string" } },
-          kosten_nutzen: { type: "object", properties: { empfehlung: { type: "string" }, break_even_pct: { type: "number" }, vergleichsempfehlung: { type: "string" } } }
+          gegner_taktiken: {
+            type: "array",
+            items: { type: "string" }
+          },
+          besondere_aspekte: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                beschreibung: { type: "string" },
+                typ: { type: "string", enum: ["chance", "risiko", "hinweis"] }
+              }
+            }
+          },
+          zusammenfassung: { type: "string" }
         }
       }
     });
 
-    if (!res || Object.keys(res).length === 0) { setLoading(false); return; }
-    setResult(res);
-    const currentKi = caseData?.ki_berater_result || {};
-    const updated = await base44.entities.Case.update(caseId, {
-      ki_berater_result: { ...currentKi, risiko_analyse: res }
-    });
-    onUpdate(updated);
-    setLoading(false);
+    if (res && Object.keys(res).length > 0) {
+      setKiResult(res);
+      setActiveTab("ki");
+      const currentKi = caseData?.ki_berater_result || {};
+      const updated = await base44.entities.Case.update(caseId, {
+        ki_berater_result: { ...currentKi, risiko_analyse: res }
+      });
+      onUpdate(updated);
+    }
+    setKiLoading(false);
   };
 
-  const radarData = result?.faktoren?.map(f => ({ subject: RISIKO_FAKTOREN.find(r => r.key === f.key)?.label || f.key, A: f.score })) || [];
-  const STRATEGIE_FARBEN = { "Klage fortsetzen": "bg-blue-600", "Vergleich anstreben": "bg-amber-500", "Verhandlung vorbereiten": "bg-indigo-600", "Rechtsmittel prüfen": "bg-purple-600", "Sofortvergleich": "bg-red-600" };
+  if (!loaded || !algoResult) {
+    return (
+      <div className="flex items-center justify-center py-16">
+        <div className="flex flex-col items-center gap-3 text-gray-400">
+          <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" />
+          <p className="text-sm">Berechne algorithmische Risikoanalyse…</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="space-y-5">
-      {/* Header Card */}
-      <div className="bg-white rounded-2xl border border-gray-100 p-5">
-        <div className="flex items-start justify-between gap-4 mb-4">
+    <div className="space-y-4">
+      {/* Mode Toggle */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-4">
+        <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
-            <h3 className="font-semibold text-gray-900 text-sm mb-1">Chancen & Risiken Analyse</h3>
-            <p className="text-xs text-gray-500">KI-gestützte Bewertung aller prozessrelevanten Faktoren</p>
+            <h3 className="text-sm font-semibold text-gray-800">Chancen & Risiken Analyse</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Stochastische Berechnung · Bayesianisch · Monte Carlo</p>
           </div>
-          {result && (
-            <div className="flex items-center gap-3 flex-shrink-0">
-              <div className="text-center">
-                <p className="text-[10px] text-gray-400">Gesamtrisiko</p>
-                <AmpelBadge level={result.gesamtrisiko} />
-              </div>
-              <div className="text-center">
-                <p className="text-[10px] text-gray-400">Erfolgschance</p>
-                <div className="text-xl font-bold text-gray-900">{result.gesamtchance}%</div>
-              </div>
+          <div className="flex items-center gap-2">
+            <div className="flex rounded-xl border border-gray-200 overflow-hidden">
+              <button
+                onClick={() => setActiveTab("algo")}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors ${
+                  activeTab === "algo"
+                    ? "bg-gray-900 text-white"
+                    : "bg-white text-gray-500 hover:bg-gray-50"
+                }`}
+              >
+                <Calculator className="w-3.5 h-3.5" />
+                Algorithmus
+              </button>
+              <button
+                onClick={() => kiResult ? setActiveTab("ki") : null}
+                className={`flex items-center gap-1.5 px-3 py-2 text-xs font-medium transition-colors border-l border-gray-200 ${
+                  activeTab === "ki"
+                    ? "bg-violet-700 text-white"
+                    : kiResult
+                      ? "bg-white text-gray-500 hover:bg-gray-50"
+                      : "bg-gray-50 text-gray-300 cursor-not-allowed"
+                }`}
+              >
+                <Sparkles className="w-3.5 h-3.5" />
+                KI-Infos
+              </button>
             </div>
-          )}
+            <Button
+              onClick={runKiAnalyse}
+              disabled={kiLoading}
+              size="sm"
+              variant="outline"
+              className="rounded-xl text-xs gap-1.5 text-violet-700 border-violet-200 hover:bg-violet-50"
+            >
+              {kiLoading
+                ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Lade Rspr…</>
+                : <><Sparkles className="w-3.5 h-3.5" /> {kiResult ? "Rspr. aktualisieren" : "Rechtsprechung laden"}</>
+              }
+            </Button>
+          </div>
         </div>
-
-        <Button onClick={runAnalyse} disabled={loading} className="w-full bg-gray-900 text-white rounded-xl gap-2">
-          {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analysiere alle Faktoren…</> : result ? "🔄 Analyse aktualisieren" : "🎯 Vollständige Risiko-Analyse starten"}
-        </Button>
-        {loading && <p className="text-[10px] text-amber-600 text-center mt-2">⚠️ Verwendet Claude Sonnet (mehr KI-Credits)</p>}
+        {kiLoading && (
+          <p className="text-[10px] text-amber-600 text-center mt-2">
+            ⚠️ KI wird nur für Rechtsprechungs- und Taktikhinweise verwendet (keine Risikoberechnung)
+          </p>
+        )}
       </div>
 
-      {result && (
-        <>
-          {/* Executive Summary + Strategie */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-            <div className="md:col-span-2 bg-white rounded-2xl border border-gray-100 p-4">
-              <p className="text-xs font-semibold text-gray-600 mb-2">📋 Executive Summary</p>
-              <p className="text-sm text-gray-700 leading-relaxed">{result.executive_summary}</p>
-            </div>
-            <div className="bg-gray-900 text-white rounded-2xl p-4 flex flex-col justify-between">
-              <p className="text-xs text-gray-400 mb-1">Empfohlene Strategie</p>
-              <p className="text-lg font-bold">{result.empfohlene_strategie}</p>
-              {result.kosten_nutzen?.break_even_pct !== undefined && (
-                <div className="mt-3 pt-3 border-t border-gray-700">
-                  <p className="text-[10px] text-gray-400">Break-Even bei</p>
-                  <p className="text-2xl font-bold">{result.kosten_nutzen.break_even_pct}%</p>
-                </div>
-              )}
-            </div>
-          </div>
+      {/* Algorithmus-Tab */}
+      {activeTab === "algo" && <AlgoRisikoPanel result={algoResult} />}
 
-          {/* Radar + Faktoren */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {radarData.length > 0 && (
-              <div className="bg-white rounded-2xl border border-gray-100 p-4">
-                <p className="text-xs font-semibold text-gray-600 mb-3">🕸️ Risiko-Radar</p>
-                <ResponsiveContainer width="100%" height={200}>
-                  <RadarChart data={radarData}>
-                    <PolarGrid stroke="#f3f4f6" />
-                    <PolarAngleAxis dataKey="subject" tick={{ fontSize: 9, fill: "#9ca3af" }} />
-                    <Radar dataKey="A" stroke="#1f2937" fill="#1f2937" fillOpacity={0.15} strokeWidth={2} />
-                  </RadarChart>
-                </ResponsiveContainer>
+      {/* KI-Infos-Tab */}
+      {activeTab === "ki" && kiResult && (
+        <div className="space-y-4">
+          {/* Zusammenfassung */}
+          {kiResult.zusammenfassung && (
+            <div className="bg-violet-50 border border-violet-100 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-violet-700 mb-2">📋 KI-Zusammenfassung (Rspr. & Taktik)</p>
+              <p className="text-sm text-violet-900">{kiResult.zusammenfassung}</p>
+            </div>
+          )}
+
+          {/* Rechtsprechung */}
+          {(kiResult.rechtsprechung || []).length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-gray-700 mb-3">⚖️ Relevante Rechtsprechung</p>
+              <div className="space-y-3">
+                {kiResult.rechtsprechung.map((r, i) => (
+                  <div key={i} className="border border-gray-100 rounded-xl p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-bold text-gray-800">{r.gericht}</span>
+                      <span className="text-[10px] text-gray-400">{r.aktenzeichen}</span>
+                      {r.datum && <span className="text-[10px] text-gray-400">{r.datum}</span>}
+                    </div>
+                    <p className="text-xs text-gray-700 font-medium mb-1">{r.leitsatz}</p>
+                    {r.relevanz && <p className="text-[10px] text-blue-600">→ Relevanz: {r.relevanz}</p>}
+                  </div>
+                ))}
               </div>
-            )}
-            <div className="bg-white rounded-2xl border border-gray-100 p-4">
-              <p className="text-xs font-semibold text-gray-600 mb-3">📊 Faktoren-Scores</p>
+            </div>
+          )}
+
+          {/* Literatur */}
+          {(kiResult.literatur || []).length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-gray-700 mb-3">📚 Literaturhinweise</p>
               <div className="space-y-2">
-                {(result.faktoren || []).map((f, i) => {
-                  const meta = RISIKO_FAKTOREN.find(r => r.key === f.key);
-                  return (
-                    <div key={i}>
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-xs text-gray-600">{meta?.icon} {meta?.label || f.key}</span>
-                        <div className="flex items-center gap-1.5">
-                          <AmpelBadge level={f.level} />
-                          <span className="text-xs text-gray-500 w-8 text-right">{f.score}/10</span>
-                        </div>
-                      </div>
-                      <div className="w-full h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                        <div className={`h-full rounded-full ${f.level === "hoch" ? "bg-red-500" : f.level === "mittel" ? "bg-amber-400" : "bg-green-500"}`} style={{ width: `${f.score * 10}%` }} />
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* Chancen & Risiken */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="bg-green-50 border border-green-100 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-green-700 mb-3">✅ Top-Chancen</p>
-              <div className="space-y-3">
-                {(result.top_chancen || []).map((c, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 border border-green-100">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-semibold text-gray-800">{c.titel}</p>
-                      <span className="text-xs font-bold text-green-600">+{c.potenzial_pct}%</span>
-                    </div>
-                    <p className="text-xs text-gray-600">{c.beschreibung}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
-              <p className="text-xs font-semibold text-red-700 mb-3">⚠️ Top-Risiken</p>
-              <div className="space-y-3">
-                {(result.top_risiken || []).map((r, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 border border-red-100">
-                    <div className="flex items-center justify-between mb-1">
-                      <p className="text-xs font-semibold text-gray-800">{r.titel}</p>
-                      <span className="text-xs font-bold text-red-600">{r.wahrscheinlichkeit_pct}%</span>
-                    </div>
-                    <p className="text-xs text-gray-600">{r.beschreibung}</p>
-                    {r.schadenspotenzial && <p className="text-[10px] text-red-500 mt-1">Schadenpotenzial: {r.schadenspotenzial}</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-
-          {/* 3 Szenarien */}
-          {result.szenarien && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <p className="text-xs font-semibold text-gray-600 mb-3">🎬 Szenarien-Analyse</p>
-              <div className="grid grid-cols-3 gap-3">
-                {[
-                  { key: "best_case", label: "Best Case", color: "border-green-200 bg-green-50", pColor: "text-green-700" },
-                  { key: "base_case", label: "Base Case", color: "border-blue-200 bg-blue-50", pColor: "text-blue-700" },
-                  { key: "worst_case", label: "Worst Case", color: "border-red-200 bg-red-50", pColor: "text-red-700" },
-                ].map(({ key, label, color, pColor }) => {
-                  const s = result.szenarien[key];
-                  if (!s) return null;
-                  return (
-                    <div key={key} className={`rounded-xl border p-3 ${color}`}>
-                      <div className="flex items-center justify-between mb-1.5">
-                        <p className="text-xs font-semibold text-gray-700">{label}</p>
-                        <span className={`text-sm font-bold ${pColor}`}>{s.wahrscheinlichkeit}%</span>
-                      </div>
-                      <p className="text-xs text-gray-700 font-medium mb-2">{s.ergebnis}</p>
-                      {(s.voraussetzungen || []).map((v, i) => <p key={i} className="text-[10px] text-gray-500">→ {v}</p>)}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Sofortmaßnahmen */}
-          {(result.sofortmassnahmen || []).length > 0 && (
-            <div className="bg-gray-900 text-white rounded-2xl p-5">
-              <p className="text-sm font-semibold mb-3">⚡ Sofortmaßnahmen</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {result.sofortmassnahmen.map((m, i) => (
-                  <div key={i} className="flex items-start gap-2 text-sm">
-                    <span className="text-gray-400 flex-shrink-0">{i + 1}.</span>
-                    <span>{m}</span>
-                  </div>
-                ))}
-              </div>
-              {result.kosten_nutzen?.vergleichsempfehlung && (
-                <div className="mt-4 pt-4 border-t border-gray-700">
-                  <p className="text-xs text-gray-400 mb-1">Vergleichsempfehlung</p>
-                  <p className="text-sm">{result.kosten_nutzen.vergleichsempfehlung}</p>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Massnahmen pro Faktor */}
-          <div className="bg-white rounded-2xl border border-gray-100 p-4">
-            <p className="text-xs font-semibold text-gray-600 mb-3">🛠️ Maßnahmen pro Risikofaktor</p>
-            <div className="space-y-2">
-              {(result.faktoren || []).filter(f => f.massnahme).map((f, i) => {
-                const meta = RISIKO_FAKTOREN.find(r => r.key === f.key);
-                return (
+                {kiResult.literatur.map((l, i) => (
                   <div key={i} className="flex items-start gap-3 py-2 border-b border-gray-50 last:border-0">
-                    <span className="text-sm">{meta?.icon}</span>
-                    <div className="flex-1">
-                      <p className="text-xs font-medium text-gray-700">{meta?.label}</p>
-                      <p className="text-xs text-gray-500">{f.massnahme}</p>
+                    <span className="text-gray-400 text-xs mt-0.5">•</span>
+                    <div>
+                      <p className="text-xs font-medium text-gray-800">{l.titel}</p>
+                      {l.autor && <p className="text-[10px] text-gray-400">{l.autor}</p>}
+                      {l.relevanz && <p className="text-[10px] text-blue-600 mt-0.5">{l.relevanz}</p>}
                     </div>
-                    <AmpelBadge level={f.level} />
                   </div>
-                );
-              })}
+                ))}
+              </div>
             </div>
+          )}
+
+          {/* Gegner-Taktiken */}
+          {(kiResult.gegner_taktiken || []).length > 0 && (
+            <div className="bg-red-50 border border-red-100 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-red-700 mb-3">🥊 Typische Gegner-Taktiken (Rechtsgebiet)</p>
+              <div className="space-y-1">
+                {kiResult.gegner_taktiken.map((t, i) => (
+                  <p key={i} className="text-xs text-red-800 flex items-start gap-2">
+                    <span className="flex-shrink-0 mt-0.5">•</span>{t}
+                  </p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Besondere Aspekte */}
+          {(kiResult.besondere_aspekte || []).length > 0 && (
+            <div className="bg-white border border-gray-100 rounded-2xl p-4">
+              <p className="text-xs font-semibold text-gray-700 mb-3">💡 Besondere Aspekte</p>
+              <div className="space-y-2">
+                {kiResult.besondere_aspekte.map((a, i) => {
+                  const cls = a.typ === "chance"
+                    ? "bg-green-50 border-green-100 text-green-800"
+                    : a.typ === "risiko"
+                      ? "bg-red-50 border-red-100 text-red-800"
+                      : "bg-blue-50 border-blue-100 text-blue-800";
+                  const icon = a.typ === "chance" ? "✅" : a.typ === "risiko" ? "⚠️" : "💡";
+                  return (
+                    <div key={i} className={`border rounded-xl p-3 ${cls}`}>
+                      <p className="text-xs font-semibold mb-0.5">{icon} {a.titel}</p>
+                      <p className="text-xs">{a.beschreibung}</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          <div className="bg-gray-50 border border-gray-100 rounded-xl p-3 text-center">
+            <p className="text-[10px] text-gray-400">
+              ℹ️ KI liefert nur Recherche-Hinweise. Alle Risikowerte und Prognosen basieren auf dem Algorithmus-Tab.
+            </p>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
