@@ -2,91 +2,44 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { X, ChevronDown, Zap } from "lucide-react";
 
 const COLORS = {
-  "stützt": { edge: "#34C759", label: "stützt" },
-  "entkräftet": { edge: "#FF3B30", label: "entkräftet" },
-  "verstärkt": { edge: "#07C757", label: "verstärkt" },
-  "schwächt": { edge: "#FF9500", label: "schwächt" },
-  "widerspricht": { edge: "#FF2D55", label: "widerspricht" },
-  "schließt aus": { edge: "#5AC8FA", label: "schließt aus" },
-  "kausal": { edge: "#4F9CF9", label: "kausal" },
+  "stützt": { edge: "#10B981", bg: "#D1FAE5", label: "stützt", impact: "+" },
+  "entkräftet": { edge: "#EF4444", bg: "#FEE2E2", label: "entkräftet", impact: "−" },
+  "verstärkt": { edge: "#8B5CF6", bg: "#F3E8FF", label: "verstärkt", impact: "↑" },
+  "schwächt": { edge: "#F59E0B", bg: "#FEF3C7", label: "schwächt", impact: "↓" },
+  "widerspricht": { edge: "#EC4899", bg: "#FCE7F3", label: "widerspricht", impact: "≠" },
+  "schließt aus": { edge: "#06B6D4", bg: "#CFFAFE", label: "schließt aus", impact: "✗" },
+  "kausal": { edge: "#3B82F6", bg: "#DBEAFE", label: "kausal", impact: "→" },
 };
 
 /**
- * Force-Directed Layout (Physik-Simulation)
- * Erzeugt mathematisch komplexes Netzwerk mit Repulsion & Attraction
+ * Sankey-ähnliches Diagramm-Layout
+ * Eigene Argumente links, Gegner rechts, klare Verbindungen dazwischen
  */
-function computeForceLayout(nodes, edges, width, height, iterations = 50) {
+function computeSankeyLayout(nodes, edges, width, height) {
   const positions = {};
-  const velocity = {};
-  const springLength = 150;
-  const repulsion = 800;
-  const damping = 0.85;
+  const eigenArgs = nodes.filter(n => n.side === "eigen").sort((a, b) => a.title.localeCompare(b.title));
+  const gegnerArgs = nodes.filter(n => n.side === "gegner").sort((a, b) => a.title.localeCompare(b.title));
 
-  // Initialize random positions
-  nodes.forEach(n => {
-    positions[n.id] = {
-      x: width / 2 + (Math.random() - 0.5) * width * 0.6,
-      y: height / 2 + (Math.random() - 0.5) * height * 0.6
+  const leftX = 80;
+  const rightX = width - 80;
+  const topY = 60;
+  const spacing = Math.max(70, (height - 120) / Math.max(eigenArgs.length, gegnerArgs.length));
+
+  // Left side (eigen)
+  eigenArgs.forEach((node, idx) => {
+    positions[node.id] = {
+      x: leftX,
+      y: topY + idx * spacing
     };
-    velocity[n.id] = { x: 0, y: 0 };
   });
 
-  // Simulate forces
-  for (let iter = 0; iter < iterations; iter++) {
-    nodes.forEach(n1 => {
-      let fx = 0, fy = 0;
-      const p1 = positions[n1.id];
-
-      // Repulsion from all nodes
-      nodes.forEach(n2 => {
-        if (n1.id === n2.id) return;
-        const p2 = positions[n2.id];
-        const dx = p1.x - p2.x;
-        const dy = p1.y - p2.y;
-        const dist = Math.sqrt(dx * dx + dy * dy) + 1;
-        const force = repulsion / (dist * dist);
-        fx += (dx / dist) * force;
-        fy += (dy / dist) * force;
-      });
-
-      // Attraction for connected nodes
-      edges.forEach(e => {
-        if (e.fromId === n1.id) {
-          const p2 = positions[e.toId];
-          if (!p2) return;
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const force = (dist - springLength) * 0.05;
-          fx += (dx / dist) * force;
-          fy += (dy / dist) * force;
-        } else if (e.toId === n1.id) {
-          const p2 = positions[e.fromId];
-          if (!p2) return;
-          const dx = p2.x - p1.x;
-          const dy = p2.y - p1.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          const force = (dist - springLength) * 0.05;
-          fx += (dx / dist) * force;
-          fy += (dy / dist) * force;
-        }
-      });
-
-      // Center gravity
-      fx -= (p1.x - width / 2) * 0.01;
-      fy -= (p1.y - height / 2) * 0.01;
-
-      velocity[n1.id].x = (velocity[n1.id].x + fx) * damping;
-      velocity[n1.id].y = (velocity[n1.id].y + fy) * damping;
-
-      p1.x += velocity[n1.id].x;
-      p1.y += velocity[n1.id].y;
-
-      // Boundary constraints
-      p1.x = Math.max(50, Math.min(width - 50, p1.x));
-      p1.y = Math.max(50, Math.min(height - 50, p1.y));
-    });
-  }
+  // Right side (gegner)
+  gegnerArgs.forEach((node, idx) => {
+    positions[node.id] = {
+      x: rightX,
+      y: topY + idx * spacing
+    };
+  });
 
   return positions;
 }
@@ -125,7 +78,7 @@ export default function ArgumentGraphiOS({ args, onClose }) {
     });
   });
 
-  const positions = computeForceLayout(nodes, edges, dims.w, dims.h);
+  const positions = computeSankeyLayout(nodes, edges, dims.w, dims.h);
 
   const selectedEdges = selected ? edges.filter(e => e.fromId === selected || e.toId === selected) : [];
   const connectedIds = new Set(selectedEdges.flatMap(e => [e.fromId, e.toId]));
@@ -145,8 +98,8 @@ export default function ArgumentGraphiOS({ args, onClose }) {
         {/* Header – Apple-Style */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100/50">
           <div>
-            <h2 className="font-bold text-gray-900 text-xl tracking-tight">⚙️ Argumentationsnetzwerk</h2>
-            <p className="text-xs text-gray-500 mt-0.5 font-medium">Force-Directed Graph · {nodes.length} Knoten · {edges.length} Kanten</p>
+            <h2 className="font-bold text-gray-900 text-xl tracking-tight">📊 Argumentationsnetzwerk</h2>
+            <p className="text-xs text-gray-500 mt-0.5 font-medium">Sankey-Diagramm · {nodes.length} Argumente · {edges.length} Verbindungen</p>
           </div>
           <div className="flex items-center gap-3">
             <button 
@@ -167,11 +120,13 @@ export default function ArgumentGraphiOS({ args, onClose }) {
 
         {/* Legend */}
         {showLegend && (
-          <div className="px-6 py-4 bg-gradient-to-r from-gray-50/80 to-blue-50/40 border-b border-gray-200/50 flex flex-wrap gap-5">
-            {Object.entries(COLORS).map(([type, { edge, label }]) => (
+          <div className="px-6 py-4 bg-white border-b border-gray-200 flex flex-wrap gap-6">
+            {Object.entries(COLORS).map(([type, { edge, impact, label }]) => (
               <div key={type} className="flex items-center gap-3 text-xs">
-                <div className="w-5 h-0.5 rounded-full shadow-sm" style={{ backgroundColor: edge, boxShadow: `0 0 8px ${edge}66` }} />
-                <span className="text-gray-700 font-semibold tracking-tight">{label}</span>
+                <div className="w-10 h-10 rounded-full border-2 flex items-center justify-center font-bold" style={{ borderColor: edge, color: edge }}>
+                  {impact}
+                </div>
+                <span className="text-gray-700 font-semibold">{label}</span>
               </div>
             ))}
           </div>
@@ -211,86 +166,52 @@ export default function ArgumentGraphiOS({ args, onClose }) {
                 const isHighlighted = selected && selectedEdges.includes(edge);
                 const isDimmed = selected && !isHighlighted;
 
-                // Smooth cubic bezier curve
-                const dx = to.x - from.x;
-                const dy = to.y - from.y;
-                const dist = Math.sqrt(dx * dx + dy * dy);
-                const cp1x = from.x + dx * 0.35 + dy * 0.15;
-                const cp1y = from.y + dy * 0.35 - dx * 0.15;
-                const cp2x = to.x - dx * 0.35 - dy * 0.15;
-                const cp2y = to.y - dy * 0.35 + dx * 0.15;
-                const path = `M ${from.x} ${from.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${to.x} ${to.y}`;
+                // Smooth quadratic bezier für Sankey-Look
+                const midX = (from.x + to.x) / 2;
+                const path = `M ${from.x} ${from.y} Q ${midX} ${from.y}, ${midX} ${(from.y + to.y) / 2} T ${to.x} ${to.y}`;
 
-                const strokeW = 1.5 + (edge.intensitaet || 5) * 0.15;
+                const strokeW = 0.5 + (edge.intensitaet || 5) * 0.08;
 
                 return (
-                  <g key={i} opacity={isDimmed ? 0.2 : 1} style={{ transition: "opacity 200ms" }}>
-                    {/* Outer glow */}
+                  <g key={i} opacity={isDimmed ? 0.15 : 0.7} style={{ transition: "opacity 200ms" }}>
+                    {/* Background glow */}
                     <path 
                       d={path} 
                       stroke={color} 
-                      strokeWidth={strokeW + 6}
+                      strokeWidth={strokeW + 8}
                       fill="none"
                       opacity="0.08"
-                      style={{ filter: "blur(3px)", transition: "opacity 200ms" }}
+                      style={{ filter: "blur(2px)" }}
                     />
-                    {/* Mid glow */}
-                    <path 
-                      d={path} 
-                      stroke={color} 
-                      strokeWidth={strokeW + 3}
-                      fill="none"
-                      opacity="0.15"
-                      style={{ transition: "opacity 200ms" }}
-                    />
-                    {/* Main edge with gradient */}
+                    {/* Main edge */}
                     <path 
                       d={path} 
                       stroke={color} 
                       strokeWidth={strokeW}
                       fill="none"
-                      markerEnd={`url(#arrow-${edge.type})`}
-                      style={{ transition: "stroke-width 200ms", opacity: 0.85 }}
+                      style={{ opacity: 0.65 }}
                     />
-                    {/* Label badge with glow */}
+                    {/* Impact badge */}
                     <circle
                       cx={(from.x + to.x) / 2}
                       cy={(from.y + to.y) / 2}
-                      r="18"
-                      fill={color}
-                      opacity="0.06"
-                      style={{ filter: "blur(2px)" }}
-                    />
-                    <rect 
-                      x={(from.x + to.x) / 2 - 38} 
-                      y={(from.y + to.y) / 2 - 11}
-                      width="76"
-                      height="22"
-                      rx="11"
-                      fill={color}
-                      opacity="0.1"
-                      style={{ backdropFilter: "blur(8px)" }}
-                    />
-                    <rect 
-                      x={(from.x + to.x) / 2 - 36} 
-                      y={(from.y + to.y) / 2 - 9}
-                      width="72"
-                      height="18"
-                      rx="9"
+                      r="16"
                       fill="white"
-                      opacity="0.95"
+                      stroke={color}
+                      strokeWidth="2"
+                      opacity="0.98"
                     />
-                    {/* Label */}
-                    <text 
-                      x={(from.x + to.x) / 2} 
-                      y={(from.y + to.y) / 2 + 1}
+                    <text
+                      x={(from.x + to.x) / 2}
+                      y={(from.y + to.y) / 2}
                       textAnchor="middle"
-                      fontSize="10"
-                      fontWeight="700"
+                      dominantBaseline="middle"
+                      fontSize="12"
+                      fontWeight="800"
                       fill={color}
                       style={{ pointerEvents: "none", userSelect: "none" }}
                     >
-                      {COLORS[edge.type]?.label}
+                      {COLORS[edge.type]?.impact}
                     </text>
                   </g>
                 );
@@ -320,104 +241,100 @@ export default function ArgumentGraphiOS({ args, onClose }) {
                   <g 
                     key={node.id} 
                     transform={`translate(${pos.x},${pos.y})`}
-                    opacity={isDimmed ? 0.25 : 1}
+                    opacity={isDimmed ? 0.3 : 1}
                     style={{ 
                       cursor: "pointer",
                       transition: "opacity 200ms",
                     }}
                     onClick={e => { e.stopPropagation(); setSelected(selected === node.id ? null : node.id); }}
                   >
-                    {/* Outer halo glow */}
-                    <circle 
-                      r={radius + 14} 
-                      fill={borderColor} 
-                      opacity="0.04"
-                      style={{ transition: "all 200ms", filter: "blur(4px)" }}
-                    />
-                    {/* Mid glow */}
-                    <circle 
-                      r={radius + 8} 
-                      fill={borderColor} 
-                      opacity="0.12"
-                      style={{ transition: "all 200ms", filter: "blur(2px)" }}
-                    />
-                    {/* Main circle with enhanced depth */}
+                    {/* Shadow */}
                     <circle 
                       r={radius} 
+                      fill="black"
+                      opacity="0.04"
+                      style={{ filter: "blur(3px)", transition: "all 200ms" }}
+                    />
+                    {/* Main card */}
+                    <rect
+                      x={-radius}
+                      y={-radius}
+                      width={radius * 2}
+                      height={radius * 2}
+                      rx="16"
                       fill="white"
-                      stroke={borderColor}
-                      strokeWidth={isSelected ? 3 : 2}
-                      opacity="0.98"
-                      style={{ 
-                        transition: "stroke-width 200ms",
-                        backdropFilter: "blur(10px)",
-                        boxShadow: `0 0 20px ${borderColor}33`
+                      stroke={isSelected ? borderColor : borderColor}
+                      strokeWidth={isSelected ? 2.5 : 2}
+                      opacity="0.99"
+                      style={{
+                        transition: "stroke-width 200ms, filter 200ms",
+                        filter: isSelected ? `drop-shadow(0 0 12px ${borderColor}44)` : "drop-shadow(0 2px 6px rgba(0,0,0,0.06))"
                       }}
                     />
-                    {/* Strength indicator ring */}
-                    {node.strength && (
-                      <circle 
-                        r={radius} 
-                        fill="none"
-                        stroke={borderColor}
-                        strokeWidth="1.5"
-                        opacity="0.3"
-                        strokeDasharray={`${(node.strength / 10) * 2 * Math.PI * radius} ${2 * Math.PI * radius}`}
-                        transform="rotate(-90)"
-                        style={{ transition: "all 200ms" }}
-                      />
-                    )}
+                    {/* Strength bar */}
+                    <rect
+                      x={-radius + 4}
+                      y={radius - 6}
+                      width={(radius * 2 - 8) * (node.strength || 5) / 10}
+                      height="4"
+                      rx="2"
+                      fill={borderColor}
+                      opacity="0.6"
+                      style={{ transition: "all 200ms" }}
+                    />
                     {/* Title */}
                     <text 
                       textAnchor="middle" 
                       dominantBaseline="middle"
-                      y="-6"
-                      fontSize="13"
-                      fontWeight="600"
+                      y="-4"
+                      fontSize="12"
+                      fontWeight="700"
                       fill={textColor}
                       style={{ pointerEvents: "none", userSelect: "none" }}
                     >
-                      {node.title.length > 16 ? node.title.slice(0, 16) + "…" : node.title}
+                      {node.title.length > 14 ? node.title.slice(0, 14) + "…" : node.title}
                     </text>
-                    {/* Strength indicator */}
+                    {/* Strength */}
                     <text 
                       textAnchor="middle" 
                       dominantBaseline="middle"
-                      y="8"
-                      fontSize="11"
-                      fontWeight="500"
+                      y="10"
+                      fontSize="10"
+                      fontWeight="600"
                       fill={borderColor}
-                      opacity="0.7"
+                      opacity="0.8"
                       style={{ pointerEvents: "none", userSelect: "none" }}
                     >
                       {node.strength}/10
                     </text>
-                    {/* Side indicator badge with background */}
-                    <circle
-                      r="14"
-                      cy={-radius - 14}
+                    {/* Badge */}
+                    <rect
+                      x={-26}
+                      y={-radius - 18}
+                      width="52"
+                      height="24"
+                      rx="12"
                       fill={borderColor}
-                      opacity="0.08"
-                      style={{ backdropFilter: "blur(4px)" }}
+                      opacity="0.15"
                     />
                     <rect
-                      x="-18"
-                      y={-radius - 18}
-                      width="36"
+                      x={-24}
+                      y={-radius - 16}
+                      width="48"
                       height="20"
                       rx="10"
                       fill={borderColor}
-                      opacity="0.12"
+                      opacity="0.6"
                     />
                     <text 
                       textAnchor="middle"
-                      y={-radius - 10}
-                      fontSize="9"
-                      fontWeight="800"
-                      fill={borderColor}
-                      style={{ pointerEvents: "none", userSelect: "none", letterSpacing: "0.5px" }}
+                      y={-radius - 6}
+                      fontSize="8"
+                      fontWeight="900"
+                      fill="white"
+                      style={{ pointerEvents: "none", userSelect: "none", letterSpacing: "0.3px" }}
                     >
-                      {isEigen ? "OWN" : "OPP"}
+                      {isEigen ? "EIGENE" : "GEGNER"}
                     </text>
                   </g>
                 );
@@ -427,10 +344,13 @@ export default function ArgumentGraphiOS({ args, onClose }) {
 
           {/* Side panel on selection */}
           {selected && selectedEdges.length > 0 && (
-            <div className="absolute top-6 right-6 bg-white/98 backdrop-blur-xl border border-gray-200 rounded-2xl shadow-2xl p-5 w-80 space-y-4 z-10">
-              <div className="border-b border-gray-100 pb-3">
-                <p className="text-sm font-bold text-gray-900 tracking-tight">{getTitle(selected)}</p>
-                <p className="text-xs text-gray-500 mt-1.5 uppercase tracking-widest font-semibold">🔗 {selectedEdges.length} Verbindungen</p>
+            <div className="absolute top-6 right-6 bg-white/99 backdrop-blur-xl border border-gray-300 rounded-2xl shadow-xl p-5 w-80 space-y-4 z-10">
+              <div className="pb-3">
+                <p className="text-sm font-bold text-gray-900">{getTitle(selected)}</p>
+                <div className="h-2 w-full bg-gray-100 rounded-full mt-2">
+                  <div className="h-full bg-gray-800 rounded-full" style={{width: `${(nodes.find(n => n.id === selected)?.strength || 5) * 10}%`}} />
+                </div>
+                <p className="text-xs text-gray-500 mt-2 uppercase tracking-widest font-semibold">→ {selectedEdges.length} Auswirkungen</p>
               </div>
               <div className="space-y-2.5">
                 {selectedEdges.map((e, i) => {
@@ -453,18 +373,18 @@ export default function ArgumentGraphiOS({ args, onClose }) {
 
                    {/* Empty state */}
                    {nodes.length === 0 && (
-            <div className="absolute inset-0 flex items-center justify-center text-gray-400">
-              <div className="text-center">
-                <Zap className="w-12 h-12 mx-auto mb-3 opacity-20" />
-                <p className="text-sm">Noch keine Argumente vorhanden</p>
-              </div>
-            </div>
-          )}
+                     <div className="absolute inset-0 flex items-center justify-center">
+                       <div className="text-center">
+                         <Zap className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                         <p className="text-sm font-semibold text-gray-500">Keine Argumente vorhanden</p>
+                       </div>
+                     </div>
+                   )}
 
           {/* Help text */}
            {nodes.length > 0 && edges.length === 0 && (
-             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-blue-50/90 backdrop-blur-xl border border-blue-200 text-blue-700 text-xs rounded-2xl px-5 py-3 shadow-lg font-medium tracking-tight">
-               ⚙️ Netzwerk wird aufgebaut... Verbindungen im Verkettungs-Tab hinzufügen
+             <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-blue-50/95 backdrop-blur-xl border border-blue-300 text-blue-800 text-xs rounded-2xl px-5 py-3 shadow-lg font-semibold tracking-tight">
+               💡 Verbindungen im Verkettungs-Tab hinzufügen um Netzwerk zu sehen
              </div>
            )}
         </div>
