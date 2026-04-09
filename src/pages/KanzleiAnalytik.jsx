@@ -34,6 +34,8 @@ export default function KanzleiAnalytik() {
   const [arguments_, setArguments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [filterLabel, setFilterLabel] = useState(null);
+  const [filteredCases, setFilteredCases] = useState([]);
   const { jurisdiction } = useJurisdiction();
   const t = getT(jurisdiction);
 
@@ -158,14 +160,34 @@ export default function KanzleiAnalytik() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="md:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
             <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.faelleNachRechtsgebiet}</h2>
+            {filterLabel && (
+              <div className="flex items-center justify-between mb-3 px-1">
+                <p className="text-xs font-medium text-slate-700">Filter: <span className="text-[#1a3560]">{filterLabel}</span> · {filteredCases.length} Fälle</p>
+                <button onClick={() => { setFilterLabel(null); setFilteredCases([]); }} className="text-[10px] text-slate-400 hover:text-slate-700 underline">Zurücksetzen</button>
+              </div>
+            )}
+            {filterLabel && filteredCases.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-1">
+                {filteredCases.map(c => (
+                  <span key={c.id} className="text-[10px] bg-slate-100 text-slate-700 rounded-md px-2 py-0.5">{c.fallname}</span>
+                ))}
+              </div>
+            )}
             {rechtsgebietData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
-                <BarChart data={rechtsgebietData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+                <BarChart data={rechtsgebietData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}
+                  onClick={(data) => {
+                    if (!data?.activePayload) return;
+                    const label = data.activePayload[0]?.payload?.name;
+                    if (!label) return;
+                    setFilterLabel(label);
+                    setFilteredCases(cases.filter(c => c.rechtsgebiet === label));
+                  }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                   <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
                   <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                  <Bar dataKey="count" fill="#1a3560" radius={[4, 4, 0, 0]} name="Fälle" />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} cursor={{ fill: "#f1f5f9" }} />
+                  <Bar dataKey="count" fill="#1a3560" radius={[4, 4, 0, 0]} name="Fälle" style={{ cursor: "pointer" }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
@@ -177,9 +199,15 @@ export default function KanzleiAnalytik() {
             <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.statusVerteilung}</h2>
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
-                <PieChart>
+                <PieChart onClick={(data) => {
+                  if (!data?.activePayload) return;
+                  const label = data.activePayload[0]?.payload?.name;
+                  if (!label) return;
+                  setFilterLabel(label);
+                  setFilteredCases(cases.filter(c => c.status === label));
+                }}>
                   <Pie data={statusData} cx="50%" cy="50%" innerRadius={50} outerRadius={80}
-                    dataKey="value" nameKey="name" paddingAngle={3}>
+                    dataKey="value" nameKey="name" paddingAngle={3} style={{ cursor: "pointer" }}>
                     {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
                   <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />

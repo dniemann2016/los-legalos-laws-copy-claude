@@ -78,34 +78,64 @@ AUFGABE 2 – Musteranalyse: Leite aus den gefundenen Fällen + Kanzleierfahrung
 
 AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
       response_json_schema: {
+      type: "object",
+      properties: {
+      zusammenfassung: { type: "string" },
+      gefundene_urteile: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            aktenzeichen: { type: "string" },
+            datum: { type: "string" },
+            streitgegenstand: { type: "string" },
+            ergebnis: { type: "string" },
+            argumentationsweise: { type: "string" },
+            quelle: { type: "string" }
+          }
+        }
+      },
+      argumentationsmuster: { type: "array", items: { type: "string" } },
+      bevorzugte_normen: { type: "array", items: { type: "string" } },
+      haltung_zu_argumenten: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            argumenttyp: { type: "string" },
+            haltung: { type: "string", enum: ["sehr positiv", "positiv", "neutral", "skeptisch", "ablehnend"] },
+            begruendung: { type: "string" }
+          }
+        }
+      },
+      bevorzugte_antragstypen: {
+        type: "array",
+        items: {
+          type: "object",
+          properties: {
+            antragstyp: { type: "string" },
+            erfolgsrate: { type: "string" },
+            hinweis: { type: "string" }
+          }
+        }
+      },
+      schadensersatz_bandbreite: {
         type: "object",
         properties: {
-          zusammenfassung: { type: "string" },
-          gefundene_urteile: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                aktenzeichen: { type: "string" },
-                datum: { type: "string" },
-                streitgegenstand: { type: "string" },
-                ergebnis: { type: "string" },
-                argumentationsweise: { type: "string" },
-                quelle: { type: "string" }
-              }
-            }
-          },
-          argumentationsmuster: { type: "array", items: { type: "string" } },
-          bevorzugte_normen: { type: "array", items: { type: "string" } },
-          umgang_beweismittel: { type: "string" },
-          staerken_klaeger: { type: "array", items: { type: "string" } },
-          risiken_klaeger: { type: "array", items: { type: "string" } },
-          verhandlungstipps: { type: "array", items: { type: "object", properties: { tipp: { type: "string" }, begruendung: { type: "string" }, prioritaet: { type: "string" } } } },
-          vergleichsstrategie: { type: "string" },
-          timing_empfehlung: { type: "string" },
-          do_dont: { type: "object", properties: { dos: { type: "array", items: { type: "string" } }, donts: { type: "array", items: { type: "string" } } } },
-          gesamteinschaetzung: { type: "string" }
+          typischer_bereich: { type: "string" },
+          faktoren: { type: "array", items: { type: "string" } },
+          besonderheiten: { type: "string" }
         }
+      },
+      umgang_beweismittel: { type: "string" },
+      staerken_klaeger: { type: "array", items: { type: "string" } },
+      risiken_klaeger: { type: "array", items: { type: "string" } },
+      verhandlungstipps: { type: "array", items: { type: "object", properties: { tipp: { type: "string" }, begruendung: { type: "string" }, prioritaet: { type: "string" } } } },
+      vergleichsstrategie: { type: "string" },
+      timing_empfehlung: { type: "string" },
+      do_dont: { type: "object", properties: { dos: { type: "array", items: { type: "string" } }, donts: { type: "array", items: { type: "string" } } } },
+      gesamteinschaetzung: { type: "string" }
+      }
       }
     });
     const updated = await base44.entities.JudgeProfile.update(profile.id, { ki_analyse: { ...res, erstellt: new Date().toISOString() } });
@@ -280,6 +310,61 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
                 <p className="text-xs font-semibold text-gray-600 mb-2">§ Bevorzugte Rechtsnormen</p>
                 <div className="flex flex-wrap gap-1.5">{ki.bevorzugte_normen.map((n, i) => <span key={i} className="text-[10px] bg-white border border-gray-200 rounded px-2 py-0.5 text-gray-700 font-mono">{n}</span>)}</div>
+              </div>
+            )}
+
+            {(ki.haltung_zu_argumenten || []).length > 0 && (
+              <div className="bg-white border border-gray-100 rounded-xl p-4">
+                <p className="text-xs font-semibold text-gray-700 mb-3">⚖️ Haltung zu Argumenttypen</p>
+                <div className="space-y-2">
+                  {ki.haltung_zu_argumenten.map((h, i) => (
+                    <div key={i} className="flex items-start gap-3">
+                      <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold whitespace-nowrap self-start mt-0.5 ${
+                        h.haltung === "sehr positiv" ? "bg-green-100 text-green-700" :
+                        h.haltung === "positiv" ? "bg-emerald-100 text-emerald-600" :
+                        h.haltung === "neutral" ? "bg-gray-100 text-gray-500" :
+                        h.haltung === "skeptisch" ? "bg-yellow-100 text-yellow-700" :
+                        "bg-red-100 text-red-600"
+                      }`}>{h.haltung}</span>
+                      <div>
+                        <p className="text-xs font-medium text-gray-800">{h.argumenttyp}</p>
+                        <p className="text-xs text-gray-500">{h.begruendung}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {(ki.bevorzugte_antragstypen || []).length > 0 && (
+              <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
+                <p className="text-xs font-semibold text-indigo-700 mb-3">📋 Bevorzugte Antragstypen</p>
+                <div className="space-y-2">
+                  {ki.bevorzugte_antragstypen.map((a, i) => (
+                    <div key={i} className="bg-white rounded-lg p-2.5">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <p className="text-xs font-medium text-gray-800">{a.antragstyp}</p>
+                        {a.erfolgsrate && <span className="text-[10px] text-indigo-600 font-semibold">{a.erfolgsrate}</span>}
+                      </div>
+                      {a.hinweis && <p className="text-xs text-gray-500">{a.hinweis}</p>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {ki.schadensersatz_bandbreite && (
+              <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
+                <p className="text-xs font-semibold text-amber-700 mb-2">💶 Schadensersatz / Urteilsbandbreite</p>
+                {ki.schadensersatz_bandbreite.typischer_bereich && (
+                  <p className="text-sm font-bold text-amber-900 mb-2">{ki.schadensersatz_bandbreite.typischer_bereich}</p>
+                )}
+                {(ki.schadensersatz_bandbreite.faktoren || []).length > 0 && (
+                  <ul className="space-y-0.5 mb-2">{ki.schadensersatz_bandbreite.faktoren.map((f, i) => <li key={i} className="text-xs text-amber-800">• {f}</li>)}</ul>
+                )}
+                {ki.schadensersatz_bandbreite.besonderheiten && (
+                  <p className="text-xs text-amber-700 italic">{ki.schadensersatz_bandbreite.besonderheiten}</p>
+                )}
               </div>
             )}
 
