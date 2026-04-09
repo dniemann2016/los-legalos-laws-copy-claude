@@ -18,14 +18,13 @@ import TabVerhandlung from "../components/lexara/TabVerhandlung";
 import TabSchriftsatz from "../components/lexara/TabSchriftsatz";
 import TabCockpit from "../components/lexara/TabCockpit";
 import TabHistory from "../components/lexara/TabHistory";
-import StrategicTimeline from "../components/lexara/StrategicTimeline";
-import ScenarioSimulator from "../components/lexara/ScenarioSimulator";
+import CaseInfluenceGraph from "../components/lexara/CaseInfluenceGraph";
 import AIPerformanceDashboard from "../components/lexara/AIPerformanceDashboard";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
   {id:1,label:"Basisdaten"},{id:2,label:"Dokumente"},{id:3,label:"Argumente & Beweise"},{id:4,label:"Personen"},
-  {id:5,label:"Fristen"},{id:6,label:"Strategie"},{id:7,label:"KI-Berater"},{id:8,label:"Analyse"},{id:9,label:"Risiken"},{id:10,label:"Risikomatrix"},{id:11,label:"Simulation"},{id:12,label:"Gesamtbewertung"},{id:13,label:"Verhandlung"},{id:14,label:"Schriftsatz"},{id:15,label:"Cockpit"},{id:16,label:"Prozess-Zeitachse"},{id:17,label:"Was-wäre-wenn"},{id:18,label:"Historie"},{id:19,label:"KI-Performance"},
+  {id:5,label:"Fristen"},{id:6,label:"Strategie"},{id:7,label:"KI-Berater"},{id:8,label:"Analyse"},{id:9,label:"Risiken"},{id:10,label:"Risikomatrix"},{id:11,label:"Simulation"},{id:12,label:"Gesamtbewertung"},{id:13,label:"Verhandlung"},{id:14,label:"Schriftsatz"},{id:15,label:"Cockpit"},{id:16,label:"Fallanalyse-Netzwerk"},{id:17,label:"Historie"},{id:18,label:"KI-Performance"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -143,7 +142,7 @@ export default function CaseDetail() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin"/></div>;
   if (!caseData) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Fall nicht gefunden.</p></div>;
 
-  const completedTabs = [!!caseData.fallname,false,(counts.args>0 && counts.evidence>0),counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,false,false,!!caseData.notes,false,false,false,false,false];
+  const completedTabs = [!!caseData.fallname,false,(counts.args>0 && counts.evidence>0),counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,false,false,!!caseData.notes,false,false,false,false];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -205,10 +204,9 @@ export default function CaseDetail() {
         {activeTab===13 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
         {activeTab===14 && <TabSchriftsatz caseId={caseId} caseData={caseData} />}
         {activeTab===15 && <TabCockpit caseId={caseId} caseData={caseData} />}
-        {activeTab===16 && <StrategicTimeline caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===17 && <ScenarioSimulator caseId={caseId} caseData={caseData} />}
-        {activeTab===18 && <TabHistory caseId={caseId} />}
-        {activeTab===19 && <AIPerformanceDashboard caseId={caseId} />}
+        {activeTab===16 && <CaseInfluenceGraph caseId={caseId} />}
+        {activeTab===17 && <TabHistory caseId={caseId} />}
+        {activeTab===18 && <AIPerformanceDashboard caseId={caseId} />}
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">
             <ArrowLeft className="w-4 h-4"/> Zurück
