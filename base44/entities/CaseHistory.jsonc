@@ -1,0 +1,94 @@
+{
+  "name": "CaseHistory",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "entity_type": {
+      "type": "string",
+      "title": "Entity-Typ",
+      "enum": [
+        "Argument",
+        "Evidence",
+        "Deadline",
+        "Person",
+        "Document",
+        "Case",
+        "Risk"
+      ]
+    },
+    "entity_id": {
+      "type": "string",
+      "title": "Entity ID"
+    },
+    "entity_title": {
+      "type": "string",
+      "title": "Entity Titel (Snapshot)"
+    },
+    "action": {
+      "type": "string",
+      "title": "Aktion",
+      "enum": [
+        "create",
+        "update",
+        "delete"
+      ]
+    },
+    "field_changed": {
+      "type": "string",
+      "title": "Ge\u00e4ndertes Feld (z.B. 'strength', 'prognose')"
+    },
+    "old_value": {
+      "type": "string",
+      "title": "Alter Wert (JSON-String)"
+    },
+    "new_value": {
+      "type": "string",
+      "title": "Neuer Wert (JSON-String)"
+    },
+    "summary": {
+      "type": "string",
+      "title": "Zusammenfassung (human-readable)"
+    },
+    "user_email": {
+      "type": "string",
+      "title": "Nutzer (E-Mail)"
+    },
+    "timestamp": {
+      "type": "string",
+      "title": "Zeitstempel (ISO)"
+    }
+  },
+  "required": [
+    "case_id",
+    "entity_type",
+    "action"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -18,12 +18,13 @@ import TabRisiko from "../components/lexara/TabRisiko";
 import TabSchriftsatz from "../components/lexara/TabSchriftsatz";
 import TabCockpit from "../components/lexara/TabCockpit";
 import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
+import TabHistory from "../components/lexara/TabHistory";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
   {id:1,label:"Basisdaten"},{id:2,label:"Argumente"},{id:3,label:"Beweise"},
   {id:4,label:"Verkettung"},{id:5,label:"Personen"},{id:6,label:"Fristen"},
-  {id:7,label:"Strategie"},{id:8,label:"KI-Berater"},{id:9,label:"Analyse"},{id:10,label:"Risiken"},{id:11,label:"Simulation"},{id:12,label:"Dokumente"},{id:13,label:"Gesamtbewertung"},{id:14,label:"Verhandlung"},{id:15,label:"Schriftsatz"},{id:16,label:"Cockpit"},
+  {id:7,label:"Strategie"},{id:8,label:"KI-Berater"},{id:9,label:"Analyse"},{id:10,label:"Risiken"},{id:11,label:"Simulation"},{id:12,label:"Dokumente"},{id:13,label:"Gesamtbewertung"},{id:14,label:"Verhandlung"},{id:15,label:"Schriftsatz"},{id:16,label:"Cockpit"},{id:17,label:"Historie"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -204,6 +205,7 @@ export default function CaseDetail() {
         {activeTab===14 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
         {activeTab===15 && <TabSchriftsatz caseId={caseId} caseData={caseData} />}
         {activeTab===16 && <TabCockpit caseId={caseId} caseData={caseData} />}
+        {activeTab===17 && <TabHistory caseId={caseId} />}
 
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">
