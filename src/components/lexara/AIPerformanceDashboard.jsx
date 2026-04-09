@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { TrendingUp, AlertCircle, CheckCircle, Zap } from "lucide-react";
+import { TrendingUp, AlertCircle, CheckCircle, Zap, Edit2, X } from "lucide-react";
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export default function AIPerformanceDashboard({ caseId }) {
   const [feedbacks, setFeedbacks] = useState([]);
@@ -9,6 +10,13 @@ export default function AIPerformanceDashboard({ caseId }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
+  const [filterPeriod, setFilterPeriod] = useState("all");
+  const [filterAdvisor, setFilterAdvisor] = useState("all");
+  const [editingId, setEditingId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [trendData, setTrendData] = useState([]);
+  const [advisors, setAdvisors] = useState([]);
 
   useEffect(() => {
     loadData();
@@ -19,7 +27,31 @@ export default function AIPerformanceDashboard({ caseId }) {
     const data = await base44.entities.AIPerformanceFeedback.filter({});
     setFeedbacks(data);
     calculateStats(data);
+    buildTrendData(data);
+    extractAdvisors(data);
     setLoading(false);
+  };
+
+  const buildTrendData = (data) => {
+    const sorted = [...data].sort((a, b) => new Date(a.created_date) - new Date(b.created_date));
+    const grouped = {};
+    sorted.forEach(item => {
+      const date = new Date(item.created_date).toLocaleDateString('de-DE');
+      if (!grouped[date]) grouped[date] = { date, ratings: [], successCount: 0 };
+      if (item.gesamtbewertung) grouped[date].ratings.push(item.gesamtbewertung);
+      if (item.fall_erfolgreich) grouped[date].successCount++;
+    });
+    const trend = Object.values(grouped).map(g => ({
+      date: g.date,
+      gesamtbewertung: g.ratings.length > 0 ? (g.ratings.reduce((a, b) => a + b) / g.ratings.length).toFixed(2) : 0,
+      erfolgsquote: g.successCount,
+    }));
+    setTrendData(trend);
+  };
+
+  const extractAdvisors = (data) => {
+    const uniqueAdvisors = [...new Set(data.map(d => d.created_by))];
+    setAdvisors(uniqueAdvisors);
   };
 
   const handleCreate = async () => {
@@ -37,11 +69,48 @@ export default function AIPerformanceDashboard({ caseId }) {
       strategie_rating: form.strategie_rating,
       ki_berater_rating: form.ki_berater_rating,
       fall_erfolgreich: form.fall_erfolgreich,
+      ki_feedback: form.ki_feedback,
     });
     setForm({});
     setShowForm(false);
     await loadData();
     setSaving(false);
+  };
+
+  const handleEditOpen = (feedback) => {
+    setEditingId(feedback.id);
+    setEditForm({ ...feedback });
+    setShowEditModal(true);
+  };
+
+  const handleEditSave = async () => {
+    setSaving(true);
+    await base44.entities.AIPerformanceFeedback.update(editingId, editForm);
+    setEditingId(null);
+    setShowEditModal(false);
+    await loadData();
+    setSaving(false);
+  };
+
+  const getFilteredData = () => {
+    let filtered = feedbacks;
+    if (filterPeriod !== "all") {
+      const now = new Date();
+      filtered = filtered.filter(f => {
+        const date = new Date(f.created_date);
+        if (filterPeriod === "month") return date.getMonth() === now.getMonth() && date.getFullYear() === now.getFullYear();
+        if (filterPeriod === "quarter") {
+          const qNow = Math.floor(now.getMonth() / 3);
+          const q = Math.floor(date.getMonth() / 3);
+          return q === qNow && date.getFullYear() === now.getFullYear();
+        }
+        return true;
+      });
+    }
+    if (filterAdvisor !== "all") {
+      filtered = filtered.filter(f => f.created_by === filterAdvisor);
+    }
+    return filtered;
   };
 
   const calculateStats = (data) => {
@@ -133,6 +202,12 @@ export default function AIPerformanceDashboard({ caseId }) {
                 value={form.gesamtbewertung || ""} onChange={e => setForm({ ...form, gesamtbewertung: Number(e.target.value) })} />
             </div>
             <div className="md:col-span-2">
+              <label className="text-xs font-semibold text-gray-500 block mb-1">KI-Feedback (Verbesserungshinweise)</label>
+              <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-20"
+                placeholder="Geben Sie der KI spezifisches Feedback zu Verbesserungen..."
+                value={form.ki_feedback || ""} onChange={e => setForm({ ...form, ki_feedback: e.target.value })} />
+            </div>
+            <div className="md:col-span-2">
               <label className="text-xs font-semibold text-gray-500 block mb-1">Fall erfolgreich?</label>
               <div className="flex gap-2">
                 <button onClick={() => setForm({ ...form, fall_erfolgreich: true })} 
@@ -161,6 +236,77 @@ export default function AIPerformanceDashboard({ caseId }) {
       <button onClick={() => setShowForm(!showForm)} className="w-full py-3 border border-blue-200 bg-blue-50 text-blue-700 rounded-xl text-sm font-medium hover:bg-blue-100 transition-colors">
         + Neue Bewertung hinzufügen
       </button>
+
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <h3 className="text-sm font-semibold text-gray-900 mb-4">🔍 Filter</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">Zeitraum</label>
+            <select value={filterPeriod} onChange={e => setFilterPeriod(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <option value="all">Alle</option>
+              <option value="month">Diesen Monat</option>
+              <option value="quarter">Dieses Quartal</option>
+            </select>
+          </div>
+          <div>
+            <label className="text-xs font-semibold text-gray-500 block mb-1">KI-Berater</label>
+            <select value={filterAdvisor} onChange={e => setFilterAdvisor(e.target.value)}
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm">
+              <option value="all">Alle</option>
+              {advisors.map(a => <option key={a} value={a}>{a}</option>)}
+            </select>
+          </div>
+        </div>
+      </div>
+
+      {trendData.length > 0 && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-6">
+          <h3 className="text-sm font-semibold text-gray-900 mb-4">📈 Performance-Trend</h3>
+          <ResponsiveContainer width="100%" height={300}>
+            <LineChart data={trendData}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="date" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+              <Line type="monotone" dataKey="gesamtbewertung" stroke="#3b82f6" name="Gesamtbewertung" />
+              <Line type="monotone" dataKey="erfolgsquote" stroke="#10b981" name="Erfolgsquote" />
+            </LineChart>
+          </ResponsiveContainer>
+        </div>
+      )}
+
+      {showEditModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">Bewertung bearbeiten</h3>
+              <button onClick={() => setShowEditModal(false)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">Gesamtbewertung (1-5)</label>
+                <input type="number" min="1" max="5" className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
+                  value={editForm.gesamtbewertung || ""} onChange={e => setEditForm({ ...editForm, gesamtbewertung: Number(e.target.value) })} />
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">KI-Feedback</label>
+                <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-20"
+                  value={editForm.ki_feedback || ""} onChange={e => setEditForm({ ...editForm, ki_feedback: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setShowEditModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                Abbrechen
+              </button>
+              <button onClick={handleEditSave} disabled={saving} className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50">
+                {saving ? "Speichert..." : "Speichern"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {!stats ? (
         <div className="bg-gray-50 rounded-2xl border border-gray-100 py-12 text-center">
@@ -237,10 +383,28 @@ export default function AIPerformanceDashboard({ caseId }) {
             </div>
           </div>
 
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+           <h3 className="text-sm font-semibold text-gray-900 mb-4">📋 Bewertungen</h3>
+           <div className="space-y-2 max-h-96 overflow-y-auto">
+             {getFilteredData().map(fb => (
+               <div key={fb.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg border border-gray-100">
+                 <div className="flex-1 min-w-0">
+                   <p className="text-xs font-medium text-gray-900">{fb.case_name || fb.case_id}</p>
+                   <p className="text-[10px] text-gray-500">Bewertung: {fb.gesamtbewertung}/5 · {new Date(fb.created_date).toLocaleDateString('de-DE')}</p>
+                   {fb.ki_feedback && <p className="text-[10px] text-gray-600 mt-1 italic">Feedback: {fb.ki_feedback.substring(0, 50)}...</p>}
+                 </div>
+                 <button onClick={() => handleEditOpen(fb)} className="ml-2 p-1.5 text-gray-400 hover:text-blue-600 transition-colors">
+                   <Edit2 className="w-4 h-4" />
+                 </button>
+               </div>
+             ))}
+           </div>
+          </div>
+
           {stats.topImprovements.length > 0 && (
-            <div className="bg-white rounded-2xl border border-gray-100 p-6">
-              <h3 className="text-sm font-semibold text-gray-900 mb-4">💡 Häufigste Verbesserungsbedarfe</h3>
-              <div className="space-y-3">
+           <div className="bg-white rounded-2xl border border-gray-100 p-6">
+             <h3 className="text-sm font-semibold text-gray-900 mb-4">💡 Häufigste Verbesserungsbedarfe</h3>
+             <div className="space-y-3">
                 {stats.topImprovements.map((item, i) => (
                   <div key={i} className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg border border-gray-100">
                     <div className="flex-shrink-0 w-8 h-8 bg-blue-100 text-blue-700 rounded-lg flex items-center justify-center text-sm font-semibold">
