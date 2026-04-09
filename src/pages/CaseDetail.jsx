@@ -5,6 +5,18 @@ import { Link, useNavigate } from "react-router-dom";
 import TabBasisdaten from "../components/lexara/TabBasisdaten";
 import TabArgumenteBeweisVerkettung from "../components/lexara/TabArgumenteBeweisVerkettung";
 import TabPersonen from "../components/lexara/TabPersonen";
+import TabFristen from "../components/lexara/TabFristen";
+import TabStrategie from "../components/lexara/TabStrategie";
+import TabKIBerater from "../components/lexara/TabKIBerater";
+import TabAnalyse from "../components/lexara/TabAnalyse";
+import TabRisiko from "../components/lexara/TabRisiko";
+import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
+import TabDokumente from "../components/lexara/TabDokumente";
+import TabGesamtbewertung from "../components/lexara/TabGesamtbewertung";
+import TabVerhandlung from "../components/lexara/TabVerhandlung";
+import TabSchriftsatz from "../components/lexara/TabSchriftsatz";
+import TabCockpit from "../components/lexara/TabCockpit";
+import TabHistory from "../components/lexara/TabHistory";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
