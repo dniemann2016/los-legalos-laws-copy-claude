@@ -7,6 +7,8 @@ const DEFAULT_PROFILE = {
   usState: "CA",
   disclaimerAccepted: false,
   onboardingDone: false,
+  hasModuleAccess: false,
+  kiCredits: 0,
 };
 
 let _profile = null;
@@ -47,6 +49,8 @@ export function useUserProfile() {
             usState: user.usState || DEFAULT_PROFILE.usState,
             disclaimerAccepted: user.disclaimerAccepted || false,
             onboardingDone: user.onboardingDone || false,
+            hasModuleAccess: user.hasModuleAccess || false,
+            kiCredits: user.kiCredits || 0,
           };
           notifyAll();
         }

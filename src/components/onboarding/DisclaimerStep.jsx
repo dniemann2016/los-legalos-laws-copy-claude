@@ -23,6 +23,13 @@ const CONTENT = {
 
 6. HAFTUNGSAUSSCHLUSS KI: MachiavelLEX ist ein KI-gestütztes Entscheidungshilfe-Werkzeug. Die Plattform ersetzt keine anwaltliche Beratung und begründet kein Mandatsverhältnis. KI-Analysen ersetzen nicht das professionelle Urteil des Anwalts.
 
+7. VOLLSTÄNDIGER HAFTUNGSAUSSCHLUSS: Die Nutzung dieser Plattform erfolgt ausschließlich auf eigene Gefahr des Nutzers. Der Betreiber übernimmt keinerlei Haftung für Mängel, Fehler, Ausfälle, Datenverluste, unrichtige KI-Ausgaben oder sonstige Schäden jeglicher Art, die aus der Nutzung oder der Unmöglichkeit der Nutzung dieser Plattform entstehen – gleich ob direkte, indirekte, mittelbare oder Folgeschäden. Jegliche Gewährleistung und Haftung wird im gesetzlich maximal zulässigen Umfang ausgeschlossen. Der Betreiber haftet insbesondere nicht für:
+   • Unvollständige, fehlerhafte oder veraltete Inhalte der Plattform
+   • Entscheidungen, die auf Basis der KI-Analysen getroffen werden
+   • Technische Störungen, Serverausfälle oder Datenverluste
+   • Schäden durch unbefugten Zugriff Dritter
+   • Wirtschaftliche Nachteile oder Prozessverluste
+
 Dieser Vertrag unterliegt deutschem Recht. Gerichtsstand ist Deutschland.`,
     checkbox: "Ich habe die Nutzungsbedingungen, die Geheimhaltungsverpflichtung und die Sanktionsregelungen vollständig gelesen und erkenne diese rechtsverbindlich an.",
     btn: "Verbindlich akzeptieren & Zugang erhalten",
@@ -48,6 +55,13 @@ Dieser Vertrag unterliegt deutschem Recht. Gerichtsstand ist Deutschland.`,
 
 6. AI DISCLAIMER: MachiavelLEX is an AI-assisted decision support tool. The platform does not replace legal advice and does not establish an attorney-client relationship.
 
+7. COMPLETE LIABILITY EXCLUSION: Use of this platform is entirely at the user's own risk. The operator assumes no liability whatsoever for defects, errors, outages, data loss, inaccurate AI outputs or any other damages of any kind arising from the use or inability to use this platform – whether direct, indirect, incidental or consequential. All warranties and liability are excluded to the maximum extent permitted by law. The operator is not liable for:
+   • Incomplete, inaccurate or outdated platform content
+   • Decisions made based on AI analyses
+   • Technical failures, server outages or data loss
+   • Damages caused by unauthorized third-party access
+   • Financial losses or adverse court outcomes
+
 This agreement is governed by German law. Place of jurisdiction is Germany.`,
     checkbox: "I have fully read the terms of use, the confidentiality obligation and the penalty provisions, and I accept them as legally binding.",
     btn: "Accept Legally & Gain Access",
@@ -72,6 +86,13 @@ This agreement is governed by German law. Place of jurisdiction is Germany.`,
 5. PROTECTION DES DONNÉES : Toutes les saisies sont traitées conformément au RGPD sur des serveurs européens.
 
 6. AVERTISSEMENT IA : MachiavelLEX est un outil d'aide à la décision assisté par IA. La plateforme ne remplace pas un avis juridique.
+
+7. EXCLUSION TOTALE DE RESPONSABILITÉ : L'utilisation de cette plateforme se fait entièrement aux risques et périls de l'utilisateur. L'opérateur décline toute responsabilité pour les défauts, erreurs, pannes, pertes de données, résultats IA incorrects ou tout autre dommage de quelque nature que ce soit résultant de l'utilisation ou de l'impossibilité d'utiliser cette plateforme – qu'il s'agisse de dommages directs, indirects ou consécutifs. Toute garantie et responsabilité est exclue dans la mesure maximale permise par la loi. L'opérateur n'est pas responsable de :
+   • Contenu incomplet, inexact ou obsolète de la plateforme
+   • Décisions prises sur la base des analyses IA
+   • Défaillances techniques, pannes de serveur ou pertes de données
+   • Dommages causés par un accès non autorisé de tiers
+   • Pertes financières ou issues défavorables de procédures judiciaires
 
 Cet accord est régi par le droit allemand. Le tribunal compétent est en Allemagne.`,
     checkbox: "J'ai lu intégralement les conditions d'utilisation, l'obligation de confidentialité et les dispositions de sanction, et je les accepte comme juridiquement contraignantes.",
