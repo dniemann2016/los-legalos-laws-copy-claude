@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Calendar, AlertTriangle, Clock, Check, Download } from "lucide-react";
+import { getTByLanguage } from "../lib/jurisdictionConfig";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { exportIcal } from "@/functions/exportIcal";
 import { Link } from "react-router-dom";
 
@@ -14,14 +16,14 @@ function getStatusColor(deadline) {
   return "bg-gray-100 text-gray-600 border-gray-200";
 }
 
-function getDaysLabel(due_date, status) {
-  if (status === "erledigt") return "Erledigt";
-  if (status === "versaeumt") return "Versäumt";
+function getDaysLabel(due_date, status, t) {
+  if (status === "erledigt") return t.doneStatus;
+  if (status === "versaeumt") return t.missedStatus;
   const days = Math.ceil((new Date(due_date) - new Date()) / 86400000);
-  if (days < 0) return `${Math.abs(days)}d überfällig`;
-  if (days === 0) return "Heute";
-  if (days === 1) return "Morgen";
-  return `in ${days} Tagen`;
+  if (days < 0) return t.daysOverdueLabel(Math.abs(days));
+  if (days === 0) return t.todayLabel;
+  if (days === 1) return t.tomorrowLabel;
+  return t.inDaysLabel(days);
 }
 
 function getStatusIcon(deadline) {
@@ -32,6 +34,8 @@ function getStatusIcon(deadline) {
 }
 
 export default function Zeitleiste() {
+  const { language } = useUserProfile();
+  const t = getTByLanguage(language);
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("alle");
@@ -89,9 +93,9 @@ export default function Zeitleiste() {
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
               <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Calendar className="w-5 h-5" /> Fristen-Zeitleiste
+                <Calendar className="w-5 h-5" /> {t.timelineTitle}
               </h1>
-              <p className="text-xs text-gray-400 mt-0.5">{openCount} offen · {criticalCount} kritisch (≤14 Tage)</p>
+              <p className="text-xs text-gray-400 mt-0.5">{openCount} {t.openStatusLabel} · {criticalCount} {t.criticalStatusLabel}</p>
             </div>
             <button
               onClick={async () => {
@@ -103,14 +107,14 @@ export default function Zeitleiste() {
                 URL.revokeObjectURL(url);
               }}
               className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all">
-              <Download className="w-3.5 h-3.5" /> iCal exportieren
+              <Download className="w-3.5 h-3.5" /> {t.iCalExport}
             </button>
             <div className="flex gap-1">
-              {["alle", "offen", "kritisch", "erledigt"].map(f => (
+              {[["alle", t.filterAll], ["offen", t.filterOpen], ["kritisch", t.filterCritical], ["erledigt", t.filterCompleted]].map(([f, label]) => (
                 <button key={f} onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium capitalize transition-all
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all
                     ${filter === f ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
-                  {f === "kritisch" ? "⚠ Kritisch" : f.charAt(0).toUpperCase() + f.slice(1)}
+                  {label}
                 </button>
               ))}
             </div>
@@ -124,7 +128,7 @@ export default function Zeitleiste() {
         ) : filtered.length === 0 ? (
           <div className="text-center py-20 text-gray-400">
             <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
-            <p>Keine Fristen gefunden</p>
+            <p>{t.noDeadlinesFound}</p>
           </div>
         ) : (
           <div className="space-y-8">
@@ -154,7 +158,7 @@ export default function Zeitleiste() {
                               <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 ${colorClass}`}>
                                   {getStatusIcon(d)}
-                                  {getDaysLabel(d.due_date, d.status)}
+                                  {getDaysLabel(d.due_date, d.status, t)}
                                 </span>
                                 <span className="text-[10px] text-gray-400">
                                   {new Date(d.due_date).toLocaleDateString("de-DE")}

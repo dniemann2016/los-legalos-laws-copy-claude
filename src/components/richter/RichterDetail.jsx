@@ -2,6 +2,8 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Plus, RefreshCw, Star } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getTByLanguage } from "../../lib/jurisdictionConfig";
+import { useUserProfile } from "../../hooks/useUserProfile";
 
 const EMPTY_EXP = { datum: new Date().toISOString().split("T")[0], autor: "", fall_kontext: "", vergleichsbereitschaft: 5, entscheidungsgeschwindigkeit: 5, sachkompetenz: 5, text: "" };
 
@@ -19,6 +21,8 @@ function StarRating({ value, onChange, max = 10 }) {
 }
 
 export default function RichterDetail({ profile, cases, onBack, onUpdate }) {
+  const { language } = useUserProfile();
+  const t = getTByLanguage(language);
   const [showExpForm, setShowExpForm] = useState(false);
   const [expForm, setExpForm] = useState(EMPTY_EXP);
   const [kiLoading, setKiLoading] = useState(false);
@@ -150,7 +154,7 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
       {/* Header */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <button onClick={onBack} className="flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-700 mb-4">
-          <ArrowLeft className="w-3.5 h-3.5" /> Zurück zur Übersicht
+          <ArrowLeft className="w-3.5 h-3.5" /> {t.backToOverview}
         </button>
         <div className="flex items-start justify-between">
           <div>
@@ -181,9 +185,9 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
       {/* Erfahrungen */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-800">📝 Kanzlei-Erfahrungen ({erfahrungen.length})</h3>
+          <h3 className="text-sm font-semibold text-gray-800">📝 {t.experiencesSection} ({erfahrungen.length})</h3>
           <Button size="sm" onClick={() => setShowExpForm(!showExpForm)} className="bg-gray-900 text-white rounded-xl text-xs h-7 gap-1">
-            <Plus className="w-3 h-3" /> Erfahrung
+            <Plus className="w-3 h-3" /> {t.addExperience}
           </Button>
         </div>
 
@@ -191,20 +195,20 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
           <div className="bg-gray-50 rounded-xl p-4 mb-4 space-y-3 border border-gray-200">
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-[10px] text-gray-400 block mb-1">Datum</label>
+                <label className="text-[10px] text-gray-400 block mb-1">{t.dateLabel}</label>
                 <input type="date" className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white" value={expForm.datum} onChange={e => setExpForm({ ...expForm, datum: e.target.value })} />
               </div>
               <div>
-                <label className="text-[10px] text-gray-400 block mb-1">Autor / Anwalt</label>
+                <label className="text-[10px] text-gray-400 block mb-1">{t.authorLabel}</label>
                 <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white" placeholder="RA Müller" value={expForm.autor} onChange={e => setExpForm({ ...expForm, autor: e.target.value })} />
               </div>
             </div>
             <div>
-              <label className="text-[10px] text-gray-400 block mb-1">Fallkontext (optional)</label>
+              <label className="text-[10px] text-gray-400 block mb-1">{t.caseContextLabel}</label>
               <input className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white" placeholder="z.B. Markenrechtssache, Verhandlung 2025" value={expForm.fall_kontext} onChange={e => setExpForm({ ...expForm, fall_kontext: e.target.value })} />
             </div>
             <div className="space-y-2">
-              {[["Vergleichsbereitschaft", "vergleichsbereitschaft"], ["Entscheidungsgeschwindigkeit", "entscheidungsgeschwindigkeit"], ["Sachkompetenz", "sachkompetenz"]].map(([l, f]) => (
+              {[[t.settlementReadiness, "vergleichsbereitschaft"], [t.decisionSpeed, "entscheidungsgeschwindigkeit"], [t.expertiseLabel, "sachkompetenz"]].map(([l, f]) => (
                 <div key={f}>
                   <label className="text-[10px] text-gray-400 block mb-1">{l}</label>
                   <StarRating value={expForm[f]} onChange={v => setExpForm({ ...expForm, [f]: v })} />
@@ -212,31 +216,31 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
               ))}
             </div>
             <div>
-              <label className="text-[10px] text-gray-400 block mb-1">Erfahrungsbericht *</label>
+              <label className="text-[10px] text-gray-400 block mb-1">{t.experienceReport}</label>
               <textarea className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white" rows={3} placeholder="Was ist aufgefallen? Wie war das Verhalten in der Verhandlung?" value={expForm.text} onChange={e => setExpForm({ ...expForm, text: e.target.value })} />
             </div>
             <div className="flex gap-2">
-              <Button size="sm" onClick={saveErfahrung} disabled={saving} className="bg-gray-900 text-white rounded-xl text-xs">Speichern</Button>
-              <Button size="sm" variant="outline" onClick={() => setShowExpForm(false)} className="rounded-xl text-xs">Abbrechen</Button>
+              <Button size="sm" onClick={saveErfahrung} disabled={saving} className="bg-gray-900 text-white rounded-xl text-xs">{t.saveBtn}</Button>
+              <Button size="sm" variant="outline" onClick={() => setShowExpForm(false)} className="rounded-xl text-xs">{t.cancelBtn}</Button>
             </div>
           </div>
         )}
 
         {erfahrungen.length === 0 && !showExpForm ? (
-          <p className="text-sm text-gray-400 text-center py-6">Noch keine Erfahrungen dokumentiert.<br/><span className="text-xs">Fügen Sie die erste Erfahrung hinzu.</span></p>
+          <p className="text-sm text-gray-400 text-center py-6">{t.noExperiencesYet}<br/><span className="text-xs">{t.addFirstExperience}</span></p>
         ) : (
           <div className="space-y-3">
             {[...erfahrungen].reverse().map((e, i) => (
               <div key={i} className="border border-gray-100 rounded-xl p-3">
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-xs font-medium text-gray-700">{e.autor || "Anonym"}</span>
+                    <span className="text-xs font-medium text-gray-700">{e.autor || t.anonLabel}</span>
                     {e.fall_kontext && <span className="text-[10px] bg-gray-100 text-gray-500 rounded-full px-1.5 py-0.5">{e.fall_kontext}</span>}
                   </div>
                   <span className="text-[10px] text-gray-400">{e.datum}</span>
                 </div>
                 <div className="grid grid-cols-3 gap-2 mb-2">
-                  {[["Vergleich", e.vergleichsbereitschaft], ["Geschwindigkeit", e.entscheidungsgeschwindigkeit], ["Sachkompetenz", e.sachkompetenz]].map(([l, v]) => (
+                  {[[t.settlementBar, e.vergleichsbereitschaft], [t.speedBar, e.entscheidungsgeschwindigkeit], [t.expertiseLabel, e.sachkompetenz]].map(([l, v]) => (
                     <div key={l}>
                       <p className="text-[10px] text-gray-400">{l}</p>
                       <div className="flex items-center gap-1">
@@ -256,30 +260,30 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
       {/* KI-Analyse */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-sm font-semibold text-gray-800">🤖 KI-Taktikanalyse</h3>
+          <h3 className="text-sm font-semibold text-gray-800">🤖 {t.kiTacticsTitle}</h3>
           <Button onClick={runKIAnalyse} disabled={kiLoading} className="bg-gray-900 text-white rounded-xl text-xs h-8 gap-1.5">
-            {kiLoading ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> Analysiere...</> : <><Star className="w-3.5 h-3.5" /> {ki ? "Neu analysieren" : "Analyse starten"}</>}
+            {kiLoading ? <><RefreshCw className="w-3.5 h-3.5 animate-spin" /> {t.analyzingBtn}</> : <><Star className="w-3.5 h-3.5" /> {ki ? t.reanalyzeBtn : t.startAnalysisBtn}</>}
           </Button>
         </div>
 
         {!ki && !kiLoading && (
-          <p className="text-sm text-gray-400 text-center py-6">Starten Sie die KI-Analyse um taktische Empfehlungen auf Basis des Profils und der Kanzlei-Erfahrungen zu erhalten.</p>
+          <p className="text-sm text-gray-400 text-center py-6">{t.kiAnalysisHint}</p>
         )}
 
         {ki && (
           <div className="space-y-4">
-            {ki.erstellt && <p className="text-[10px] text-gray-400">Letzte Analyse: {new Date(ki.erstellt).toLocaleString("de-DE")} · ⚠️ Diese Analyse verwendet Gemini Pro mit Internetsuche (mehr KI-Credits)</p>}
+            {ki.erstellt && <p className="text-[10px] text-gray-400">{t.lastAnalysis}: {new Date(ki.erstellt).toLocaleString("de-DE")} · {t.kiCreditWarning}</p>}
 
             {ki.zusammenfassung && (
               <div className="bg-gray-50 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-600 mb-1">📊 Zusammenfassung</p>
+                <p className="text-xs font-semibold text-gray-600 mb-1">{t.summaryLabel}</p>
                 <p className="text-sm text-gray-700">{ki.zusammenfassung}</p>
               </div>
             )}
 
             {(ki.gefundene_urteile || []).length > 0 && (
               <div className="bg-white border border-gray-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-700 mb-3">🔍 Gefundene Urteile & Entscheidungen ({ki.gefundene_urteile.length})</p>
+                <p className="text-xs font-semibold text-gray-700 mb-3">{t.foundRulingsLabel} ({ki.gefundene_urteile.length})</p>
                 <div className="space-y-3">
                   {ki.gefundene_urteile.map((u, i) => (
                     <div key={i} className="border border-gray-100 rounded-lg p-3 bg-gray-50">
@@ -291,7 +295,7 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
                         {u.quelle && <a href={u.quelle.startsWith("http") ? u.quelle : undefined} target="_blank" rel="noopener noreferrer" className="text-[10px] text-blue-500 hover:underline truncate max-w-[120px]">{u.quelle}</a>}
                       </div>
                       {u.streitgegenstand && <p className="text-xs font-medium text-gray-800 mb-1">{u.streitgegenstand}</p>}
-                      {u.ergebnis && <p className="text-xs text-gray-600 mb-1"><span className="font-medium">Ergebnis:</span> {u.ergebnis}</p>}
+                      {u.ergebnis && <p className="text-xs text-gray-600 mb-1"><span className="font-medium">{t.resultLabel}:</span> {u.ergebnis}</p>}
                       {u.argumentationsweise && <p className="text-xs text-gray-500 italic">→ {u.argumentationsweise}</p>}
                     </div>
                   ))}
@@ -301,21 +305,21 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
 
             {(ki.argumentationsmuster || []).length > 0 && (
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-amber-700 mb-2">🧠 Typische Argumentationsmuster</p>
+                <p className="text-xs font-semibold text-amber-700 mb-2">{t.argumentationPatternsLabel}</p>
                 <ul className="space-y-1">{ki.argumentationsmuster.map((m, i) => <li key={i} className="text-xs text-amber-800">• {m}</li>)}</ul>
               </div>
             )}
 
             {(ki.bevorzugte_normen || []).length > 0 && (
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
-                <p className="text-xs font-semibold text-gray-600 mb-2">§ Bevorzugte Rechtsnormen</p>
+                <p className="text-xs font-semibold text-gray-600 mb-2">{t.preferredNormsLabel}</p>
                 <div className="flex flex-wrap gap-1.5">{ki.bevorzugte_normen.map((n, i) => <span key={i} className="text-[10px] bg-white border border-gray-200 rounded px-2 py-0.5 text-gray-700 font-mono">{n}</span>)}</div>
               </div>
             )}
 
             {(ki.haltung_zu_argumenten || []).length > 0 && (
               <div className="bg-white border border-gray-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-700 mb-3">⚖️ Haltung zu Argumenttypen</p>
+                <p className="text-xs font-semibold text-gray-700 mb-3">{t.argumentStanceLabel}</p>
                 <div className="space-y-2">
                   {ki.haltung_zu_argumenten.map((h, i) => (
                     <div key={i} className="flex items-start gap-3">
@@ -338,7 +342,7 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
 
             {(ki.bevorzugte_antragstypen || []).length > 0 && (
               <div className="bg-indigo-50 border border-indigo-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-indigo-700 mb-3">📋 Bevorzugte Antragstypen</p>
+                <p className="text-xs font-semibold text-indigo-700 mb-3">{t.preferredMotionsLabel}</p>
                 <div className="space-y-2">
                   {ki.bevorzugte_antragstypen.map((a, i) => (
                     <div key={i} className="bg-white rounded-lg p-2.5">
@@ -355,7 +359,7 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
 
             {ki.schadensersatz_bandbreite && (
               <div className="bg-amber-50 border border-amber-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-amber-700 mb-2">💶 Schadensersatz / Urteilsbandbreite</p>
+                <p className="text-xs font-semibold text-amber-700 mb-2">{t.damageRangeLabel}</p>
                 {ki.schadensersatz_bandbreite.typischer_bereich && (
                   <p className="text-sm font-bold text-amber-900 mb-2">{ki.schadensersatz_bandbreite.typischer_bereich}</p>
                 )}
@@ -370,7 +374,7 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
 
             {ki.umgang_beweismittel && (
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                <p className="text-xs font-semibold text-blue-700 mb-1">📜 Umgang mit Beweismitteln</p>
+                <p className="text-xs font-semibold text-blue-700 mb-1">{t.evidenceHandlingLabel}</p>
                 <p className="text-xs text-blue-800">{ki.umgang_beweismittel}</p>
               </div>
             )}
@@ -378,13 +382,13 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               {(ki.staerken_klaeger || []).length > 0 && (
                 <div className="bg-green-50 border border-green-100 rounded-xl p-3">
-                  <p className="text-xs font-semibold text-green-700 mb-2">✅ Stärken für Kläger</p>
+                  <p className="text-xs font-semibold text-green-700 mb-2">{t.plaintiffStrengthsLabel}</p>
                   <ul className="space-y-1">{ki.staerken_klaeger.map((s, i) => <li key={i} className="text-xs text-green-800">• {s}</li>)}</ul>
                 </div>
               )}
               {(ki.risiken_klaeger || []).length > 0 && (
                 <div className="bg-red-50 border border-red-100 rounded-xl p-3">
-                  <p className="text-xs font-semibold text-red-700 mb-2">⚠️ Risiken für Kläger</p>
+                  <p className="text-xs font-semibold text-red-700 mb-2">{t.plaintiffRisksLabel}</p>
                   <ul className="space-y-1">{ki.risiken_klaeger.map((r, i) => <li key={i} className="text-xs text-red-800">• {r}</li>)}</ul>
                 </div>
               )}
@@ -394,13 +398,13 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {(ki.do_dont.dos || []).length > 0 && (
                   <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-blue-700 mb-2">👍 DO</p>
+                    <p className="text-xs font-semibold text-blue-700 mb-2">{t.doLabel}</p>
                     <ul className="space-y-1">{ki.do_dont.dos.map((d, i) => <li key={i} className="text-xs text-blue-800">✓ {d}</li>)}</ul>
                   </div>
                 )}
                 {(ki.do_dont.donts || []).length > 0 && (
                   <div className="bg-orange-50 border border-orange-100 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-orange-700 mb-2">👎 DON'T</p>
+                    <p className="text-xs font-semibold text-orange-700 mb-2">{t.dontLabel}</p>
                     <ul className="space-y-1">{ki.do_dont.donts.map((d, i) => <li key={i} className="text-xs text-orange-800">✗ {d}</li>)}</ul>
                   </div>
                 )}
@@ -409,7 +413,7 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
 
             {(ki.verhandlungstipps || []).length > 0 && (
               <div className="bg-white border border-gray-100 rounded-xl p-4">
-                <p className="text-xs font-semibold text-gray-700 mb-3">💡 Verhandlungstipps</p>
+                <p className="text-xs font-semibold text-gray-700 mb-3">{t.tacticalTipsLabel}</p>
                 <div className="space-y-3">
                   {ki.verhandlungstipps.map((t, i) => (
                     <div key={i} className="flex gap-3">
@@ -426,21 +430,21 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
 
             {ki.vergleichsstrategie && (
               <div className="bg-purple-50 border border-purple-100 rounded-xl p-3">
-                <p className="text-xs font-semibold text-purple-700 mb-1">🤝 Vergleichsstrategie</p>
+                <p className="text-xs font-semibold text-purple-700 mb-1">{t.settlementStrategyLabel}</p>
                 <p className="text-xs text-purple-800">{ki.vergleichsstrategie}</p>
               </div>
             )}
 
             {ki.timing_empfehlung && (
               <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                <p className="text-xs font-semibold text-blue-700 mb-1">⏰ Timing</p>
+                <p className="text-xs font-semibold text-blue-700 mb-1">{t.timingLabel}</p>
                 <p className="text-xs text-blue-800">{ki.timing_empfehlung}</p>
               </div>
             )}
 
             {ki.gesamteinschaetzung && (
               <div className="bg-gray-900 text-white rounded-xl p-4">
-                <p className="text-xs font-semibold mb-1">🎯 Gesamteinschätzung</p>
+                <p className="text-xs font-semibold mb-1">{t.overallAssessmentLabel}</p>
                 <p className="text-sm">{ki.gesamteinschaetzung}</p>
               </div>
             )}

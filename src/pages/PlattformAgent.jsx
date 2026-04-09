@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
+import { getTByLanguage } from "../lib/jurisdictionConfig";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { ArrowLeft, Bot, Send, Zap, TrendingUp, Target, ChevronRight } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
@@ -48,6 +50,8 @@ function MessageBubble({ message }) {
 }
 
 export default function PlattformAgent() {
+  const { language } = useUserProfile();
+  const t = getTByLanguage(language);
   const [conversations, setConversations] = useState([]);
   const [activeConv, setActiveConv] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -127,7 +131,7 @@ export default function PlattformAgent() {
           </div>
           <button onClick={() => startNewConversation(null)}
             className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors">
-            + Neue Sitzung
+            {t.newSession}
           </button>
         </div>
       </div>
@@ -136,13 +140,13 @@ export default function PlattformAgent() {
         {/* Sidebar */}
         <div className="w-56 border-r border-gray-100 bg-white flex-shrink-0 hidden md:flex flex-col">
           <div className="p-3 border-b border-gray-50">
-            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">Sitzungen</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-wider">{t.sessionsLabel}</p>
           </div>
           <div className="flex-1 overflow-y-auto">
             {loadingConvs ? (
               <p className="text-xs text-gray-400 p-3">Laden…</p>
             ) : conversations.length === 0 ? (
-              <p className="text-xs text-gray-400 p-3">Noch keine Sitzungen</p>
+              <p className="text-xs text-gray-400 p-3">{t.noSessionsYet}</p>
             ) : (
               conversations.map(c => (
                 <button key={c.id} onClick={() => { setActiveConv(c); setMessages(c.messages || []); }}
@@ -162,9 +166,9 @@ export default function PlattformAgent() {
               <div className="w-14 h-14 bg-gray-900 rounded-2xl flex items-center justify-center mb-4">
                 <Target className="w-7 h-7 text-white" />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-1">Plattform-Optimierer</h2>
+              <h2 className="text-xl font-bold text-gray-900 mb-1">{t.platformAgentTitle}</h2>
               <p className="text-sm text-gray-500 text-center mb-8 max-w-md">
-                Der KI-Agent analysiert Ihre Kanzleidaten, identifiziert Lücken und setzt Verbesserungen direkt um – bis MachiavelLEX für Großkanzleien unverzichtbar ist.
+                {t.platformAgentDesc}
               </p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 w-full max-w-xl mb-6">
                 {STARTER_PROMPTS.map((s) => (
@@ -180,7 +184,7 @@ export default function PlattformAgent() {
               <div className="flex items-center gap-2 w-full max-w-xl">
                 <input value={input} onChange={e => setInput(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-                  placeholder="Eigene Aufgabe eingeben…"
+                  placeholder={t.customTaskPlaceholder}
                   className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm bg-white outline-none focus:border-gray-400" />
                 <button onClick={handleSend} disabled={!input.trim()}
                   className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center disabled:opacity-40 hover:bg-gray-700 transition-colors">
@@ -215,14 +219,14 @@ export default function PlattformAgent() {
                 <div className="flex gap-2">
                   <input value={input} onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && !e.shiftKey && handleSend()}
-                    placeholder="Nächste Aufgabe für den Agenten…"
+                    placeholder={t.nextTaskPlaceholder}
                     className="flex-1 border border-gray-200 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-gray-400" />
                   <button onClick={handleSend} disabled={!input.trim() || sending}
                     className="w-10 h-10 bg-gray-900 rounded-xl flex items-center justify-center disabled:opacity-40 hover:bg-gray-700 transition-colors">
                     <Send className="w-4 h-4 text-white" />
                   </button>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1.5 text-center">Der Agent kann Richterprofile, Argumente und Fristen direkt erstellen & bearbeiten.</p>
+                <p className="text-[10px] text-gray-400 mt-1.5 text-center">{t.agentNote}</p>
               </div>
             </>
           )}

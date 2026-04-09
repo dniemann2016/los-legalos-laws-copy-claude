@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
+import { getTByLanguage } from "../lib/jurisdictionConfig";
+import { useUserProfile } from "../hooks/useUserProfile";
 import { ArrowLeft, ChevronRight, AlertTriangle, TrendingUp, Scale, Clock } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 
@@ -28,6 +30,8 @@ function KpiCard({ icon: Icon, label, value, sub, accent }) {
 
 export default function KanzleiCockpit() {
   const navigate = useNavigate();
+  const { language } = useUserProfile();
+  const t = getTByLanguage(language);
   const [cases, setCases] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -84,13 +88,13 @@ export default function KanzleiCockpit() {
             </Link>
             <div className="w-px h-4 bg-slate-200" />
             <div>
-              <h1 className="text-sm font-bold text-slate-900">Kanzlei-Cockpit</h1>
-              <p className="text-[11px] text-slate-400">Portfolio-Übersicht · {cases.length} Mandate</p>
+              <h1 className="text-sm font-bold text-slate-900">{t.cockpitTitle}</h1>
+              <p className="text-[11px] text-slate-400">{t.portfolioSub(cases.length)}</p>
             </div>
           </div>
           <Link to="/lexara"
             className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
-            + Neuer Fall
+            {t.newCaseLinkLabel}
           </Link>
         </div>
       </div>
@@ -98,23 +102,23 @@ export default function KanzleiCockpit() {
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
         {/* KPIs */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KpiCard icon={Scale} label="Aktive Fälle" value={aktiv.length} sub={`${cases.length} Mandate gesamt`} accent="bg-blue-50" />
-          <KpiCard icon={TrendingUp} label="Gesamtstreitwert" value={`${(gesamtStreitwert / 1000000).toFixed(1)}M€`} sub="alle Mandate" accent="bg-emerald-50" />
-          <KpiCard icon={TrendingUp} label="Ø Erfolgsprognose" value={`${avgPrognose}%`} sub="gewichteter Durchschnitt" accent="bg-amber-50" />
-          <KpiCard icon={AlertTriangle} label="Überfällige Fristen" value={ueberfaellig.length}
-            sub={ueberfaellig.length > 0 ? "Sofort handeln" : "Alles im Plan"} accent={ueberfaellig.length > 0 ? "bg-red-50" : "bg-green-50"} />
+          <KpiCard icon={Scale} label={t.aktiveFaelleLabel} value={aktiv.length} sub={`${cases.length} ${t.allMandatesSub}`} accent="bg-blue-50" />
+          <KpiCard icon={TrendingUp} label={t.totalClaimLabel} value={`${(gesamtStreitwert / 1000000).toFixed(1)}M€`} sub={t.allMandatesSub} accent="bg-emerald-50" />
+          <KpiCard icon={TrendingUp} label={t.avgPrognosisLabel} value={`${avgPrognose}%`} sub={t.weightedAvgSub} accent="bg-amber-50" />
+          <KpiCard icon={AlertTriangle} label={t.overdueDeadlinesLabel} value={ueberfaellig.length}
+            sub={ueberfaellig.length > 0 ? t.actNow : t.allOnTrack} accent={ueberfaellig.length > 0 ? "bg-red-50" : "bg-green-50"} />
         </div>
 
         {/* Charts row */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <div className="bg-white rounded-xl border border-slate-100 p-5">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">Risikoverteilung</p>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.risikoverteilung}</p>
             <ResponsiveContainer width="100%" height={140}>
               <PieChart>
                 <Pie data={risikoVerteilung} cx="50%" cy="50%" innerRadius={38} outerRadius={58} dataKey="value" paddingAngle={3}>
                   {risikoVerteilung.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                 </Pie>
-                <Tooltip formatter={(v, n) => [v + " Fälle", n]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <Tooltip formatter={(v, n) => [v + ` ${t.casesLabelShort}`, n]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
             <div className="flex justify-center gap-4 mt-2">
@@ -128,12 +132,12 @@ export default function KanzleiCockpit() {
           </div>
 
           <div className="md:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">Fälle nach Rechtsgebiet</p>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.faelleNachRechtsgebiet}</p>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={rechtsgebietData} layout="vertical" margin={{ left: 8 }}>
                 <XAxis type="number" hide />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} width={110} />
-                <Tooltip formatter={v => [v + " Fälle"]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <Tooltip formatter={v => [v + ` ${t.casesLabelShort}`]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
                 <Bar dataKey="value" fill="#1a3560" radius={[0, 4, 4, 0]} />
               </BarChart>
             </ResponsiveContainer>
@@ -145,10 +149,10 @@ export default function KanzleiCockpit() {
           <div className="bg-white rounded-xl border border-red-100 p-5">
             <div className="flex items-center gap-2 mb-4">
               <AlertTriangle className="w-4 h-4 text-red-500" />
-              <p className="text-[11px] font-semibold text-red-600 uppercase tracking-widest">Hochrisiko-Fälle (aktiv)</p>
+              <p className="text-[11px] font-semibold text-red-600 uppercase tracking-widest">{t.highRiskLabel}</p>
             </div>
             {hochrisikoFaelle.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Keine Hochrisiko-Fälle aktiv ✓</p>
+              <p className="text-xs text-slate-400 py-4 text-center">{t.noHighRisk}</p>
             ) : (
               <div className="space-y-2">
                 {hochrisikoFaelle.map(c => (
@@ -171,10 +175,10 @@ export default function KanzleiCockpit() {
           <div className="bg-white rounded-xl border border-green-100 p-5">
             <div className="flex items-center gap-2 mb-4">
               <TrendingUp className="w-4 h-4 text-green-600" />
-              <p className="text-[11px] font-semibold text-green-700 uppercase tracking-widest">Top-Chancen (aktiv)</p>
+              <p className="text-[11px] font-semibold text-green-700 uppercase tracking-widest">{t.topChancesLabel}</p>
             </div>
             {topChancen.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">Noch keine Fälle mit hoher Prognose</p>
+              <p className="text-xs text-slate-400 py-4 text-center">{t.noTopChancesText}</p>
             ) : (
               <div className="space-y-2">
                 {topChancen.map(c => (
@@ -200,12 +204,12 @@ export default function KanzleiCockpit() {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Clock className="w-4 h-4 text-slate-400" />
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Nächste Fristen</p>
+              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{t.nextDeadlinesLabel}</p>
             </div>
-            <Link to="/zeitleiste" className="text-[11px] text-[#1a3560] font-semibold hover:opacity-70 transition-opacity">Alle anzeigen →</Link>
+            <Link to="/zeitleiste" className="text-[11px] text-[#1a3560] font-semibold hover:opacity-70 transition-opacity">{t.showAllLink}</Link>
           </div>
           {naechsteFristen.length === 0 ? (
-            <p className="text-xs text-slate-400 py-4 text-center">Keine offenen Fristen ✓</p>
+            <p className="text-xs text-slate-400 py-4 text-center">{t.noOpenDeadlinesText}</p>
           ) : (
             <div className="divide-y divide-slate-50">
               {naechsteFristen.map((d, i) => {
@@ -215,7 +219,7 @@ export default function KanzleiCockpit() {
                 return (
                   <div key={i} className="flex items-center justify-between py-2.5">
                     <div className="flex items-center gap-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md min-w-[32px] text-center ${urgency}`}>{days}T</span>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md min-w-[32px] text-center ${urgency}`}>{days}{language === "EN" ? "d" : language === "FR" ? "j" : "T"}</span>
                       <div>
                         <p className="text-xs font-medium text-slate-800">{d.title}</p>
                         <p className="text-[10px] text-slate-400">{c?.fallname || "—"}{d.frist_type ? ` · ${d.frist_type}` : ""}</p>
@@ -232,14 +236,14 @@ export default function KanzleiCockpit() {
         {/* Mandats-Tabelle */}
         <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
           <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">Alle Mandate</p>
-            <span className="text-[11px] text-slate-400">{cases.length} Einträge</span>
+            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{t.allMandatesLabel}</p>
+            <span className="text-[11px] text-slate-400">{t.entriesLabel(cases.length)}</span>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-slate-50">
-                  {["", "Fall", "Rechtsgebiet", "Gericht", "Streitwert", "Prognose", "Status", ""].map((h, i) => (
+                  {["", t.tableHeaderCase, t.rechtsgebiet, t.tableHeaderCourt, t.tableHeaderClaimValue, t.prognose, t.tableHeaderStatus, ""].map((h, i) => (
                     <th key={i} className="px-4 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider">{h}</th>
                   ))}
                 </tr>

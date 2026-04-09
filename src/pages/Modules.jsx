@@ -84,8 +84,8 @@ export default function Modules() {
 
         {/* Footer */}
         <div className="mt-10 pt-6 border-t border-slate-200 flex items-center justify-between">
-          <p className="text-[11px] text-slate-400">© 2026 MachiavelLEX · Alle Rechte vorbehalten</p>
-          <p className="text-[11px] text-slate-400">DSGVO-konform · EU-Server</p>
+          <p className="text-[11px] text-slate-400">{t.copyright}</p>
+          <p className="text-[11px] text-slate-400">{t.dsgvo}</p>
         </div>
       </div>
     </div>
