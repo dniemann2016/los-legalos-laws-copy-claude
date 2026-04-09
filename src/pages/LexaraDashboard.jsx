@@ -112,10 +112,10 @@ export default function LexaraDashboard() {
     setLoading(true);
     const [cs, args, evs, pers, deadlines] = await Promise.all([
       base44.entities.Case.list("-created_date"),
-      base44.entities.Argument.list(),
-      base44.entities.Evidence.list(),
-      base44.entities.Person.list(),
-      base44.entities.Deadline.list(),
+      base44.entities.Argument.filter({}),
+      base44.entities.Evidence.filter({}),
+      base44.entities.Person.filter({}),
+      base44.entities.Deadline.filter({}),
     ]);
     setCases(cs);
     const counts = {};
