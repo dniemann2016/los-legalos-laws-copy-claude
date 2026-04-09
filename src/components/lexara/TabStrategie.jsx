@@ -252,7 +252,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
           <div className="mt-4">
             <h4 className="text-xs font-semibold text-gray-700 mb-2">Taktische Einschätzung</h4>
             <div className="space-y-2">
-              {[["Historische Konsistenz",Math.min(99,prognose+6)],["Kompetenzniveau",Math.min(99,prognose+15)],["Interessenkonflikt",Math.min(99,prognose+19)],["Verborgene Motive",Math.min(99,prognose+19)],["Selbstschutz",Math.min(99,prognose+2)],["Angstfaktor",Math.min(99,prognose+12)]].map(([l,v]) => (
+              {[["Historische Konsistenz",Math.round(prognose*0.85)],["Kompetenzniveau",Math.round(prognose*0.75)],["Interessenkonflikt",Math.round(Math.max(20,prognose-15))],["Verborgene Motive",Math.round(Math.max(15,prognose-20))],["Selbstschutz",Math.round(prognose*0.60)],["Angstfaktor",Math.round(prognose*0.70)]].map(([l,v]) => (
                 <div key={l} className="flex items-center gap-3">
                   <span className="text-xs text-gray-500 w-40">{l}</span>
                   <div className="flex-1 h-1.5 bg-gray-100 rounded-full overflow-hidden"><div className="h-full bg-green-700 rounded-full" style={{width:`${v}%`}} /></div>
