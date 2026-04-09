@@ -10,20 +10,34 @@ const DEFAULT_PROFILE = {
 };
 
 let _profile = null;
+let _loading = true;
 let _setters = [];
+let _loadingSetters = [];
+
+function notifyLoadingAll() {
+  _loadingSetters.forEach(fn => fn(_loading));
+}
 
 function notifyAll() {
   _setters.forEach(fn => fn({ ..._profile }));
 }
 
+
 export function useUserProfile() {
   const [profile, setProfile] = useState(_profile || DEFAULT_PROFILE);
+  const [isLoading, setIsLoading] = useState(_loading);
 
   useEffect(() => {
     _setters.push(setProfile);
-    if (!_profile) {
+    _loadingSetters.push(setIsLoading);
+
+    if (_loading) {
       base44.auth.isAuthenticated().then(authed => {
-        if (!authed) return;
+        if (!authed) {
+          _loading = false;
+          notifyLoadingAll();
+          return null;
+        }
         return base44.auth.me();
       }).then(user => {
         if (user) {
@@ -36,10 +50,17 @@ export function useUserProfile() {
           };
           notifyAll();
         }
-      }).catch(() => {});
+        _loading = false;
+        notifyLoadingAll();
+      }).catch(() => {
+        _loading = false;
+        notifyLoadingAll();
+      });
     }
+
     return () => {
       _setters = _setters.filter(fn => fn !== setProfile);
+      _loadingSetters = _loadingSetters.filter(fn => fn !== setIsLoading);
     };
   }, []);
 
@@ -77,6 +98,7 @@ export function useUserProfile() {
 
   return {
     ...profile,
+    isLoadingProfile: isLoading,
     setLanguage,
     setJurisdiction,
     setUsState,

@@ -1,9 +1,9 @@
 import { Languages, ArrowLeft } from "lucide-react";
 
 const LANGUAGES = [
-  { code: "DE", label: "Deutsch", flag: "🇩🇪", sub: "German" },
-  { code: "EN", label: "English", flag: "🇬🇧", sub: "English" },
-  { code: "FR", label: "Français", flag: "🇫🇷", sub: "French" },
+  { code: "DE", label: "Deutsch", flag: "🇩🇪", sub: "German", notice: null },
+  { code: "EN", label: "English", flag: "🇬🇧", sub: "English", notice: "🚧 Platform is currently displayed mostly in German. Full English translation is in progress." },
+  { code: "FR", label: "Français", flag: "🇫🇷", sub: "French", notice: "🚧 La plateforme s'affiche actuellement principalement en allemand. La traduction complète est en cours." },
 ];
 
 const TITLES = {
@@ -31,9 +31,12 @@ export default function LanguageStep({ language, onSelect, onBack }) {
                 : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
             }`}>
             <span className="text-2xl">{lang.flag}</span>
-            <div>
+            <div className="flex-1">
               <p className="text-sm font-semibold text-slate-900">{lang.label}</p>
               <p className="text-xs text-slate-400">{lang.sub}</p>
+              {lang.notice && (
+                <p className="text-[10px] text-amber-600 font-medium mt-0.5">{lang.notice}</p>
+              )}
             </div>
             {language === lang.code && (
               <div className="ml-auto w-4 h-4 rounded-full bg-[#1a3560] flex items-center justify-center">

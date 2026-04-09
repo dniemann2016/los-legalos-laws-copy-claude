@@ -24,7 +24,7 @@ import { useUserProfile } from './hooks/useUserProfile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
-  const { onboardingDone, disclaimerAccepted } = useUserProfile();
+  const { onboardingDone, disclaimerAccepted, isLoadingProfile } = useUserProfile();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -41,6 +41,14 @@ const AuthenticatedApp = () => {
       navigateToLogin();
       return null;
     }
+  }
+
+  if (isLoadingProfile) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-muted border-t-foreground rounded-full animate-spin" />
+      </div>
+    );
   }
 
   if (!onboardingDone || !disclaimerAccepted) {
