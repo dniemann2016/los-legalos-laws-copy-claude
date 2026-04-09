@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { Button } from "@/components/ui/button";
+import { Info } from "lucide-react";
 
 function PrognoseCircle({ value }) {
   const r = 42, circ = 2 * Math.PI * r, offset = circ - (value/100)*circ;
