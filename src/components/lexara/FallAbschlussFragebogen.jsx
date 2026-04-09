@@ -59,6 +59,7 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [mode, setMode] = useState(null); // null, 'quick', 'detailed'
 
   const set = (key, val) => setForm(f => ({ ...f, [key]: val }));
 
@@ -94,10 +95,33 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
             <CheckCircle2 className="w-12 h-12 text-green-500" />
             <p className="text-base font-semibold text-gray-800">Fragebogen gespeichert!</p>
           </div>
+        ) : mode === null ? (
+          <div className="flex-1 flex flex-col items-center justify-center gap-4 p-8">
+            <p className="text-sm text-gray-600 text-center">Wie möchte Sie die KI-Empfehlungen bewerten?</p>
+            <div className="space-y-3 w-full">
+              <button
+                onClick={() => setMode('quick')}
+                className="w-full py-4 rounded-xl border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 transition-all text-left">
+                <p className="font-semibold text-gray-900 mb-1">⚡ Schnell-Bewertung</p>
+                <p className="text-xs text-gray-500">Ja / Nein Fragen – 2 Minuten</p>
+              </button>
+              <button
+                onClick={() => setMode('detailed')}
+                className="w-full py-4 rounded-xl border-2 border-gray-200 hover:border-green-300 hover:bg-green-50 transition-all text-left">
+                <p className="font-semibold text-gray-900 mb-1">📋 Detaillierte Bewertung</p>
+                <p className="text-xs text-gray-500">Detaillierte Kritik & Verbesserungen – 10 Minuten</p>
+              </button>
+            </div>
+          </div>
         ) : (
           <>
             <div className="flex-1 overflow-y-auto p-4 space-y-3">
-              {/* Ja/Nein Fragen */}
+              {/* Modus-Header */}
+              <div className="bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+                <p className="text-xs font-semibold text-blue-700">{mode === 'quick' ? '⚡ Schnell-Bewertung' : '📋 Detaillierte Bewertung'}</p>
+              </div>
+
+              {/* Ja/Nein Fragen – zeige immer */}
               <Sektion title="Schnell-Bewertung (Ja / Nein)" defaultOpen={true}>
                 <JaNein label="Prozessziel erreicht?" value={form.ziel_erreicht} onChange={v => set("ziel_erreicht", v)} />
                 <JaNein label="Mandant zufrieden?" value={form.mandant_zufrieden} onChange={v => set("mandant_zufrieden", v)} />
@@ -107,7 +131,8 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
                 <JaNein label="KI-Prognose war zutreffend?" value={form.ki_prognose_korrekt} onChange={v => set("ki_prognose_korrekt", v)} />
               </Sektion>
 
-              {/* Detailangaben */}
+              {/* Detailangaben – nur bei detailed mode */}
+              {mode === 'detailed' && (
               <Sektion title="Detaillierte Angaben">
                 <div className="pt-2 space-y-4">
                   <TextFeld label="Ergebnis / Urteil" value={form.ergebnis_urteil} onChange={v => set("ergebnis_urteil", v)}
@@ -121,7 +146,8 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
                 </div>
               </Sektion>
 
-              {/* Zahlen */}
+              {/* Kennzahlen – nur bei detailed mode */}
+              {mode === 'detailed' && (
               <Sektion title="Kennzahlen">
                 <div className="pt-3 space-y-4">
                   <div className="space-y-2">
@@ -155,10 +181,32 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
                   </div>
                 </div>
               </Sektion>
+              )}
+
+              {/* KI-Kritik – nur bei detailed mode */}
+              {mode === 'detailed' && (
+              <Sektion title="Kritik & Verbesserungen (KI-Empfehlungen)" defaultOpen={true}>
+                <div className="pt-2 space-y-4">
+                  <TextFeld label="Kritik an KI-Berater" value={form.ki_berater_kritik} onChange={v => set("ki_berater_kritik", v)}
+                    placeholder="Welche Empfehlungen waren falsch oder missleitet? Was hätte die KI besser analysieren sollen?" />
+                  <TextFeld label="Kritik an KI-Prognose" value={form.ki_prognose_kritik} onChange={v => set("ki_prognose_kritik", v)}
+                    placeholder="War die Erfolgswahrscheinlichkeit zu hoch/niedrig? Fehlende Risiko-Faktoren?" />
+                  <TextFeld label="Kritik an Strategieanalyse" value={form.ki_strategie_kritik} onChange={v => set("ki_strategie_kritik", v)}
+                    placeholder="Welche Strategien waren ineffektiv? Was hätte besser funktioniert?" />
+                  <TextFeld label="Allgemeine Verbesserungen" value={form.ki_verbesserungen} onChange={v => set("ki_verbesserungen", v)}
+                    placeholder="Wie könnte die KI in zukünftigen Fällen besser unterstützen?" />
+                </div>
+              </Sektion>
+              )}
             </div>
 
             {/* Footer */}
             <div className="px-5 py-4 border-t border-gray-100 flex gap-3">
+              {mode !== null && (
+                <button onClick={() => setMode(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
+                  Zurück
+                </button>
+              )}
               <button onClick={onClose} className="flex-1 py-3 rounded-xl border border-gray-200 text-sm text-gray-500 hover:bg-gray-50 transition-colors">
                 Überspringen
               </button>

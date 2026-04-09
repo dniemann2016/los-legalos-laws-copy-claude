@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { ChevronDown, Search, Filter, Download } from "lucide-react";
+import { ChevronDown, Search, Filter, Download, Sparkles } from "lucide-react";
 
 const ENTITY_ICONS = {
   Argument: "⚖️",
@@ -126,11 +126,13 @@ function TimelineEntry({ entry, expanded, onToggle }) {
 
 export default function TabHistory({ caseId }) {
   const [history, setHistory] = useState([]);
+  const [caseData, setCaseData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [expandedId, setExpandedId] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterType, setFilterType] = useState("all");
   const [filterAction, setFilterAction] = useState("all");
+  const [expandedSummary, setExpandedSummary] = useState(null);
 
   useEffect(() => {
     loadHistory();
@@ -138,8 +140,12 @@ export default function TabHistory({ caseId }) {
 
   const loadHistory = async () => {
     setLoading(true);
-    const entries = await base44.entities.CaseHistory.filter({ case_id: caseId }, "-timestamp", 100);
+    const [entries, cs] = await Promise.all([
+      base44.entities.CaseHistory.filter({ case_id: caseId }, "-timestamp", 100),
+      base44.entities.Case.filter({ id: caseId }),
+    ]);
     setHistory(entries);
+    setCaseData(cs[0] || null);
     setLoading(false);
   };
 
@@ -188,8 +194,80 @@ export default function TabHistory({ caseId }) {
     );
   }
 
+  const STEP_SUMMARIES = [
+    { step: 1, label: "Basisdaten", icon: "📋", desc: "Fallname, Gericht, Rechtsgebiet, Richter" },
+    { step: 2, label: "Argumente & Beweise", icon: "⚖️", desc: "Eigene & Gegner-Argumente mit Gewichtung" },
+    { step: 3, label: "Personen", icon: "👤", desc: "Richter, Zeugen, Sachverständige" },
+    { step: 4, label: "Fristen", icon: "⏰", desc: "Verfahrensfristen und Deadlines" },
+    { step: 5, label: "Strategie", icon: "🎯", desc: "Taktische Planung und Prognose" },
+    { step: 6, label: "KI-Berater", icon: "🧠", desc: "KI-Analyse Gegner & Verhandlungsszenarien" },
+    { step: 7, label: "Analyse", icon: "📊", desc: "Kosten-Nutzen & Rechtsprechung" },
+    { step: 8, label: "Risiken", icon: "⚠️", desc: "Risiko-Bewertung mit KI" },
+    { step: 9, label: "Simulation", icon: "🎮", desc: "Verhandlungs-Simulation" },
+    { step: 10, label: "Dokumente", icon: "📄", desc: "Hochgeladene Dokumente & Schriftsätze" },
+    { step: 11, label: "Gesamtbewertung", icon: "📈", desc: "Algorithmus + KI-Strategieanalyse" },
+    { step: 12, label: "Verhandlung", icon: "🤝", desc: "Verhandlungszeitplan & Szenarios" },
+    { step: 13, label: "Cockpit", icon: "⚖️", desc: "Live-Dashboard mit Alerts & Last-Minute-Check" },
+    { step: 14, label: "Prozess-Zeitachse", icon: "📅", desc: "Strategische Meilensteine" },
+    { step: 15, label: "Was-wäre-wenn", icon: "🔄", desc: "Szenario-Simulation mit Variablen" },
+    { step: 16, label: "Historie", icon: "📜", desc: "Alle Änderungen & Audit-Trail" },
+  ];
+
+  const getKiResults = () => {
+    if (!caseData) return [];
+    const results = [];
+    if (caseData.ki_berater_result) results.push({ label: "KI-Berater", data: caseData.ki_berater_result });
+    if (caseData.notes) results.push({ label: "Fallnotizen", data: caseData.notes });
+    return results;
+  };
+
   return (
     <div className="space-y-4">
+      {/* Zusammenfassung aller Schritte */}
+      <div className="bg-white border border-gray-100 rounded-2xl p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-4">📋 Zusammenfassung aller 16 Schritte</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {STEP_SUMMARIES.map(s => (
+            <button key={s.step}
+              onClick={() => setExpandedSummary(expandedSummary === s.step ? null : s.step)}
+              className="text-left p-3 rounded-xl border border-gray-100 hover:bg-gray-50 transition-colors">
+              <div className="flex items-start gap-2">
+                <span className="text-lg">{s.icon}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-xs font-semibold text-gray-600">Schritt {s.step}</p>
+                  <p className="text-sm font-medium text-gray-900 mt-0.5">{s.label}</p>
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{s.desc}</p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* KI-Ergebnisse & Bewertung */}
+      {getKiResults().length > 0 && (
+      <div className="bg-white border border-gray-100 rounded-2xl p-5">
+        <h3 className="text-sm font-semibold text-gray-800 mb-4 flex items-center gap-2"><Sparkles className="w-4 h-4" /> KI-Ergebnisse zur Bewertung</h3>
+        <div className="space-y-3">
+          {getKiResults().map((result, i) => (
+            <div key={i} className="border border-violet-100 rounded-xl overflow-hidden bg-violet-50/30">
+              <button
+                onClick={() => setExpandedSummary(expandedSummary === `ki-${i}` ? null : `ki-${i}`)}
+                className="w-full flex items-center justify-between px-4 py-3 hover:bg-violet-50 transition-colors">
+                <span className="font-semibold text-sm text-violet-900">{result.label}</span>
+                <ChevronDown className={`w-4 h-4 text-violet-500 transition-transform ${expandedSummary === `ki-${i}` ? 'rotate-180' : ''}`} />
+              </button>
+              {expandedSummary === `ki-${i}` && (
+                <div className="px-4 pb-3 text-xs text-gray-700 bg-white/50 border-t border-violet-100 max-h-48 overflow-y-auto">
+                  <pre className="whitespace-pre-wrap font-mono text-[10px]">{typeof result.data === 'object' ? JSON.stringify(result.data, null, 2) : result.data}</pre>
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+      )}
+
       {/* Header */}
       <div className="bg-white border border-gray-100 rounded-2xl p-4">
         <div className="flex items-center justify-between gap-3 mb-4 flex-wrap">
