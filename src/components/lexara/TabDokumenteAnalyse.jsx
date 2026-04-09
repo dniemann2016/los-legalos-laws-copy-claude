@@ -20,7 +20,7 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
     setLoading(false);
   };
 
-  React.useEffect(() => {
+  useEffect(() => {
     loadDocs();
   }, [caseId]);
 
