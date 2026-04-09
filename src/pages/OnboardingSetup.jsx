@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Scale } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { useUserProfile } from "../hooks/useUserProfile";
 import DisclaimerStep from "../components/onboarding/DisclaimerStep";
 import LanguageStep from "../components/onboarding/LanguageStep";
@@ -14,10 +15,11 @@ const STEP_LABELS = {
 export default function OnboardingSetup() {
   const { language, jurisdiction, usState, setLanguage, setJurisdiction, setUsState, completeOnboarding } = useUserProfile();
   const [step, setStep] = useState(1);
+  const navigate = useNavigate();
 
   const handleComplete = async () => {
     await completeOnboarding();
-    window.location.href = "/";
+    navigate("/", { replace: true });
   };
 
   const labels = STEP_LABELS[language] || STEP_LABELS.DE;
