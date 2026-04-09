@@ -42,6 +42,7 @@ export default function AIPerformanceDashboard({ caseId }) {
     setShowForm(false);
     await loadData();
     setSaving(false);
+  };
 
   const calculateStats = (data) => {
     if (data.length === 0) {
@@ -282,5 +283,3 @@ export default function AIPerformanceDashboard({ caseId }) {
     </div>
   );
 }
-
-export default AIPerformanceDashboard;
