@@ -30,6 +30,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
   const [algorithm, setAlgorithm] = useState({});
   const [saving, setSaving] = useState(false);
   const [chartView, setChartView] = useState("overlap");
+  const [showTacticalInfo, setShowTacticalInfo] = useState(false);
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -250,7 +251,22 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
             {eigenArgs.filter(a=>(a.strength||0)>=7).length === 0 && <p className="text-xs text-gray-400">Keine starken Argumente ≥7/10</p>}
           </div>
           <div className="mt-4">
-            <h4 className="text-xs font-semibold text-gray-700 mb-2">Taktische Einschätzung</h4>
+            <div className="flex items-center gap-2 mb-2">
+              <h4 className="text-xs font-semibold text-gray-700">Taktische Einschätzung</h4>
+              <button onClick={() => setShowTacticalInfo(!showTacticalInfo)} className="text-gray-400 hover:text-gray-600 transition-colors">
+                <Info className="w-3.5 h-3.5" />
+              </button>
+            </div>
+            {showTacticalInfo && (
+              <div className="bg-blue-50 border border-blue-100 rounded-lg p-3 mb-3 text-[10px] text-blue-800 space-y-1">
+                <p><strong>Historische Konsistenz:</strong> Prognose × 0,85 (bei Beweise vorhanden)</p>
+                <p><strong>Kompetenzniveau:</strong> Prognose × 0,75 (bei Personen erfasst)</p>
+                <p><strong>Interessenkonflikt:</strong> max(20, Prognose − 15) (bei Richter-Daten vorhanden)</p>
+                <p><strong>Verborgene Motive:</strong> max(15, Prognose − 20) (bei Gegner-Argumente)</p>
+                <p><strong>Selbstschutz:</strong> Prognose × 0,60 (bei eigene Argumente)</p>
+                <p><strong>Angstfaktor:</strong> Prognose × 0,70 (bei Gegner-Strategie erkannt)</p>
+              </div>
+            )}
             <div className="space-y-2">
               {[
                 ["Historische Konsistenz", evidence.length > 0 ? Math.round(prognose*0.85) : "unbekannt"],
