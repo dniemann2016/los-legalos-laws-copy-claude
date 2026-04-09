@@ -36,6 +36,9 @@ export default function TabCockpit({ caseId, caseData }) {
     ]).then(([d, t, a, w]) => { setDeadlines(d); setTasks(t); setArgs(a); setWarnings(w); });
   }, [caseId]);
 
+  const criticalWarnings = warnings.filter(w => w.severity === "kritisch");
+  const highWarnings = warnings.filter(w => w.severity === "hoch");
+
   const now = new Date();
   const prognose = caseData?.prognose || 0;
 
@@ -55,7 +58,7 @@ export default function TabCockpit({ caseId, caseData }) {
 
   // Event-Alerts
   const alerts = [];
-  
+
   // Compliance-Warnungen hinzufügen
   if (criticalWarnings.length > 0) {
     alerts.push({
@@ -109,10 +112,6 @@ export default function TabCockpit({ caseId, caseData }) {
   }
 
   const gegnerArgs = args.filter(a => a.side === "gegner").sort((a, b) => (b.strength || 5) - (a.strength || 5)).slice(0, 4);
-
-  // Compliance-Warnungen
-  const criticalWarnings = warnings.filter(w => w.severity === "kritisch");
-  const highWarnings = warnings.filter(w => w.severity === "hoch");
 
   const daysUntil = (d) => Math.ceil((new Date(d) - now) / 86400000);
   const formatDate = (d) => { try { return new Date(d).toLocaleDateString("de-DE", { day: "2-digit", month: "short" }); } catch { return d; } };
