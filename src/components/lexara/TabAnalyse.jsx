@@ -7,6 +7,8 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
   const [args, setArgs] = useState([]);
   const [rechtsprechung, setRechtsprechung] = useState(null);
   const [rpLoading, setRpLoading] = useState(false);
+  const [savedInsights, setSavedInsights] = useState([]);
+  const [savingInsights, setSavingInsights] = useState(false);
   const [form, setForm] = useState({
     streitwert: caseData?.streitwert || 100000,
     gebuehrenstufe: caseData?.gebuehrenstufe || 1.3,
@@ -19,14 +21,34 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
 
   useEffect(() => {
     base44.entities.Argument.filter({ case_id: caseId }).then(setArgs);
+    // Load previously saved insights for this jurisdiction/topic
+    base44.entities.JurisdictionInsight.filter({}).then(insights => {
+      const relevant = insights.filter(i =>
+        !caseData?.rechtsgebiet || i.jurisdiction === (caseData?.rechtsgebiet || "DE") || i.topic === caseData?.rechtsgebiet
+      ).slice(0, 5);
+      setSavedInsights(relevant);
+    });
   }, [caseId]);
 
   const sucheRechtsprechung = async () => {
     setRpLoading(true);
     setRechtsprechung(null);
     const argList = args.map(a => a.title).join(", ");
+    const insightsContext = savedInsights.length > 0
+      ? `\n\nBereits bekannte relevante Entscheidungen aus der Wissensbasis (zur Ergänzung, nicht zur Wiederholung):\n${savedInsights.map(i => `- ${i.topic}: ${i.insight_text.slice(0, 150)}`).join("\n")}`
+      : "";
+
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein juristischer Rechercheur. Suche im Internet nach aktueller relevanter Rechtsprechung für folgenden Fall:\n\nFall: "${caseData?.fallname || ""}"\nRechtsgebiet: ${caseData?.rechtsgebiet || "Zivilrecht"}\nGericht: ${caseData?.gericht || ""}\nZentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}\nArgumente: ${argList || "keine"}\nInstanz: ${caseData?.instanz || "Erstinstanz"}\n\nFinde 5-8 relevante Gerichtsentscheidungen aus Deutschland (BGH, BVerfG, OLG, BAG, BFH etc.) oder international je nach Rechtsordnung (EGMR, EuGH, US Supreme Court, UK Supreme Court etc.). Suche konkret nach Aktenzeichen, Datum, Leitsatz und wie sie auf die Argumente anwendbar sind. Gib NUR Entscheidungen an, die wirklich existieren und über eine Internetsuche verifizierbar sind.`,
+      prompt: `Du bist ein juristischer Rechercheur. Suche im Internet nach aktueller relevanter Rechtsprechung für folgenden Fall:
+
+Fall: "${caseData?.fallname || ""}"
+Rechtsgebiet: ${caseData?.rechtsgebiet || "Zivilrecht"}
+Gericht: ${caseData?.gericht || ""}
+Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
+Argumente: ${argList || "keine"}
+Instanz: ${caseData?.instanz || "Erstinstanz"}${insightsContext}
+
+Finde 5-8 relevante Gerichtsentscheidungen aus Deutschland (BGH, BVerfG, OLG, BAG etc.) oder international je nach Rechtsordnung (z.B. EGMR, EuGH, US Supreme Court, UK Supreme Court). Suche konkret nach Aktenzeichen, Datum, Leitsatz und wie sie auf die Argumente anwendbar sind. Gib NUR Entscheidungen an, die wirklich existieren und über eine Internetsuche verifizierbar sind.`,
       add_context_from_internet: true,
       response_json_schema: {
         type: "object",
@@ -52,6 +74,30 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
       }
     });
     setRechtsprechung(res);
+
+    // Auto-save high-relevance decisions to knowledge base
+    if (res?.entscheidungen) {
+      setSavingInsights(true);
+      const toSave = res.entscheidungen.filter(e => e.staerke === "hoch" && e.aktenzeichen);
+      for (const e of toSave) {
+        const text = `${e.gericht} ${e.aktenzeichen} (${e.datum || ""}): ${e.leitsatz}`;
+        // Avoid duplicate saves
+        const exists = savedInsights.some(i => i.insight_text.includes(e.aktenzeichen || ""));
+        if (!exists && e.aktenzeichen) {
+          await base44.entities.JurisdictionInsight.create({
+            jurisdiction: caseData?.rechtsgebiet || "DE",
+            topic: caseData?.rechtsgebiet || "Zivilrecht",
+            source_type: "court_practice",
+            insight_text: text,
+            usage_count: 1,
+            effectiveness_score: e.staerke === "hoch" ? 8 : e.staerke === "mittel" ? 6 : 4,
+            tags: [e.gericht, caseData?.rechtsgebiet || "Zivilrecht"].filter(Boolean),
+          });
+        }
+      }
+      setSavingInsights(false);
+    }
+
     setRpLoading(false);
   };
 
@@ -213,6 +259,9 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
           <div>
             <h3 className="text-sm font-semibold text-gray-800">📚 Relevante Rechtsprechung (KI + Internet)</h3>
             <p className="text-xs text-gray-400 mt-0.5">KI sucht live im Internet nach BGH/OLG/BVerfG oder internationalen Entscheidungen passend zu Ihren Argumenten</p>
+            {savedInsights.length > 0 && (
+              <p className="text-[10px] text-violet-600 mt-0.5">🧠 {savedInsights.length} Einträge aus der Wissensbasis verfügbar{savingInsights ? " · Speichere neue Erkenntnisse…" : ""}</p>
+            )}
           </div>
           <Button onClick={sucheRechtsprechung} disabled={rpLoading} size="sm"
             className="bg-violet-700 hover:bg-violet-800 text-white text-xs rounded-xl gap-1.5">
