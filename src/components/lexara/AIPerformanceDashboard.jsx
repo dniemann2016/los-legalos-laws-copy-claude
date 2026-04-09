@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { TrendingUp, AlertCircle, CheckCircle, Zap, Edit2, X } from "lucide-react";
+import { TrendingUp, AlertCircle, CheckCircle, Zap, Edit2, X, Star } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 
 export default function AIPerformanceDashboard({ caseId }) {
@@ -17,6 +17,10 @@ export default function AIPerformanceDashboard({ caseId }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [trendData, setTrendData] = useState([]);
   const [advisors, setAdvisors] = useState([]);
+  const [kiLogs, setKiLogs] = useState([]);
+  const [showKiHistory, setShowKiHistory] = useState(false);
+  const [ratingLog, setRatingLog] = useState(null);
+  const [ratingForm, setRatingForm] = useState({});
 
   useEffect(() => {
     loadData();
@@ -25,7 +29,9 @@ export default function AIPerformanceDashboard({ caseId }) {
   const loadData = async () => {
     setLoading(true);
     const data = await base44.entities.AIPerformanceFeedback.filter({});
+    const logs = await base44.entities.KIUsageLog.filter({ case_id: caseId });
     setFeedbacks(data);
+    setKiLogs(logs.sort((a, b) => new Date(b.created_date) - new Date(a.created_date)));
     calculateStats(data);
     buildTrendData(data);
     extractAdvisors(data);
@@ -88,6 +94,19 @@ export default function AIPerformanceDashboard({ caseId }) {
     await base44.entities.AIPerformanceFeedback.update(editingId, editForm);
     setEditingId(null);
     setShowEditModal(false);
+    await loadData();
+    setSaving(false);
+  };
+
+  const handleRateKiLog = async () => {
+    if (!ratingForm.rating) {
+      alert('Bitte Bewertung angeben');
+      return;
+    }
+    setSaving(true);
+    await base44.entities.KIUsageLog.update(ratingLog.id, ratingForm);
+    setRatingLog(null);
+    setRatingForm({});
     await loadData();
     setSaving(false);
   };
@@ -308,6 +327,49 @@ export default function AIPerformanceDashboard({ caseId }) {
         </div>
       )}
 
+      {ratingLog && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl max-w-lg w-full p-6 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-900">KI-Nutzung bewerten</h3>
+              <button onClick={() => setRatingLog(null)}><X className="w-4 h-4" /></button>
+            </div>
+            <div className="bg-gray-50 rounded-lg p-3 max-h-48 overflow-y-auto">
+              <p className="text-xs font-mono text-gray-700 break-words">{ratingLog.output.substring(0, 200)}...</p>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-2">Bewertung (1-5)</label>
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4, 5].map(i => (
+                    <button key={i} onClick={() => setRatingForm({ ...ratingForm, rating: i })}
+                      className={`w-8 h-8 rounded-lg border transition-all ${
+                        ratingForm.rating === i ? "bg-yellow-400 border-yellow-400" : "border-gray-200 hover:border-yellow-300"
+                      }`}>
+                      <Star className="w-4 h-4 mx-auto" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-semibold text-gray-500 block mb-1">Feedback (optional)</label>
+                <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-16"
+                  placeholder="Was kann die KI besser machen?"
+                  value={ratingForm.feedback || ""} onChange={e => setRatingForm({ ...ratingForm, feedback: e.target.value })} />
+              </div>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button onClick={() => setRatingLog(null)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">
+                Abbrechen
+              </button>
+              <button onClick={handleRateKiLog} disabled={saving} className="flex-1 px-4 py-2 bg-yellow-500 text-white rounded-lg text-sm font-medium hover:bg-yellow-600 disabled:opacity-50">
+                {saving ? "Speichert..." : "Bewertung speichern"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {!stats ? (
         <div className="bg-gray-50 rounded-2xl border border-gray-100 py-12 text-center">
           <p className="text-gray-500">Noch keine KI-Bewertungen vorhanden</p>
@@ -401,6 +463,49 @@ export default function AIPerformanceDashboard({ caseId }) {
            </div>
           </div>
 
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+           <div className="flex items-center justify-between mb-4">
+             <h3 className="text-sm font-semibold text-gray-900">🤖 KI-Nutzungs-Historie</h3>
+             <button onClick={() => setShowKiHistory(!showKiHistory)} className="text-xs text-blue-600 hover:text-blue-700">
+               {showKiHistory ? "Ausblenden" : "Anzeigen"} ({kiLogs.length})
+             </button>
+           </div>
+           {showKiHistory && (
+             <div className="space-y-2 max-h-96 overflow-y-auto">
+               {kiLogs.length === 0 ? (
+                 <p className="text-xs text-gray-500 text-center py-4">Noch keine KI-Nutzungen geloggt</p>
+               ) : (
+                 kiLogs.map(log => (
+                   <div key={log.id} className="p-3 bg-gray-50 rounded-lg border border-gray-100">
+                     <div className="flex items-start justify-between mb-2">
+                       <div className="flex-1 min-w-0">
+                         <p className="text-xs font-semibold text-gray-900">{log.ki_function}</p>
+                         <p className="text-[10px] text-gray-500">{log.context} · {new Date(log.created_date).toLocaleDateString('de-DE')}</p>
+                         {log.is_duplicate && <p className="text-[10px] text-orange-600 font-medium">🔄 Wiederholung</p>}
+                       </div>
+                       <div className="flex gap-1 flex-shrink-0">
+                         {log.rating && (
+                           <div className="flex items-center gap-0.5">
+                             {[...Array(log.rating)].map((_, i) => <Star key={i} className="w-3 h-3 fill-yellow-400 text-yellow-400" />)}
+                           </div>
+                         )}
+                         {!log.rating && (
+                           <button onClick={() => { setRatingLog(log); setRatingForm({ rating: log.rating, feedback: log.feedback }); }}
+                             className="px-2 py-1 text-[10px] border border-yellow-200 text-yellow-700 rounded hover:bg-yellow-50">
+                             Bewerten
+                           </button>
+                         )}
+                       </div>
+                     </div>
+                     <p className="text-[10px] text-gray-600 line-clamp-2 break-words">{log.output.substring(0, 100)}...</p>
+                     {log.feedback && <p className="text-[10px] text-gray-500 mt-1 italic">Feedback: {log.feedback.substring(0, 60)}...</p>}
+                   </div>
+                 ))
+               )}
+             </div>
+           )}
+          </div>
+
           {stats.topImprovements.length > 0 && (
            <div className="bg-white rounded-2xl border border-gray-100 p-6">
              <h3 className="text-sm font-semibold text-gray-900 mb-4">💡 Häufigste Verbesserungsbedarfe</h3>
@@ -445,5 +550,22 @@ export default function AIPerformanceDashboard({ caseId }) {
         </>
       )}
     </div>
-  );
-}
+    );
+    }
+
+    export { AIPerformanceDashboard };
+
+    export const logKiUsage = async (caseId, kiFunction, inputSummary, output, model, context) => {
+    const existing = await base44.entities.KIUsageLog.filter({ input_summary: inputSummary, is_duplicate: false });
+    await base44.entities.KIUsageLog.create({
+    case_id: caseId,
+    ki_function: kiFunction,
+    input_summary: inputSummary,
+    output: output,
+    model: model || "automatic",
+    context: context,
+    is_duplicate: existing.length > 0,
+    parent_log_id: existing[0]?.id || null,
+    timestamp: new Date().toISOString(),
+    });
+    };

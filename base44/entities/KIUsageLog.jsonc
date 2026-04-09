@@ -1,0 +1,95 @@
+{
+  "name": "KIUsageLog",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "ki_function": {
+      "type": "string",
+      "title": "KI-Funktion (z.B. InvokeLLM)"
+    },
+    "input_summary": {
+      "type": "string",
+      "title": "Eingabe-Zusammenfassung"
+    },
+    "output": {
+      "type": "string",
+      "title": "KI-Output"
+    },
+    "model": {
+      "type": "string",
+      "title": "Verwendetes Modell"
+    },
+    "context": {
+      "type": "string",
+      "title": "Kontext (z.B. TabAnalyse, TabKIBerater)"
+    },
+    "rating": {
+      "type": "number",
+      "title": "Bewertung (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "feedback": {
+      "type": "string",
+      "title": "Feedback f\u00fcr KI-Verbesserung"
+    },
+    "is_duplicate": {
+      "type": "boolean",
+      "title": "Wiederholung (gleicher Input)"
+    },
+    "parent_log_id": {
+      "type": "string",
+      "title": "ID des urspr\u00fcnglichen Logs (bei Wiederholungen)"
+    },
+    "timestamp": {
+      "type": "string",
+      "title": "Zeitstempel"
+    }
+  },
+  "required": [
+    "ki_function",
+    "output"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
