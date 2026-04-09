@@ -4,6 +4,7 @@ import { X, Scale, Loader2, ChevronDown } from "lucide-react";
 import { getAIContext, JURISDICTION_META } from "../../lib/jurisdictionConfig";
 import { useUserProfile } from "../../hooks/useUserProfile";
 import ReactMarkdown from "react-markdown";
+import FeedbackWidget from "../FeedbackWidget";
 
 export default function FallAnalyseModal({ cases, onClose, t = {} }) {
   const { jurisdiction, usState, language } = useUserProfile();
@@ -171,6 +172,12 @@ Antworte auf ${outputLang}, strukturiert mit Markdown-Überschriften. Zitiere ko
                 <ReactMarkdown>{result}</ReactMarkdown>
               </div>
               <p className="text-xs text-gray-400 text-center">{t.analyseWarning}</p>
+              <FeedbackWidget
+                jurisdiction={jurisdiction}
+                topic={`case_analysis_${selectedCase?.rechtsgebiet || "general"}`}
+                context={result?.slice(0, 500)}
+                language={language}
+              />
             </div>
           )}
         </div>
