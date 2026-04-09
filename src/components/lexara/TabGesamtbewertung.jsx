@@ -231,10 +231,32 @@ Erstelle eine vollständige Gesamtbewertung mit:
             </div>
           </button>
           {showAlgoSteps && (
-            <div className="mt-3 space-y-2">
-              {(algoPrognose.steps || []).map((step, i) => (
-                <AlgoStepCard key={i} step={step} index={i} />
-              ))}
+            <div className="mt-3 space-y-4">
+              {(() => {
+                const grouped = {};
+                (algoPrognose.steps || []).forEach((step, i) => {
+                  const cat = step.kategorie || "Sonstige";
+                  if (!grouped[cat]) grouped[cat] = [];
+                  grouped[cat].push({ ...step, index: i });
+                });
+                return Object.entries(grouped).map(([kategorie, steps]) => (
+                  <div key={kategorie} className="border border-gray-100 rounded-xl overflow-hidden">
+                    <button
+                      onClick={() => setShowAlgoSteps(k => k === kategorie ? false : kategorie)}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left bg-gray-50 font-semibold text-sm text-gray-700"
+                    >
+                      <span className="w-1 h-1 rounded-full bg-gray-900" />
+                      {kategorie}
+                      <span className="ml-auto text-xs text-gray-400">({steps.length})</span>
+                    </button>
+                    <div className="space-y-2 p-3">
+                      {steps.map((step, i) => (
+                        <AlgoStepCard key={i} step={step} index={step.index} />
+                      ))}
+                    </div>
+                  </div>
+                ));
+              })()}
             </div>
           )}
           {!showAlgoSteps && (

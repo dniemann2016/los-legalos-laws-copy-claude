@@ -97,6 +97,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
   const adjustedBase = clamp(baseRate * instanzFaktor);
 
   steps.push({
+    kategorie: "Basis-Annahmen & Initialisierung",
     label: "Prior-Wahrscheinlichkeit (Basisrate)",
     formel: `P_basis = Basisrate(${rechtsgebiet}) × Instanzfaktor(${instanzKey})`,
     wert: adjustedBase,
@@ -122,6 +123,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
   logOdds += argLogOddsDelta;
 
   steps.push({
+    kategorie: "Inhaltliche Fallbewertung",
     label: "Argumentationsbilanz",
     formel: `Δ_arg = (Ø_eigene_Stärke - Ø_Gegner_Stärke) × 1.6 = (${avgEigen.toFixed(2)} - ${avgGegner.toFixed(2)}) × 1.6`,
     wert: argLogOddsDelta,
@@ -146,6 +148,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
   logOdds += beweisLogOddsDelta;
 
   steps.push({
+    kategorie: "Inhaltliche Fallbewertung",
     label: "Beweisqualität & -quantität",
     formel: `Δ_bew = [(Ø_Gewicht - 0.5) × 1.2 + log(n+1)/log(20) × 0.3] × 1.0`,
     wert: beweisLogOddsDelta,
@@ -165,6 +168,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
     logOdds += richterLogOddsDelta;
 
     steps.push({
+      kategorie: "Kontextuelle & Prozedurale Einflüsse",
       label: "Richter-Statistik (Bayesianisch)",
       formel: `Δ_richter = (logit(Klägerquote) - logit(0.5)) × 0.4 = (logit(${richterP.toFixed(2)}) - 0) × 0.4`,
       wert: richterLogOddsDelta,
@@ -173,6 +177,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
     });
   } else {
     steps.push({
+      kategorie: "Kontextuelle & Prozedurale Einflüsse",
       label: "Richter-Statistik",
       formel: "Δ_richter = 0 (kein Richter bekannt)",
       wert: 0,
@@ -193,6 +198,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
   logOdds += fristenPenalty;
 
   steps.push({
+    kategorie: "Kontextuelle & Prozedurale Einflüsse",
     label: "Fristenrisiko (Malus)",
     formel: `Δ_fristen = -(versäumte × 0.4 + kritische × 0.15) = -(${versaeumt} × 0.4 + ${kritisch} × 0.15)`,
     wert: fristenPenalty,
@@ -209,6 +215,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
     logOdds += vergleichDelta;
 
     steps.push({
+      kategorie: "Kontextuelle & Prozedurale Einflüsse",
       label: "Vergleichsangebot-Signal",
       formel: `Δ_vgl = (Vergleich/Streitwert - 0.4) × 0.8 = (${vergleichsRatio.toFixed(2)} - 0.4) × 0.8`,
       wert: vergleichDelta,
@@ -221,6 +228,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
   const pFinal = clamp(logistic(logOdds));
 
   steps.push({
+    kategorie: "Endgültige Prognose & Unsicherheit",
     label: "Finale Wahrscheinlichkeit (Logistische Transformation)",
     formel: `P_final = σ(log-Odds) = 1/(1+e^(-${logOdds.toFixed(3)})) = ${(pFinal * 100).toFixed(1)}%`,
     wert: pFinal,
@@ -244,6 +252,7 @@ export function computePrognose({ args = [], evidence = [], deadlines = [], pers
   const ciHigh = clamp(pFinal + 1.645 * gesamtSigma);
 
   steps.push({
+    kategorie: "Endgültige Prognose & Unsicherheit",
     label: "90%-Konfidenzintervall (Fehlerfortpflanzung)",
     formel: `σ_gesamt = √(σ_arg² × 0.35² + σ_bew² × 0.25² + σ_richter² + 0.04²) = ${gesamtSigma.toFixed(3)}`,
     wert: { ciLow, ciHigh },
