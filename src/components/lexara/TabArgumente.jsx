@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Upload, X, RefreshCw, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Upload, X, RefreshCw, Trash2, ChevronDown, ChevronUp, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function TabArgumente({ caseId, caseData, onCountChange }) {
@@ -15,6 +15,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [kiWeightingId, setKiWeightingId] = useState(null);
   const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
   const fileRef = useRef(null);
 
@@ -80,6 +81,24 @@ Extrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, 
   };
 
   const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
+
+  const kiGewichten = async (arg) => {
+    setKiWeightingId(arg.id);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Anwalt. Bewerte die Stärke dieses Rechtsarguments auf einer Skala von 0-10.
+Argument: "${arg.title}"
+Beschreibung: "${arg.description||""}"
+Typ: ${arg.type||"Rechtsargument"}, Seite: ${arg.side||"eigen"}
+Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
+    });
+    const parsed = parseFloat(String(result).replace(/[^0-9.]/g, ""));
+    if (!isNaN(parsed)) {
+      await base44.entities.Argument.update(arg.id, { strength: Math.min(10, Math.max(0, parsed)) });
+      load();
+    }
+    setKiWeightingId(null);
+  };
+
   const filtered = args.filter(a => filter === "all" || a.side === filter);
 
   return (
@@ -246,6 +265,11 @@ Extrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, 
                   </div>
                   <span className="text-xs text-gray-500">{arg.strength||5}/10</span>
                   {arg.paragraphs?.length > 0 && <span className="text-[10px] text-gray-400">{arg.paragraphs.length} Beweise</span>}
+                  <button onClick={() => kiGewichten(arg)} disabled={kiWeightingId === arg.id}
+                    title="KI-Gewichtung" className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-800 border border-violet-200 rounded px-1.5 py-0.5 disabled:opacity-40">
+                    {kiWeightingId === arg.id ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <Sparkles className="w-2.5 h-2.5" />}
+                    KI
+                  </button>
                 </div>
               </div>
               <button onClick={() => del(arg.id)} className="text-gray-300 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all">

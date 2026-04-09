@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BEWEIS_TYPES = ["Gesetzliche Grundlage / Normtext","BGH/BVerfG Entscheidung (einschlägig)","Notarielle Beurkundung","Öffentliche Urkunde §415 ZPO","BGH-Entscheidung (übertragbar)","Gerichtliches SV-Gutachten","OLG-Entscheidung (gleiches BL)","Private Urkunde §416 ZPO","Augenscheinsbeweis","Privates SV-Gutachten","E-Mail / elektronisch","Zeuge (unabhängig)","LG-Entscheidung","Parteivernehmung §445 ZPO","Zeuge (parteinah)","Indizien (kumulativ)","Negative Tatsache"];
@@ -10,6 +10,7 @@ export default function TabBeweise({ caseId }) {
   const [args, setArgs] = useState([]);
   const [evidence, setEvidence] = useState([]);
   const [selectedArg, setSelectedArg] = useState(null);
+  const [kiWeightingId, setKiWeightingId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showRef, setShowRef] = useState(false);
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
@@ -32,6 +33,23 @@ export default function TabBeweise({ caseId }) {
   };
 
   const del = async (id) => { await base44.entities.Evidence.delete(id); load(); };
+
+  const kiGewichten = async (ev) => {
+    setKiWeightingId(ev.id);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein Rechtsanwalt. Bewerte die Beweiskraft dieses Beweismittels im deutschen Zivilprozess auf einer Skala von 0-10.
+Titel: "${ev.title}"
+Typ: "${ev.type||""}"
+Beschreibung: "${ev.description||""}"
+Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
+    });
+    const parsed = parseFloat(String(result).replace(/[^0-9.]/g, ""));
+    if (!isNaN(parsed)) {
+      await base44.entities.Evidence.update(ev.id, { weight: Math.min(10, Math.max(0, parsed)) });
+      load();
+    }
+    setKiWeightingId(null);
+  };
   const selectedArgData = args.find(a => a.id === selectedArg);
   const argEvidence = evidence.filter(e => e.argument_id === selectedArg);
 
@@ -93,6 +111,11 @@ export default function TabBeweise({ caseId }) {
                           </div>
                           {ev.description && <p className="text-xs text-gray-500">{ev.description}</p>}
                           {ev.type && <p className="text-[10px] text-gray-400 mt-0.5">{ev.type}</p>}
+                          <button onClick={() => kiGewichten(ev)} disabled={kiWeightingId === ev.id}
+                            title="KI-Gewichtung" className="mt-1 flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-800 border border-violet-200 rounded px-1.5 py-0.5 disabled:opacity-40">
+                            {kiWeightingId === ev.id ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <Sparkles className="w-2.5 h-2.5" />}
+                            KI gewichten
+                          </button>
                         </div>
                         <button onClick={() => del(ev.id)} className="text-gray-300 hover:text-red-400 p-1 opacity-0 group-hover:opacity-100 transition-all ml-2"><Trash2 className="w-3.5 h-3.5" /></button>
                       </div>

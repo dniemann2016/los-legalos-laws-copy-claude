@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Download } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import TabBasisdaten from "../components/lexara/TabBasisdaten";
 import TabArgumente from "../components/lexara/TabArgumente";
@@ -47,6 +47,62 @@ export default function CaseDetail() {
   const [counts, setCounts] = useState({args:0,evidence:0,persons:0,deadlines:0});
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+
+  const handleExportCSV = async () => {
+    setExporting(true);
+    const [args, evs, pers, deadlines] = await Promise.all([
+      base44.entities.Argument.filter({ case_id: caseId }),
+      base44.entities.Evidence.filter({ case_id: caseId }),
+      base44.entities.Person.filter({ case_id: caseId }),
+      base44.entities.Deadline.filter({ case_id: caseId }),
+    ]);
+
+    const sections = [];
+
+    // Case header
+    sections.push("=== FALLDATEN ===");
+    sections.push(`Fallname,${caseData.fallname||""}`);
+    sections.push(`Aktenzeichen,${caseData.aktenzeichen||""}`);
+    sections.push(`Gericht,${caseData.gericht||""}`);
+    sections.push(`Rechtsgebiet,${caseData.rechtsgebiet||""}`);
+    sections.push(`Status,${caseData.status||""}`);
+    sections.push(`Prognose,${caseData.prognose||0}%`);
+    sections.push(`Streitwert,${caseData.streitwert||""} EUR`);
+    sections.push("");
+
+    // Arguments
+    sections.push("=== ARGUMENTE ===");
+    sections.push("Titel,Seite,Typ,Stärke,Beschreibung");
+    args.forEach(a => sections.push(`"${a.title||""}",${a.side||""}, ${a.type||""}, ${a.strength||5},"${(a.description||"").replace(/"/g,"'")}"`) );
+    sections.push("");
+
+    // Evidence
+    sections.push("=== BEWEISE ===");
+    sections.push("Titel,Typ,Gewicht,Quelle,Beschreibung");
+    evs.forEach(e => sections.push(`"${e.title||""}","${e.type||""}",${e.weight||5},"${e.source||""}","${(e.description||"").replace(/"/g,"'")}"`));
+    sections.push("");
+
+    // Persons
+    sections.push("=== PERSONEN ===");
+    sections.push("Name,Rolle,Organisation,Glaubwürdigkeit %");
+    pers.forEach(p => sections.push(`"${p.name||""}",${p.role||""},"${p.organization||""}",${p.glaubwuerdigkeit||""}`));
+    sections.push("");
+
+    // Deadlines
+    sections.push("=== FRISTEN ===");
+    sections.push("Titel,Fristtyp,Fälligkeitsdatum,Status,Seite");
+    deadlines.forEach(d => sections.push(`"${d.title||""}","${d.frist_type||""}",${d.due_date||""},${d.status||""},${d.side||""}`));
+
+    const csv = sections.join("\n");
+    const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Fallbericht_${caseData.fallname||caseId}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    setExporting(false);
+  };
 
   const handleExportPDF = async () => {
     setExporting(true);
@@ -99,6 +155,10 @@ export default function CaseDetail() {
               <button onClick={handleExportPDF} disabled={exporting}
                 className="ml-2 flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-lg transition-colors disabled:opacity-50">
                 {exporting ? "..." : "↓ PDF"}
+              </button>
+              <button onClick={handleExportCSV} disabled={exporting}
+                className="flex items-center gap-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 px-2 py-1 rounded-lg transition-colors disabled:opacity-50">
+                <Download className="w-3 h-3" /> CSV
               </button>
             </div>
             <div className="flex items-center gap-2">
