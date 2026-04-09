@@ -12,7 +12,7 @@ import TabAnalyse from "../components/lexara/TabAnalyse";
 import TabRisiko from "../components/lexara/TabRisiko";
 import RiskMatrix from "../components/lexara/RiskMatrix";
 import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
-import TabDokumente from "../components/lexara/TabDokumente";
+import TabDokumenteAnalyse from "../components/lexara/TabDokumenteAnalyse";
 import TabGesamtbewertung from "../components/lexara/TabGesamtbewertung";
 import TabVerhandlung from "../components/lexara/TabVerhandlung";
 import TabSchriftsatz from "../components/lexara/TabSchriftsatz";
@@ -24,8 +24,8 @@ import AIPerformanceDashboard from "../components/lexara/AIPerformanceDashboard"
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
-  {id:1,label:"Basisdaten"},{id:2,label:"Argumente & Beweise"},{id:3,label:"Personen"},
-  {id:4,label:"Fristen"},{id:5,label:"Strategie"},{id:6,label:"KI-Berater"},{id:7,label:"Analyse"},{id:8,label:"Risiken"},{id:9,label:"Risikomatrix"},{id:10,label:"Simulation"},{id:11,label:"Dokumente"},{id:12,label:"Gesamtbewertung"},{id:13,label:"Verhandlung"},{id:14,label:"Schriftsatz"},{id:15,label:"Cockpit"},{id:16,label:"Prozess-Zeitachse"},{id:17,label:"Was-wäre-wenn"},{id:18,label:"Historie"},{id:19,label:"KI-Performance"},
+  {id:1,label:"Basisdaten"},{id:2,label:"Dokumente"},{id:3,label:"Argumente & Beweise"},{id:4,label:"Personen"},
+  {id:5,label:"Fristen"},{id:6,label:"Strategie"},{id:7,label:"KI-Berater"},{id:8,label:"Analyse"},{id:9,label:"Risiken"},{id:10,label:"Risikomatrix"},{id:11,label:"Simulation"},{id:12,label:"Gesamtbewertung"},{id:13,label:"Verhandlung"},{id:14,label:"Schriftsatz"},{id:15,label:"Cockpit"},{id:16,label:"Prozess-Zeitachse"},{id:17,label:"Was-wäre-wenn"},{id:18,label:"Historie"},{id:19,label:"KI-Performance"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -143,7 +143,7 @@ export default function CaseDetail() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin"/></div>;
   if (!caseData) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Fall nicht gefunden.</p></div>;
 
-  const completedTabs = [!!caseData.fallname,(counts.args>0 && counts.evidence>0),counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,false,false,!!caseData.notes,false,false,false,false,false];
+  const completedTabs = [!!caseData.fallname,false,(counts.args>0 && counts.evidence>0),counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,false,false,!!caseData.notes,false,false,false,false,false];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -191,16 +191,16 @@ export default function CaseDetail() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 17</p>
         {activeTab===1 && <TabBasisdaten caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===2 && <TabArgumenteBeweisVerkettung caseId={caseId} caseData={caseData} onCountChange={loadCase} />}
-        {activeTab===3 && <TabPersonen caseId={caseId} onCountChange={loadCase} />}
-        {activeTab===4 && <TabFristen caseId={caseId} onCountChange={loadCase} />}
-        {activeTab===5 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===6 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===7 && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===8 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===9 && <RiskMatrix caseId={caseId} caseData={caseData} />}
-        {activeTab===10 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
-        {activeTab===11 && <TabDokumente caseId={caseId} />}
+        {activeTab===2 && <TabDokumenteAnalyse caseId={caseId} caseData={caseData} onDataImport={loadCase} />}
+        {activeTab===3 && <TabArgumenteBeweisVerkettung caseId={caseId} caseData={caseData} onCountChange={loadCase} />}
+        {activeTab===4 && <TabPersonen caseId={caseId} onCountChange={loadCase} />}
+        {activeTab===5 && <TabFristen caseId={caseId} onCountChange={loadCase} />}
+        {activeTab===6 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===7 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===8 && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===9 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===10 && <RiskMatrix caseId={caseId} caseData={caseData} />}
+        {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
         {activeTab===12 && <TabGesamtbewertung caseId={caseId} caseData={caseData} />}
         {activeTab===13 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
         {activeTab===14 && <TabSchriftsatz caseId={caseId} caseData={caseData} />}
