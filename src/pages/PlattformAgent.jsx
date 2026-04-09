@@ -46,6 +46,7 @@ export default function PlattformAgent() {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState(null);
   const [loadingConvs, setLoadingConvs] = useState(true);
   const bottomRef = useRef(null);
 
@@ -86,8 +87,13 @@ export default function PlattformAgent() {
     const convToUse = conv || activeConv;
     if (!convToUse || !text.trim()) return;
     setSending(true);
+    setSendError(null);
     setInput("");
-    await base44.agents.addMessage(convToUse, { role: "user", content: text });
+    try {
+      await base44.agents.addMessage(convToUse, { role: "user", content: text });
+    } catch (err) {
+      setSendError(language === "EN" ? "Network error – please try again." : language === "FR" ? "Erreur réseau – veuillez réessayer." : "Netzwerkfehler – bitte erneut versuchen.");
+    }
     setSending(false);
   };
 
@@ -222,7 +228,10 @@ export default function PlattformAgent() {
                     <Send className="w-4 h-4 text-white" />
                   </button>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-1.5 text-center">{t.agentNote}</p>
+                {sendError && (
+                  <p className="text-[11px] text-red-500 mt-1.5 text-center">{sendError}</p>
+                )}
+                {!sendError && <p className="text-[10px] text-gray-400 mt-1.5 text-center">{t.agentNote}</p>}
               </div>
             </>
           )}
