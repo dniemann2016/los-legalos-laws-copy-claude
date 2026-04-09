@@ -35,6 +35,7 @@ export default function TabCockpit({ caseId, caseData }) {
   }, [caseId]);
 
   const now = new Date();
+  const prognose = caseData?.prognose || 0;
 
   const urgentTasks = tasks
     .filter(t => t.status !== "erledigt")
@@ -122,7 +123,6 @@ Liefere:
     setLoadingCheck(false);
   };
 
-  const prognose = caseData?.prognose || 0;
   const prognoseColor = prognose >= 65 ? "text-green-600" : prognose >= 40 ? "text-amber-600" : "text-red-600";
   const prognoseLabel = prognose >= 65 ? "Gute Ausgangslage" : prognose >= 40 ? "Ausgangslage unklar" : "Schwierige Ausgangslage";
 
