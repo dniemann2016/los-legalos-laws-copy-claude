@@ -17,10 +17,13 @@ import KanzleiCockpit from './pages/KanzleiCockpit';
 import FallAssistentChat from './pages/FallAssistentChat';
 import DsgvoBanner from './components/DsgvoBanner';
 import KanzleiAnalytik from './pages/KanzleiAnalytik';
+import OnboardingSetup from './pages/OnboardingSetup';
+import { useUserProfile } from './hooks/useUserProfile';
 // Add page imports here
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { onboardingDone, disclaimerAccepted } = useUserProfile();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -34,6 +37,10 @@ const AuthenticatedApp = () => {
     if (authError.type === 'user_not_registered') {
       return <UserNotRegisteredError />;
     }
+  }
+
+  if (!onboardingDone || !disclaimerAccepted) {
+    return <OnboardingSetup />;
   }
 
   return (
@@ -50,6 +57,7 @@ const AuthenticatedApp = () => {
         <Route path="/cockpit" element={<KanzleiCockpit />} />
         <Route path="/analytik" element={<KanzleiAnalytik />} />
         <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
+        <Route path="/onboarding" element={<OnboardingSetup />} />
         {/* Add your page Route elements here */}
         <Route path="*" element={<PageNotFound />} />
       </Routes>
