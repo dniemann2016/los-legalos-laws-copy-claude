@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
-import { Scale } from "lucide-react";
+import { Scale, File } from "lucide-react";
 import FallAbschlussFragebogen from "./FallAbschlussFragebogen";
 import JudgeComparisonModal from "./JudgeComparisonModal";
 
@@ -22,6 +22,7 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
   const [showFragebogen, setShowFragebogen] = useState(false);
   const [showJudgeComparison, setShowJudgeComparison] = useState(false);
   const [caseEntities, setCaseEntities] = useState({ args: [], evidence: [], deadlines: [], persons: [] });
+  const [documents, setDocuments] = useState([]);
 
   useEffect(() => {
     Promise.all([
@@ -29,7 +30,11 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
       base44.entities.Evidence.filter({ case_id: caseId }),
       base44.entities.Deadline.filter({ case_id: caseId }),
       base44.entities.Person.filter({ case_id: caseId }),
-    ]).then(([a, e, d, p]) => setCaseEntities({ args: a, evidence: e, deadlines: d, persons: p }));
+      base44.entities.Document.filter({ case_id: caseId }),
+    ]).then(([a, e, d, p, docs]) => {
+      setCaseEntities({ args: a, evidence: e, deadlines: d, persons: p });
+      setDocuments(docs.slice(-10).reverse());
+    });
   }, [caseId]);
 
   const handleSave = async () => {
@@ -96,6 +101,26 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
           Richterwechsel simulieren
         </button>
       </div>
+
+      {documents.length > 0 && (
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">📄 Zuletzt hinzugefügte Dokumente</h3>
+        <div className="space-y-2">
+          {documents.map(doc => (
+            <a key={doc.id} href={doc.file_url} target="_blank" rel="noopener noreferrer"
+              className="flex items-start gap-3 p-3 rounded-lg hover:bg-gray-50 transition-colors border border-gray-50">
+              <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                <File className="w-4 h-4 text-gray-500" />
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-medium text-gray-900 truncate">{doc.title}</p>
+                {doc.ai_summary && <p className="text-[10px] text-gray-500 line-clamp-1 mt-0.5">{doc.ai_summary}</p>}
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+      )}
 
       <div className="flex justify-end">
         <Button onClick={handleSave} disabled={saving} className="bg-gray-900 text-white rounded-xl px-6">
