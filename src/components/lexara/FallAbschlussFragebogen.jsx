@@ -70,6 +70,22 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
       case_name: caseData.fallname,
       ...form,
     });
+    // Speichere AI Performance Feedback wenn detailed mode
+    if (mode === 'detailed') {
+      await base44.entities.AIPerformanceFeedback.create({
+        case_id: caseData.id,
+        case_name: caseData.fallname,
+        prognose_rating: form.prognose_rating || 3,
+        prognose_abweichung: form.prognose_abweichung || null,
+        strategie_rating: form.strategie_rating || 3,
+        strategie_feedback: form.strategie_feedback || "",
+        ki_berater_rating: form.ki_berater_rating || 3,
+        ki_berater_feedback: form.ki_berater_feedback || "",
+        verbesserungsvorschlaege: form.verbesserungsvorschlaege || [],
+        gesamtbewertung: form.gesamtbewertung || 3,
+        fall_erfolgreich: form.ziel_erreicht || false,
+      });
+    }
     setSaving(false);
     setSaved(true);
     setTimeout(() => { onSaved?.(); onClose(); }, 1500);
@@ -184,18 +200,111 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
               </Sektion>
               )}
 
-              {/* KI-Kritik – nur bei detailed mode */}
+              {/* KI-Bewertungen & Verbesserungen – nur bei detailed mode */}
               {mode === 'detailed' && (
-              <Sektion title="Kritik & Verbesserungen (KI-Empfehlungen)" defaultOpen={true}>
+              <Sektion title="🤖 KI-Performance Bewertungen" defaultOpen={true}>
                 <div className="pt-2 space-y-4">
-                  <TextFeld label="Kritik an KI-Berater" value={form.ki_berater_kritik} onChange={v => set("ki_berater_kritik", v)}
-                    placeholder="Welche Empfehlungen waren falsch oder missleitet? Was hätte die KI besser analysieren sollen?" />
-                  <TextFeld label="Kritik an KI-Prognose" value={form.ki_prognose_kritik} onChange={v => set("ki_prognose_kritik", v)}
-                    placeholder="War die Erfolgswahrscheinlichkeit zu hoch/niedrig? Fehlende Risiko-Faktoren?" />
-                  <TextFeld label="Kritik an Strategieanalyse" value={form.ki_strategie_kritik} onChange={v => set("ki_strategie_kritik", v)}
-                    placeholder="Welche Strategien waren ineffektiv? Was hätte besser funktioniert?" />
-                  <TextFeld label="Allgemeine Verbesserungen" value={form.ki_verbesserungen} onChange={v => set("ki_verbesserungen", v)}
-                    placeholder="Wie könnte die KI in zukünftigen Fällen besser unterstützen?" />
+                  {/* Prognose-Rating */}
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Prognose-Genauigkeit</label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <button key={n} onClick={() => set("prognose_rating", n)}
+                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                           form.prognose_rating === n ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          }`}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-400">1=völlig falsch, 5=sehr genau</p>
+                  </div>
+                  <TextFeld label="Tatsächliche Erfolgsrate (%)" value={form.prognose_abweichung} onChange={v => set("prognose_abweichung", v)}
+                    placeholder="z.B. 65 (wenn KI 70% sagte, aber 65% war richtig)" />
+
+                  {/* Strategie-Rating */}
+                  <div className="space-y-2 pt-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Strategie-Effektivität</label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <button key={n} onClick={() => set("strategie_rating", n)}
+                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                           form.strategie_rating === n ? "bg-green-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          }`}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-400">1=unwirksam, 5=sehr effektiv</p>
+                  </div>
+                  <TextFeld label="Strategie-Feedback" value={form.strategie_feedback} onChange={v => set("strategie_feedback", v)}
+                    placeholder="Welche Strategien waren hilfreich/schädlich? Spezifische Beispiele?" />
+
+                  {/* KI-Berater Rating */}
+                  <div className="space-y-2 pt-2">
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide">KI-Berater Qualität</label>
+                    <div className="flex gap-1">
+                      {[1, 2, 3, 4, 5].map(n => (
+                        <button key={n} onClick={() => set("ki_berater_rating", n)}
+                          className={`flex-1 py-2 rounded-lg text-xs font-semibold transition-all ${
+                           form.ki_berater_rating === n ? "bg-purple-500 text-white" : "bg-gray-100 text-gray-500 hover:bg-gray-200"
+                          }`}>
+                          {n}
+                        </button>
+                      ))}
+                    </div>
+                    <p className="text-[10px] text-gray-400">1=irreführend, 5=sehr hilfreich</p>
+                  </div>
+                  <TextFeld label="KI-Berater Feedback" value={form.ki_berater_feedback} onChange={v => set("ki_berater_feedback", v)}
+                    placeholder="War die Analyse akkurat? Fehlende Aspekte? Zu oberflächlich?" />
+                </div>
+              </Sektion>
+              )}
+
+              {/* Konkrete Verbesserungsvorschläge */}
+              {mode === 'detailed' && (
+              <Sektion title="💡 Konkrete Verbesserungsvorschläge">
+                <div className="pt-2 space-y-3">
+                  {form.verbesserungsvorschlaege?.length > 0 ? (
+                    form.verbesserungsvorschlaege.map((v, i) => (
+                      <div key={i} className="bg-gray-50 p-3 rounded-lg border border-gray-100 space-y-1.5">
+                        <div className="flex items-center justify-between">
+                          <select className="text-xs font-semibold px-2 py-1 rounded bg-white border border-gray-200" 
+                            value={v.aspekt} onChange={e => {
+                              const updated = [...form.verbesserungsvorschlaege];
+                              updated[i].aspekt = e.target.value;
+                              set('verbesserungsvorschlaege', updated);
+                            }}>
+                            <option value="prognose">Prognose</option>
+                            <option value="strategie">Strategie</option>
+                            <option value="ki_berater">KI-Berater</option>
+                            <option value="deadline_tracking">Deadline-Tracking</option>
+                            <option value="risk_assessment">Risiko-Analyse</option>
+                          </select>
+                          <button onClick={() => set('verbesserungsvorschlaege', form.verbesserungsvorschlaege.filter((_, idx) => idx !== i))}
+                            className="text-xs text-red-500 hover:text-red-700">Entfernen</button>
+                        </div>
+                        <textarea className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white" rows={2}
+                          placeholder="Problem beschreiben..."
+                          value={v.problem} onChange={e => {
+                            const updated = [...form.verbesserungsvorschlaege];
+                            updated[i].problem = e.target.value;
+                            set('verbesserungsvorschlaege', updated);
+                          }} />
+                        <textarea className="w-full text-xs border border-gray-200 rounded px-2 py-1.5 bg-white" rows={2}
+                          placeholder="Konkrete Lösung..."
+                          value={v.loesung} onChange={e => {
+                            const updated = [...form.verbesserungsvorschlaege];
+                            updated[i].loesung = e.target.value;
+                            set('verbesserungsvorschlaege', updated);
+                          }} />
+                      </div>
+                    ))
+                  ) : null}
+                  <button onClick={() => set('verbesserungsvorschlaege', [...(form.verbesserungsvorschlaege || []), { aspekt: 'prognose', problem: '', loesung: '', prioritaet: 'mittel' }])}
+                    className="w-full py-2 text-xs text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 font-semibold">
+                    + Verbesserungsvorschlag hinzufügen
+                  </button>
                 </div>
               </Sektion>
               )}

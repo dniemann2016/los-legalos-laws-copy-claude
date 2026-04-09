@@ -1,0 +1,130 @@
+{
+  "name": "AIPerformanceFeedback",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "case_name": {
+      "type": "string",
+      "title": "Fallname"
+    },
+    "prognose_rating": {
+      "type": "number",
+      "title": "Prognose-Bewertung (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "prognose_abweichung": {
+      "type": "number",
+      "title": "Tats\u00e4chliche Erfolgsrate %"
+    },
+    "strategie_rating": {
+      "type": "number",
+      "title": "Strategie-Effektivit\u00e4t (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "strategie_feedback": {
+      "type": "string",
+      "title": "Strategie-Feedback (Welche waren hilfreich/sch\u00e4dlich?)"
+    },
+    "ki_berater_rating": {
+      "type": "number",
+      "title": "KI-Berater-Rating (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "ki_berater_feedback": {
+      "type": "string",
+      "title": "KI-Berater Feedback (Korrekt/Irref\u00fchrend?)"
+    },
+    "verbesserungsvorschlaege": {
+      "type": "array",
+      "title": "Konkrete Verbesserungsvorschl\u00e4ge",
+      "items": {
+        "type": "object",
+        "properties": {
+          "aspekt": {
+            "type": "string",
+            "enum": [
+              "prognose",
+              "strategie",
+              "ki_berater",
+              "deadline_tracking",
+              "risk_assessment"
+            ]
+          },
+          "problem": {
+            "type": "string"
+          },
+          "loesung": {
+            "type": "string"
+          },
+          "prioritaet": {
+            "type": "string",
+            "enum": [
+              "hoch",
+              "mittel",
+              "niedrig"
+            ]
+          }
+        }
+      }
+    },
+    "gesamtbewertung": {
+      "type": "number",
+      "title": "Gesamtbewertung (1-5)",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "fall_erfolgreich": {
+      "type": "boolean",
+      "title": "Fall erfolgreich abgeschlossen?"
+    }
+  },
+  "required": [
+    "case_id",
+    "gesamtbewertung"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
