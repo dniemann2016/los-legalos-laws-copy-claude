@@ -180,15 +180,17 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   };
 
   const handleExtract = async () => {
-    if (!dsgvo || (!file && !text.trim())) return;
+    if (extractMode === "ki" && !dsgvo) { setExtractError("Bitte DSGVO-Hinweis akzeptieren"); return; }
+    if (!file && !text.trim()) { setExtractError("Dokument oder Text erforderlich"); return; }
     setExtracting(true);
     setExtractError(null);
-    let fileUrl = null;
-    if (file) {
-      const res = await base44.integrations.Core.UploadFile({ file });
-      fileUrl = res.file_url;
-    }
-    const result = await base44.integrations.Core.InvokeLLM({
+    try {
+      let fileUrl = null;
+      if (file) {
+        const res = await base44.integrations.Core.UploadFile({ file });
+        fileUrl = res.file_url;
+      }
+      const result = await base44.integrations.Core.InvokeLLM({
       prompt: `Du bist ein erfahrener Rechtsanwalt. Analysiere dieses juristische Dokument und extrahiere alle Argumente.\nFallkontext: ${caseData?.fallname || ""}, Rechtsgebiet: ${caseData?.rechtsgebiet || ""}, Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}\n${!fileUrl ? "TEXT: " + text : ""}\nExtrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, Schwächen, Paragraphen.`,
       file_urls: fileUrl ? [fileUrl] : undefined,
       response_json_schema: {
@@ -202,16 +204,17 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
           relevante_paragraphen: { type: "array", items: { type: "string" } },
         }
       }
-    });
-    if (!result) { setExtractError("KI-Analyse fehlgeschlagen. Bitte erneut versuchen."); setExtracting(false); return; }
-    setExtracted(result);
-    setExtracting(false);
-  };
-
-  const take = async (a, side, argType = "Rechtsargument") => {
-    await base44.entities.Argument.create({ case_id: caseId, title: a.titel, description: a.beschreibung || "", side, strength: a.staerke || 5, type: argType, paragraphs: a.paragraphen || [] });
-    load(true);
-  };
+      });
+      if (!result) { setExtractError("KI-Analyse fehlgeschlagen. Bitte erneut versuchen."); setExtracting(false); return; }
+      setExtracted(result);
+      setFile(null);
+      setText("");
+    } catch (error) {
+      setExtractError("Fehler bei der Analyse: " + (error?.message || "Unbekannter Fehler"));
+    } finally {
+      setExtracting(false);
+    }
+  }
 
   const takeAll = async () => {
     if (!extracted) return;
