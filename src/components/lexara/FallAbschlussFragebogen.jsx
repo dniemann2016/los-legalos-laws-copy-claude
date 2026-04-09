@@ -145,6 +145,7 @@ export default function FallAbschlussFragebogen({ caseData, onClose, onSaved }) 
                     placeholder="Rückmeldung des Mandanten (optional)..." />
                 </div>
               </Sektion>
+              )}
 
               {/* Kennzahlen – nur bei detailed mode */}
               {mode === 'detailed' && (
