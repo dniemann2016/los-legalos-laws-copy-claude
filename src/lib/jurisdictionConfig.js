@@ -82,6 +82,32 @@ const DE_TEXT = {
   daysOverdueLabel: (n) => `${n}d überfällig`,
   inDaysLabel: (n) => `in ${n} Tagen`,
 
+  // Shared subtitle helpers
+  mandatesSub: (total, active) => `${total} Mandate · ${active} aktiv`,
+  ofTotalLabel: (n) => `von ${n} gesamt`,
+  winProbabilityLabel: "Erfolgswahrscheinlichkeit",
+  totalRecordedLabel: "gesamt erfasst",
+  filterResetBtn: "Zurücksetzen",
+  noDataShort: "Keine Daten",
+  noDeadlinesShort: "Keine Fristen erfasst",
+  todayShort: "Heute",
+  noUpcomingShort: "Keine bevorstehenden Fristen",
+
+  // FallAssistentChat
+  conversationLabel: "Gespräch",
+  lexTitle: "Lex · Fall-Assistent",
+  lexDescription: "Ich kann Fälle analysieren, Fristen überwachen, Argumente verwalten und strategische Empfehlungen geben.",
+  newConversationBtn: "Neues Gespräch",
+  loadingLabel: "Lädt…",
+  noConversationsYet: "Noch keine Gespräche",
+  chatInputPlaceholder: "Juristische Frage stellen oder Fall-Daten verwalten…",
+  quickPrompts: [
+    "Zeige mir alle offenen Fristen",
+    "Analysiere meinen stärksten Fall",
+    "Welche Argumente fehlen noch?",
+    "Gib mir eine Risikoübersicht",
+  ],
+
   // LexaraDashboard
   caseOverview: "Fallübersicht",
   mandatesTotalSub: (total, active) => `${total} Mandate · ${active} aktiv`,
@@ -111,7 +137,7 @@ const DE_TEXT = {
   allMandatesSub: "alle Mandate",
   avgPrognosisLabel: "Ø Erfolgsprognose",
   weightedAvgSub: "gewichteter Durchschnitt",
-  overdueDeadlinesLabel: "Überfällige Fristen",
+  overdueDeadlinesLabel: "überfällig",
   actNow: "Sofort handeln",
   allOnTrack: "Alles im Plan",
   highRiskLabel: "Hochrisiko-Fälle (aktiv)",
@@ -288,6 +314,32 @@ const EN_TEXT = {
   daysOverdueLabel: (n) => `${n}d overdue`,
   inDaysLabel: (n) => `in ${n} days`,
 
+  // Shared subtitle helpers
+  mandatesSub: (total, active) => `${total} matters · ${active} active`,
+  ofTotalLabel: (n) => `of ${n} total`,
+  winProbabilityLabel: "Win Probability",
+  totalRecordedLabel: "total recorded",
+  filterResetBtn: "Reset",
+  noDataShort: "No data",
+  noDeadlinesShort: "No deadlines recorded",
+  todayShort: "Today",
+  noUpcomingShort: "No upcoming deadlines",
+
+  // FallAssistentChat
+  conversationLabel: "Conversation",
+  lexTitle: "Lex · Case Assistant",
+  lexDescription: "I can analyze cases, monitor deadlines, manage arguments and provide strategic recommendations.",
+  newConversationBtn: "New Conversation",
+  loadingLabel: "Loading…",
+  noConversationsYet: "No conversations yet",
+  chatInputPlaceholder: "Ask a legal question or manage case data…",
+  quickPrompts: [
+    "Show me all open deadlines",
+    "Analyze my strongest case",
+    "Which arguments are missing?",
+    "Give me a risk overview",
+  ],
+
   // LexaraDashboard
   caseOverview: "Case Overview",
   mandatesTotalSub: (total, active) => `${total} matters · ${active} active`,
@@ -317,7 +369,7 @@ const EN_TEXT = {
   allMandatesSub: "all matters",
   avgPrognosisLabel: "Avg. Win Probability",
   weightedAvgSub: "weighted average",
-  overdueDeadlinesLabel: "Overdue Deadlines",
+  overdueDeadlinesLabel: "overdue",
   actNow: "Act immediately",
   allOnTrack: "All on track",
   highRiskLabel: "High-Risk Cases (active)",
@@ -494,6 +546,32 @@ const FR_TEXT = {
   daysOverdueLabel: (n) => `${n}j en retard`,
   inDaysLabel: (n) => `dans ${n} jours`,
 
+  // Shared subtitle helpers
+  mandatesSub: (total, active) => `${total} dossiers · ${active} actifs`,
+  ofTotalLabel: (n) => `sur ${n} au total`,
+  winProbabilityLabel: "Probabilité de succès",
+  totalRecordedLabel: "enregistrés au total",
+  filterResetBtn: "Réinitialiser",
+  noDataShort: "Aucune donnée",
+  noDeadlinesShort: "Aucun délai enregistré",
+  todayShort: "Aujourd'hui",
+  noUpcomingShort: "Aucun délai à venir",
+
+  // FallAssistentChat
+  conversationLabel: "Conversation",
+  lexTitle: "Lex · Assistant dossier",
+  lexDescription: "Je peux analyser des dossiers, surveiller les délais, gérer les arguments et fournir des recommandations stratégiques.",
+  newConversationBtn: "Nouvelle conversation",
+  loadingLabel: "Chargement…",
+  noConversationsYet: "Aucune conversation",
+  chatInputPlaceholder: "Posez une question juridique ou gérez vos données de dossier…",
+  quickPrompts: [
+    "Montrez-moi tous les délais ouverts",
+    "Analysez mon dossier le plus solide",
+    "Quels arguments manquent encore ?",
+    "Donnez-moi un aperçu des risques",
+  ],
+
   // LexaraDashboard
   caseOverview: "Vue d'ensemble des dossiers",
   mandatesTotalSub: (total, active) => `${total} dossiers · ${active} actifs`,
@@ -523,7 +601,7 @@ const FR_TEXT = {
   allMandatesSub: "tous dossiers",
   avgPrognosisLabel: "Pronostic moy. de succès",
   weightedAvgSub: "moyenne pondérée",
-  overdueDeadlinesLabel: "Délais dépassés",
+  overdueDeadlinesLabel: "en retard",
   actNow: "Agir immédiatement",
   allOnTrack: "Tout est en ordre",
   highRiskLabel: "Dossiers à haut risque (actifs)",
