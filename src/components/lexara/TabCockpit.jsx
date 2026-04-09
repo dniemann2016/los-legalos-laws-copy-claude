@@ -50,6 +50,41 @@ export default function TabCockpit({ caseId, caseData }) {
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
     .slice(0, 5);
 
+  // Event-Alerts
+  const alerts = [];
+  const missedDeadlines = deadlines.filter(d => d.status === "versaeumt");
+  const missedDeadlinesThisWeek = missedDeadlines.filter(d => {
+    const daysAgo = (now - new Date(d.due_date)) / 86400000;
+    return daysAgo >= 0 && daysAgo <= 7;
+  });
+  if (missedDeadlines.length > 0) {
+    alerts.push({
+      type: "deadline",
+      severity: "critical",
+      title: `${missedDeadlines.length} Frist(en) versäumt`,
+      description: missedDeadlinesThisWeek.length > 0 ? `${missedDeadlinesThisWeek.length} diese Woche` : "Auswirkung auf Prognose",
+      icon: "⚠️"
+    });
+  }
+  if (args.filter(a => a.side === "gegner" && (a.strength || 5) >= 7).length >= 3) {
+    alerts.push({
+      type: "arguments",
+      severity: "high",
+      title: "Starke Gegenerargumente",
+      description: "3+ starke Gegnerargumente vorhanden",
+      icon: "🛡️"
+    });
+  }
+  if (prognose < 40) {
+    alerts.push({
+      type: "prognose",
+      severity: "high",
+      title: "Niedriges Erfolgsrisiko",
+      description: `Prognose nur ${prognose}%`,
+      icon: "📉"
+    });
+  }
+
   const gegnerArgs = args.filter(a => a.side === "gegner").sort((a, b) => (b.strength || 5) - (a.strength || 5)).slice(0, 4);
 
   const daysUntil = (d) => Math.ceil((new Date(d) - now) / 86400000);
@@ -93,6 +128,27 @@ Liefere:
 
   return (
     <div className="space-y-5">
+      {/* Event-Alerts */}
+      {alerts.length > 0 && (
+        <div className="space-y-2">
+          {alerts.map((alert, i) => {
+            const bgColor = alert.severity === "critical" ? "bg-red-50 border-red-200" : "bg-amber-50 border-amber-200";
+            const textColor = alert.severity === "critical" ? "text-red-700" : "text-amber-700";
+            return (
+              <div key={i} className={`border rounded-xl p-3 ${bgColor}`}>
+                <div className="flex items-start gap-2">
+                  <span className="text-lg">{alert.icon}</span>
+                  <div>
+                    <p className={`text-xs font-semibold ${textColor}`}>{alert.title}</p>
+                    <p className={`text-[10px] ${textColor} opacity-80`}>{alert.description}</p>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-base font-semibold text-gray-900">⚖️ Verhandlungs-Cockpit</h2>

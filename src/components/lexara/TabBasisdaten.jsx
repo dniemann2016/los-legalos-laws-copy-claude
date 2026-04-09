@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Scale } from "lucide-react";
 import FallAbschlussFragebogen from "./FallAbschlussFragebogen";
+import JudgeComparisonModal from "./JudgeComparisonModal";
 
 export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
   const [form, setForm] = useState({
@@ -18,6 +20,17 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
   });
   const [saving, setSaving] = useState(false);
   const [showFragebogen, setShowFragebogen] = useState(false);
+  const [showJudgeComparison, setShowJudgeComparison] = useState(false);
+  const [caseEntities, setCaseEntities] = useState({ args: [], evidence: [], deadlines: [], persons: [] });
+
+  useEffect(() => {
+    Promise.all([
+      base44.entities.Argument.filter({ case_id: caseId }),
+      base44.entities.Evidence.filter({ case_id: caseId }),
+      base44.entities.Deadline.filter({ case_id: caseId }),
+      base44.entities.Person.filter({ case_id: caseId }),
+    ]).then(([a, e, d, p]) => setCaseEntities({ args: a, evidence: e, deadlines: d, persons: p }));
+  }, [caseId]);
 
   const handleSave = async () => {
     setSaving(true);
@@ -78,6 +91,10 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
               onChange={e => setForm({ ...form, richter_klaeger_rate: +e.target.value })} className="w-full" />
           </div>
         </div>
+        <button onClick={() => setShowJudgeComparison(true)} className="w-full mt-3 flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200 rounded-xl text-xs font-medium transition-colors">
+          <Scale className="w-3.5 h-3.5" />
+          Richterwechsel simulieren
+        </button>
       </div>
 
       <div className="flex justify-end">
@@ -93,6 +110,18 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
           onSaved={() => setShowFragebogen(false)}
         />
       )}
+
+      <JudgeComparisonModal
+        isOpen={showJudgeComparison}
+        onClose={() => setShowJudgeComparison(false)}
+        currentJudgeName={form.richter_name}
+        caseId={caseId}
+        caseData={caseData}
+        args={caseEntities.args}
+        evidence={caseEntities.evidence}
+        deadlines={caseEntities.deadlines}
+        persons={caseEntities.persons}
+      />
     </div>
   );
 }
