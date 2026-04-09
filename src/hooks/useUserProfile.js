@@ -22,7 +22,10 @@ export function useUserProfile() {
   useEffect(() => {
     _setters.push(setProfile);
     if (!_profile) {
-      base44.auth.me().then(user => {
+      base44.auth.isAuthenticated().then(authed => {
+        if (!authed) return;
+        return base44.auth.me();
+      }).then(user => {
         if (user) {
           _profile = {
             language: user.language || DEFAULT_PROFILE.language,
