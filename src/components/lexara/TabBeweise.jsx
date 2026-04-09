@@ -11,6 +11,7 @@ export default function TabBeweise({ caseId }) {
   const [evidence, setEvidence] = useState([]);
   const [selectedArg, setSelectedArg] = useState(null);
   const [kiWeightingId, setKiWeightingId] = useState(null);
+  const [editWeightId, setEditWeightId] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showRef, setShowRef] = useState(false);
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
@@ -49,6 +50,13 @@ Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
       load();
     }
     setKiWeightingId(null);
+  };
+
+  const saveWeight = async (id, val) => {
+    const num = parseFloat(val);
+    if (!isNaN(num)) await base44.entities.Evidence.update(id, { weight: Math.min(10, Math.max(0, num)) });
+    setEditWeightId(null);
+    load();
   };
   const selectedArgData = args.find(a => a.id === selectedArg);
   const argEvidence = evidence.filter(e => e.argument_id === selectedArg);
@@ -107,7 +115,15 @@ Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
                           <div className="flex items-center gap-2 mb-1"><span className="text-xs">📄</span><span className="font-medium text-sm text-gray-900">{ev.title}</span></div>
                           <div className="flex items-center gap-2 mb-1">
                             <div className="w-20 h-1.5 bg-gray-200 rounded-full overflow-hidden"><div className="h-full bg-green-600 rounded-full" style={{width:`${(ev.weight||5)*10}%`}} /></div>
-                            <span className="text-xs text-gray-500">{ev.weight||5}/10</span>
+                            {editWeightId === ev.id ? (
+                              <input type="number" min={0} max={10} step={0.5} autoFocus
+                                className="w-14 border border-violet-300 rounded px-1 py-0.5 text-xs"
+                                defaultValue={ev.weight||5}
+                                onBlur={e => saveWeight(ev.id, e.target.value)}
+                                onKeyDown={e => e.key === "Enter" && saveWeight(ev.id, e.target.value)} />
+                            ) : (
+                              <span className="text-xs text-gray-500 cursor-pointer hover:text-violet-600" title="Klicken zum Bearbeiten" onClick={() => setEditWeightId(ev.id)}>{ev.weight||5}/10 ✏️</span>
+                            )}
                           </div>
                           {ev.description && <p className="text-xs text-gray-500">{ev.description}</p>}
                           {ev.type && <p className="text-[10px] text-gray-400 mt-0.5">{ev.type}</p>}

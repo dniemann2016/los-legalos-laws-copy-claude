@@ -15,6 +15,8 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
+  const [editStrengthId, setEditStrengthId] = useState(null);
+  const [editStrengthVal, setEditStrengthVal] = useState(5);
   const [kiWeightingId, setKiWeightingId] = useState(null);
   const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
   const fileRef = useRef(null);
@@ -93,10 +95,18 @@ Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
     });
     const parsed = parseFloat(String(result).replace(/[^0-9.]/g, ""));
     if (!isNaN(parsed)) {
-      await base44.entities.Argument.update(arg.id, { strength: Math.min(10, Math.max(0, parsed)) });
+      const val = Math.min(10, Math.max(0, parsed));
+      await base44.entities.Argument.update(arg.id, { strength: val });
       load();
     }
     setKiWeightingId(null);
+  };
+
+  const saveStrength = async (id, val) => {
+    const num = parseFloat(val);
+    if (!isNaN(num)) await base44.entities.Argument.update(id, { strength: Math.min(10, Math.max(0, num)) });
+    setEditStrengthId(null);
+    load();
   };
 
   const filtered = args.filter(a => filter === "all" || a.side === filter);
@@ -263,7 +273,15 @@ Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
                   <div className="w-24 h-1 bg-gray-100 rounded-full overflow-hidden">
                     <div className="h-full bg-green-600 rounded-full" style={{ width: `${(arg.strength||5)*10}%` }} />
                   </div>
-                  <span className="text-xs text-gray-500">{arg.strength||5}/10</span>
+                  {editStrengthId === arg.id ? (
+                    <input type="number" min={0} max={10} step={0.5} autoFocus
+                      className="w-14 border border-violet-300 rounded px-1 py-0.5 text-xs"
+                      defaultValue={arg.strength||5}
+                      onBlur={e => saveStrength(arg.id, e.target.value)}
+                      onKeyDown={e => e.key === "Enter" && saveStrength(arg.id, e.target.value)} />
+                  ) : (
+                    <span className="text-xs text-gray-500 cursor-pointer hover:text-violet-600" title="Klicken zum Bearbeiten" onClick={() => { setEditStrengthId(arg.id); setEditStrengthVal(arg.strength||5); }}>{arg.strength||5}/10 ✏️</span>
+                  )}
                   {arg.paragraphs?.length > 0 && <span className="text-[10px] text-gray-400">{arg.paragraphs.length} Beweise</span>}
                   <button onClick={() => kiGewichten(arg)} disabled={kiWeightingId === arg.id}
                     title="KI-Gewichtung" className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-800 border border-violet-200 rounded px-1.5 py-0.5 disabled:opacity-40">
