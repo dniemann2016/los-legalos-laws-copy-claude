@@ -309,7 +309,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
               {file && <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">📄 {file.name} ({Math.round(file.size / 1024)}KB) <button onClick={() => setFile(null)}><X className="w-3 h-3" /></button></div>}
             </div>
             <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-[70px]" placeholder="Oder Text manuell einfügen..." value={text} onChange={e => setText(e.target.value)} />
-            <Button onClick={handleExtract} disabled={extracting || (!file && !text.trim()) || (extractMode === "ki" && !dsgvo)} className="bg-gray-700 text-white hover:bg-gray-800 gap-2 text-sm">
+            <Button onClick={handleExtract} disabled={extracting} className="w-full bg-blue-600 text-white hover:bg-blue-700 gap-2 text-sm">
               {extracting ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analysiere...</> : "🔄 Analysieren"}
             </Button>
             {extractError && <p className="text-xs text-red-500 mt-2">⚠️ {extractError}</p>}
