@@ -1,22 +1,16 @@
-import { useState, useEffect } from "react";
-
-const KEY = "machiavellex_jurisdiction";
+import { useState } from "react";
 
 export function useJurisdiction() {
-  const [jurisdiction, setJurisdiction] = useState(() =>
-    localStorage.getItem(KEY) || "DE"
+  const [jurisdiction, setJurisdiction] = useState(
+    () => localStorage.getItem("jurisdiction") || "DE"
   );
 
-  const toggle = () => {
-    const next = jurisdiction === "DE" ? "US" : "DE";
-    localStorage.setItem(KEY, next);
-    setJurisdiction(next);
+  const set = (jur) => {
+    setJurisdiction(jur);
+    localStorage.setItem("jurisdiction", jur);
   };
 
-  const set = (j) => {
-    localStorage.setItem(KEY, j);
-    setJurisdiction(j);
-  };
+  const toggle = () => set(jurisdiction === "DE" ? "US" : "DE");
 
-  return { jurisdiction, toggle, set };
+  return { jurisdiction, set, toggle };
 }

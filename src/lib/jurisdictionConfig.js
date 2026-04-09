@@ -1,153 +1,138 @@
-// Jurisdiction configuration: DE = German law, US = American law
-
 export const JURISDICTIONS = {
-  DE: "DE",
-  US: "US",
+  DE: "DE", AT: "AT", CH: "CH", LI: "LI",
+  LU: "LU", SE: "SE", NO: "NO", DK: "DK", FI: "FI", US: "US",
 };
 
-export const T = {
-  DE: {
-    // General
-    platform: "MachiavelLEX",
-    platformSub: "Legal Intelligence Platform",
-    // Case fields
-    fallname: "Fallname",
-    aktenzeichen: "Aktenzeichen",
-    gericht: "Gericht",
-    rechtsgebiet: "Rechtsgebiet",
-    prozessziel: "Prozessziel",
-    streitwert: "Streitwert",
-    instanz: "Instanz",
-    prognose: "Prognose",
-    zentrale_rechtsfrage: "Zentrale Rechtsfrage",
-    richter: "Richter",
-    // Status
-    aktiv: "Aktiv",
-    vorbereitung: "Vorbereitung",
-    abgeschlossen: "Abgeschlossen",
-    ruhend: "Ruhend",
-    // Instanzen
-    erstinstanz: "Erstinstanz",
-    berufung: "Berufung",
-    revision: "Revision",
-    // Roles
-    richterRole: "Richter",
-    zeuge: "Zeuge",
-    sachverstaendiger: "Sachverständiger",
-    partei: "Partei",
-    anwalt: "Anwalt",
-    gutachter: "Gutachter",
-    // Deadline
-    frist: "Frist",
-    fristen: "Fristen",
-    // Argument
-    argument: "Argument",
-    argumente: "Argumente",
-    // Evidence
-    beweis: "Beweis",
-    beweise: "Beweise",
-    // Navigation
-    aktiveFaelle: "Aktive Fälle",
-    offeeneFristen: "Offene Fristen",
-    // Modules
-    module: [
-      { category: "KI-ASSISTENT · FALLVERWALTUNG", title: "Lex · Fall-Assistent", description: "Juristischer KI-Assistent: Fälle analysieren, Fristen überwachen, Argumente verwalten und Strategien entwickeln per Chat." },
-      { category: "KANZLEI · FALLMANAGEMENT", title: "Anwalts-Tool", description: "Argumentketten, Beweisführung, Strategie & Prognose für laufende Mandantenakten." },
-      { category: "RICHTERPROFILE · STATISTIKEN", title: "Richterprofile", description: "Statistische Richterprofile mit Klägerquote, Vergleichsrate und Verfahrensdauer – verknüpft mit laufenden Fällen." },
-      { category: "KI-AGENT · PLATTFORM", title: "Plattform-Optimierer", description: "KI-Agent der kontinuierlich Lücken erkennt, Richterprofile ergänzt, Argumente stärkt und die Kanzlei auf Großkanzlei-Niveau hebt." },
-      { category: "PORTFOLIO · COCKPIT", title: "Kanzlei-Cockpit", description: "Portfolio-Übersicht aller Mandate mit Risikoampel, KPI-Dashboard, Fristenalarm und Chancen-Analyse auf einen Blick." },
-      { category: "ANALYTIK · CHARTS", title: "Kanzlei-Analytik", description: "Interaktive Dashboards mit Recharts: Fallstatistiken, Fristen-Übersichten, Prognoseverteilung und KI-gestützte Fallanalyse." },
-    ],
-    // Analytics labels
-    faelleNachRechtsgebiet: "Fälle nach Rechtsgebiet",
-    statusVerteilung: "Status-Verteilung",
-    prognoseVerteilung: "Prognose-Verteilung",
-    fristenUebersicht: "Fristen-Übersicht",
-    naechste14Tage: "Fristen der nächsten 14 Tage",
-    instanzVerteilung: "Instanz-Verteilung",
-    kiFallanalyse: "KI-Fallanalyse",
-    fallAuswaehlen: "Fall auswählen",
-    analyseStarten: "KI-Analyse starten",
-    analyseWarning: "⚠ Diese Analyse ersetzt keine rechtliche Beratung und dient ausschließlich als Orientierungshilfe.",
-    aktiveFaelleLabel: "Aktive Fälle",
-    offeeneFristenLabel: "Offene Fristen",
-    avgPrognoseLabel: "Ø Prognose",
-    argumenteLabel: "Argumente",
-    currency: "€",
-    currencyLocale: "de-DE",
-  },
-  US: {
-    // General
-    platform: "MachiavelLEX",
-    platformSub: "Legal Intelligence Platform",
-    // Case fields
-    fallname: "Case Name",
-    aktenzeichen: "Docket Number",
-    gericht: "Court",
-    rechtsgebiet: "Practice Area",
-    prozessziel: "Legal Objective",
-    streitwert: "Amount in Controversy",
-    instanz: "Court Level",
-    prognose: "Win Probability",
-    zentrale_rechtsfrage: "Central Legal Issue",
-    richter: "Judge",
-    // Status
-    aktiv: "Active",
-    vorbereitung: "Preparation",
-    abgeschlossen: "Closed",
-    ruhend: "Stayed",
-    // Instanzen
-    erstinstanz: "Trial Court",
-    berufung: "Court of Appeals",
-    revision: "Supreme Court",
-    // Roles
-    richterRole: "Judge",
-    zeuge: "Witness",
-    sachverstaendiger: "Expert Witness",
-    partei: "Party",
-    anwalt: "Attorney",
-    gutachter: "Consultant",
-    // Deadline
-    frist: "Deadline",
-    fristen: "Deadlines",
-    // Argument
-    argument: "Argument",
-    argumente: "Arguments",
-    // Evidence
-    beweis: "Evidence",
-    beweise: "Evidence Items",
-    // Navigation
-    aktiveFaelle: "Active Cases",
-    offeeneFristen: "Open Deadlines",
-    // Modules
-    module: [
-      { category: "AI ASSISTANT · CASE MANAGEMENT", title: "Lex · Case Assistant", description: "AI-powered legal assistant: analyze cases, track deadlines, manage arguments, and develop litigation strategies via chat." },
-      { category: "LAW FIRM · CASE MANAGEMENT", title: "Attorney Tool", description: "Argument chains, evidence management, strategy & win probability for active client matters." },
-      { category: "JUDGE PROFILES · STATISTICS", title: "Judge Profiles", description: "Statistical judge profiles with plaintiff win rates, settlement rates, and average case duration – linked to active cases." },
-      { category: "AI AGENT · PLATFORM", title: "Platform Optimizer", description: "AI agent that continuously identifies gaps, enriches judge profiles, strengthens arguments, and elevates firm performance." },
-      { category: "PORTFOLIO · COCKPIT", title: "Firm Cockpit", description: "Portfolio overview of all matters with risk indicators, KPI dashboard, deadline alerts, and opportunity analysis." },
-      { category: "ANALYTICS · CHARTS", title: "Firm Analytics", description: "Interactive dashboards: case statistics, deadline overviews, win probability distribution, and AI-powered case analysis." },
-    ],
-    // Analytics labels
-    faelleNachRechtsgebiet: "Cases by Practice Area",
-    statusVerteilung: "Status Distribution",
-    prognoseVerteilung: "Win Probability Distribution",
-    fristenUebersicht: "Deadline Overview",
-    naechste14Tage: "Deadlines in the Next 14 Days",
-    instanzVerteilung: "Court Level Distribution",
-    kiFallanalyse: "AI Case Analysis",
-    fallAuswaehlen: "Select a Case",
-    analyseStarten: "Start AI Analysis",
-    analyseWarning: "⚠ This analysis does not constitute legal advice and is intended solely as a reference tool.",
-    aktiveFaelleLabel: "Active Cases",
-    offeeneFristenLabel: "Open Deadlines",
-    avgPrognoseLabel: "Avg. Win Probability",
-    argumenteLabel: "Arguments",
-    currency: "$",
-    currencyLocale: "en-US",
-  },
+export const JURISDICTION_META = {
+  DE: { flag: "🇩🇪", name: { DE: "Deutschland", EN: "Germany", FR: "Allemagne" }, system: "ZPO / BGB / StPO", currency: "€" },
+  AT: { flag: "🇦🇹", name: { DE: "Österreich", EN: "Austria", FR: "Autriche" }, system: "ZPO / ABGB / StPO", currency: "€" },
+  CH: { flag: "🇨🇭", name: { DE: "Schweiz", EN: "Switzerland", FR: "Suisse" }, system: "ZPO / OR / ZGB", currency: "CHF" },
+  LI: { flag: "🇱🇮", name: { DE: "Liechtenstein", EN: "Liechtenstein", FR: "Liechtenstein" }, system: "ZPO / PGR", currency: "CHF" },
+  LU: { flag: "🇱🇺", name: { DE: "Luxemburg", EN: "Luxembourg", FR: "Luxembourg" }, system: "Code de procédure civile", currency: "€" },
+  SE: { flag: "🇸🇪", name: { DE: "Schweden", EN: "Sweden", FR: "Suède" }, system: "Rättegångsbalken", currency: "SEK" },
+  NO: { flag: "🇳🇴", name: { DE: "Norwegen", EN: "Norway", FR: "Norvège" }, system: "Tvisteloven", currency: "NOK" },
+  DK: { flag: "🇩🇰", name: { DE: "Dänemark", EN: "Denmark", FR: "Danemark" }, system: "Retsplejeloven", currency: "DKK" },
+  FI: { flag: "🇫🇮", name: { DE: "Finnland", EN: "Finland", FR: "Finlande" }, system: "Oikeudenkäymiskaari", currency: "€" },
+  US: { flag: "🇺🇸", name: { DE: "USA", EN: "United States", FR: "États-Unis" }, system: "Common Law / FRCP", currency: "$" },
 };
+
+export function getAIContext(jurisdiction, usState) {
+  const contexts = {
+    DE: `You are an expert German attorney. Apply German law strictly: ZPO, BGB, StGB, HGB. Reference specific paragraphs (§§). Follow BGH and BVerfG case law. Use precise German legal terminology.`,
+    AT: `You are an expert Austrian attorney. Apply Austrian law: ZPO, ABGB, StGB. Reference OGH decisions. Distinguish from German law where relevant. Use Austrian legal terminology.`,
+    CH: `You are an expert Swiss attorney. Apply Swiss law: ZPO, OR, ZGB, StGB. Reference BGer/Tribunal fédéral decisions. Note cantonal variations where relevant.`,
+    LI: `You are an expert Liechtenstein attorney. Apply Liechtenstein law including the PGR (Personen- und Gesellschaftsrecht). Note similarities to Austrian law.`,
+    LU: `You are an expert Luxembourg attorney. Apply Luxembourg law based on French civil law tradition. Reference Cour d'appel and Cour de cassation decisions. Note EU law primacy.`,
+    SE: `You are an expert Swedish attorney. Apply Swedish law under the Rättegångsbalken. Reference Högsta domstolen decisions. Note Nordic legal tradition.`,
+    NO: `You are an expert Norwegian attorney. Apply Norwegian law under the Tvisteloven. Reference Høyesterett decisions.`,
+    DK: `You are an expert Danish attorney. Apply Danish law under the Retsplejeloven. Reference Højesteret decisions.`,
+    FI: `You are an expert Finnish attorney. Apply Finnish law under the Oikeudenkäymiskaari. Reference Korkein oikeus decisions. Note bilingual (Finnish/Swedish) legal system.`,
+    US: `You are an expert American attorney${usState ? ` specializing in ${usState} law` : ""}. Apply US federal and ${usState || "state"} law. Reference FRCP, applicable federal statutes, ${usState ? `${usState} Rules of Civil Procedure, ` : ""}and relevant case law. Use IRAC structure.`,
+  };
+  return contexts[jurisdiction] || contexts.DE;
+}
+
+const DE_TEXT = {
+  platform: "Ihre KI-gestützte Rechtsplattform",
+  platformSub: "Strategische Fallanalyse & Intelligente Prozessführung",
+  kiFallanalyse: "KI-Fallanalyse",
+  analyseStarten: "KI-Analyse starten",
+  analyseWarning: "Diese Analyse ist eine KI-gestützte Einschätzung und ersetzt keine Rechtsberatung.",
+  fallAuswaehlen: "Fall auswählen",
+  aktiveFaelleLabel: "Aktive Fälle",
+  offeeneFristenLabel: "Offene Fristen",
+  avgPrognoseLabel: "Ø Prognose",
+  argumenteLabel: "Argumente",
+  faelleNachRechtsgebiet: "Fälle nach Rechtsgebiet",
+  statusVerteilung: "Status-Verteilung",
+  prognoseVerteilung: "Prognose-Verteilung",
+  fristenUebersicht: "Fristen-Übersicht",
+  naechste14Tage: "Nächste 14 Tage",
+  instanzVerteilung: "Instanz-Verteilung",
+  rechtsgebiet: "Rechtsgebiet",
+  gericht: "Gericht",
+  instanz: "Instanz",
+  aktiv: "Status",
+  streitwert: "Streitwert",
+  prognose: "Prognose",
+  module: [
+    { category: "KI-Assistent", title: "Fall-Assistent Chat", description: "Konversationelle KI-Analyse Ihrer Mandate" },
+    { category: "Mandatsverwaltung", title: "Lexara Dashboard", description: "Alle Fälle im Überblick – Fristen, Argumente, Beweise" },
+    { category: "Personenprofile", title: "Richterprofile", description: "Erfahrungen, Statistiken & KI-Taktikanalyse" },
+    { category: "KI-Agent", title: "Plattform-Agent", description: "Autonomer Agent für Plattformoptimierung und Analyse" },
+    { category: "Cockpit", title: "Kanzlei-Cockpit", description: "Risiko-Ampel, Portfolio und Fristen-Monitoring" },
+    { category: "Analytics", title: "Kanzlei-Analytik", description: "Visualisierung aller Fallkennzahlen und Trends" },
+  ],
+};
+
+const EN_TEXT = {
+  platform: "Your AI-Powered Legal Platform",
+  platformSub: "Strategic Case Analysis & Intelligent Litigation Management",
+  kiFallanalyse: "AI Case Analysis",
+  analyseStarten: "Start AI Analysis",
+  analyseWarning: "This analysis is AI-assisted and does not constitute legal advice.",
+  fallAuswaehlen: "Select case",
+  aktiveFaelleLabel: "Active Cases",
+  offeeneFristenLabel: "Open Deadlines",
+  avgPrognoseLabel: "Avg. Prognosis",
+  argumenteLabel: "Arguments",
+  faelleNachRechtsgebiet: "Cases by Practice Area",
+  statusVerteilung: "Status Distribution",
+  prognoseVerteilung: "Prognosis Distribution",
+  fristenUebersicht: "Deadline Overview",
+  naechste14Tage: "Next 14 Days",
+  instanzVerteilung: "Court Level Distribution",
+  rechtsgebiet: "Practice Area",
+  gericht: "Court",
+  instanz: "Court Level",
+  aktiv: "Status",
+  streitwert: "Amount in Controversy",
+  prognose: "Win Probability",
+  module: [
+    { category: "AI Assistant", title: "Case Assistant Chat", description: "Conversational AI analysis of your cases" },
+    { category: "Case Management", title: "Lexara Dashboard", description: "All cases at a glance – deadlines, arguments, evidence" },
+    { category: "People Profiles", title: "Judge Profiles", description: "Experience, statistics & AI tactical analysis" },
+    { category: "AI Agent", title: "Platform Agent", description: "Autonomous agent for platform optimization" },
+    { category: "Cockpit", title: "Firm Cockpit", description: "Risk indicators, portfolio and deadline monitoring" },
+    { category: "Analytics", title: "Firm Analytics", description: "Visualization of all case metrics and trends" },
+  ],
+};
+
+const FR_TEXT = {
+  platform: "Votre plateforme juridique IA",
+  platformSub: "Analyse stratégique des dossiers & gestion intelligente du contentieux",
+  kiFallanalyse: "Analyse IA du dossier",
+  analyseStarten: "Lancer l'analyse IA",
+  analyseWarning: "Cette analyse est assistée par IA et ne constitue pas un avis juridique.",
+  fallAuswaehlen: "Sélectionner un dossier",
+  aktiveFaelleLabel: "Dossiers actifs",
+  offeeneFristenLabel: "Délais ouverts",
+  avgPrognoseLabel: "Pronostic moy.",
+  argumenteLabel: "Arguments",
+  faelleNachRechtsgebiet: "Dossiers par domaine",
+  statusVerteilung: "Répartition des statuts",
+  prognoseVerteilung: "Répartition du pronostic",
+  fristenUebersicht: "Vue d'ensemble des délais",
+  naechste14Tage: "14 prochains jours",
+  instanzVerteilung: "Répartition par instance",
+  rechtsgebiet: "Domaine juridique",
+  gericht: "Tribunal",
+  instanz: "Instance",
+  aktiv: "Statut",
+  streitwert: "Valeur du litige",
+  prognose: "Pronostic",
+  module: [
+    { category: "Assistant IA", title: "Chat assistant dossier", description: "Analyse IA conversationnelle de vos dossiers" },
+    { category: "Gestion des dossiers", title: "Tableau de bord Lexara", description: "Tous les dossiers en un coup d'œil" },
+    { category: "Profils de personnes", title: "Profils de juges", description: "Expériences, statistiques & analyse tactique IA" },
+    { category: "Agent IA", title: "Agent de plateforme", description: "Agent autonome d'optimisation de la plateforme" },
+    { category: "Cockpit", title: "Cockpit cabinet", description: "Indicateurs de risque, portefeuille et délais" },
+    { category: "Analytique", title: "Analytique cabinet", description: "Visualisation de tous les indicateurs de dossiers" },
+  ],
+};
+
+const TEXTS = { DE: DE_TEXT, AT: DE_TEXT, CH: DE_TEXT, LI: DE_TEXT, EN: EN_TEXT, US: EN_TEXT, SE: EN_TEXT, NO: EN_TEXT, DK: EN_TEXT, FI: EN_TEXT, LU: FR_TEXT, FR: FR_TEXT };
 
 export function getT(jurisdiction) {
-  return T[jurisdiction] || T.DE;
+  return TEXTS[jurisdiction] || DE_TEXT;
 }
