@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Plus, X, Sparkles, RefreshCw, Pencil, Check, Network } from "lucide-react";
-import ArgumentGraph from "./ArgumentGraph";
+import ArgumentGraphiOS from "./ArgumentGraphiOS";
 import { Button } from "@/components/ui/button";
 
 const CONN_TYPES = ["stützt", "entkräftet", "schließt aus", "kausal", "widerspricht", "schwächt", "verstärkt"];
@@ -129,7 +129,7 @@ export default function TabVerkettung({ caseId }) {
 
   return (
     <div className="space-y-4">
-      {showGraph && <ArgumentGraph args={args} onClose={() => setShowGraph(false)} />}
+      {showGraph && <ArgumentGraphiOS args={args} onClose={() => setShowGraph(false)} />}
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-semibold text-gray-700">🔗 Argumentketten & Kausalzusammenhänge</h3>
