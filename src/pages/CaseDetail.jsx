@@ -10,7 +10,7 @@ import TabStrategie from "../components/lexara/TabStrategie";
 import TabKIBerater from "../components/lexara/TabKIBerater";
 import TabAnalyse from "../components/lexara/TabAnalyse";
 import TabRisiko from "../components/lexara/TabRisiko";
-import TabZeitachseSimulation from "../components/lexara/TabZeitachseSimulation";
+import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
 import TabDokumente from "../components/lexara/TabDokumente";
 import TabGesamtbewertung from "../components/lexara/TabGesamtbewertung";
 import TabVerhandlung from "../components/lexara/TabVerhandlung";
@@ -194,7 +194,7 @@ export default function CaseDetail() {
         {activeTab===6 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===7 && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===8 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===9 && <TabZeitachseSimulation caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===9 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
         {activeTab===10 && <TabDokumente caseId={caseId} />}
         {activeTab===11 && <TabGesamtbewertung caseId={caseId} caseData={caseData} />}
         {activeTab===12 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
