@@ -70,7 +70,8 @@ export default function Zeitleiste() {
   filtered.forEach(d => {
     const date = new Date(d.due_date);
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
-    const label = date.toLocaleDateString("de-DE", { month: "long", year: "numeric" });
+    const locale = language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE";
+    const label = date.toLocaleDateString(locale, { month: "long", year: "numeric" });
     if (!grouped[key]) grouped[key] = { label, items: [] };
     grouped[key].items.push(d);
   });
@@ -87,7 +88,7 @@ export default function Zeitleiste() {
         <div className="max-w-3xl mx-auto">
           <div className="flex items-center gap-3 mb-3">
             <Link to="/lexara" className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm">
-              <ArrowLeft className="w-4 h-4" /> Zurück
+              <ArrowLeft className="w-4 h-4" /> {t.backLabel}
             </Link>
           </div>
           <div className="flex items-center justify-between flex-wrap gap-3">
@@ -161,7 +162,7 @@ export default function Zeitleiste() {
                                   {getDaysLabel(d.due_date, d.status, t)}
                                 </span>
                                 <span className="text-[10px] text-gray-400">
-                                  {new Date(d.due_date).toLocaleDateString("de-DE")}
+                                  {new Date(d.due_date).toLocaleDateString(language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE")}
                                 </span>
                               </div>
                             </div>

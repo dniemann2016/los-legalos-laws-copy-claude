@@ -225,7 +225,7 @@ export default function KanzleiCockpit() {
                         <p className="text-[10px] text-slate-400">{c?.fallname || "—"}{d.frist_type ? ` · ${d.frist_type}` : ""}</p>
                       </div>
                     </div>
-                    <span className="text-[11px] text-slate-400 tabular-nums">{new Date(d.due_date).toLocaleDateString("de-DE")}</span>
+                    <span className="text-[11px] text-slate-400 tabular-nums">{new Date(d.due_date).toLocaleDateString(language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE")}</span>
                   </div>
                 );
               })}
