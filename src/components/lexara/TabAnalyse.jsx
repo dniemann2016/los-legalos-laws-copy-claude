@@ -1,8 +1,12 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
+import { Sparkles, RefreshCw, ExternalLink } from "lucide-react";
 
 export default function TabAnalyse({ caseId, caseData, onUpdate }) {
+  const [args, setArgs] = useState([]);
+  const [rechtsprechung, setRechtsprechung] = useState(null);
+  const [rpLoading, setRpLoading] = useState(false);
   const [form, setForm] = useState({
     streitwert: caseData?.streitwert || 100000,
     gebuehrenstufe: caseData?.gebuehrenstufe || 1.3,
@@ -13,9 +17,46 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
   });
   const [saving, setSaving] = useState(false);
 
+  useEffect(() => {
+    base44.entities.Argument.filter({ case_id: caseId }).then(setArgs);
+  }, [caseId]);
+
+  const sucheRechtsprechung = async () => {
+    setRpLoading(true);
+    setRechtsprechung(null);
+    const argList = args.map(a => a.title).join(", ");
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein juristischer Rechercheur. Suche im Internet nach aktueller relevanter Rechtsprechung für folgenden Fall:\n\nFall: "${caseData?.fallname || ""}"\nRechtsgebiet: ${caseData?.rechtsgebiet || "Zivilrecht"}\nGericht: ${caseData?.gericht || ""}\nZentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}\nArgumente: ${argList || "keine"}\nInstanz: ${caseData?.instanz || "Erstinstanz"}\n\nFinde 5-8 relevante Gerichtsentscheidungen aus Deutschland (BGH, BVerfG, OLG, BAG, BFH etc.) oder international je nach Rechtsordnung (EGMR, EuGH, US Supreme Court, UK Supreme Court etc.). Suche konkret nach Aktenzeichen, Datum, Leitsatz und wie sie auf die Argumente anwendbar sind. Gib NUR Entscheidungen an, die wirklich existieren und über eine Internetsuche verifizierbar sind.`,
+      add_context_from_internet: true,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          entscheidungen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                gericht: { type: "string" },
+                aktenzeichen: { type: "string" },
+                datum: { type: "string" },
+                leitsatz: { type: "string" },
+                relevanz: { type: "string" },
+                anwendung: { type: "string" },
+                staerke: { type: "string", enum: ["hoch", "mittel", "niedrig"] }
+              },
+              required: ["gericht", "leitsatz", "relevanz"]
+            }
+          },
+          zusammenfassung: { type: "string" }
+        }
+      }
+    });
+    setRechtsprechung(res);
+    setRpLoading(false);
+  };
+
   const prognose = caseData?.prognose || 50;
 
-  // RVG Calculation
   const rgvGrundgebuehr = () => {
     const s = form.streitwert;
     if(s<=500) return 49;
@@ -57,15 +98,12 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
   const anwalt = Math.round(grundgebuehr * form.gebuehrenstufe + grundgebuehr * 1.2);
   const gericht = Math.round(grundgebuehr * 3);
   const gegnerAnwalt = anwalt;
-
   const kostenVollsieg = anwalt;
   const kostenNiederlage = anwalt + gegnerAnwalt + gericht;
   const kostenVergleich = Math.round(anwalt*0.8 + gericht*0.5);
-
   const ewKlage = (prognose/100)*form.streitwert - (1-prognose/100)*(anwalt+gegnerAnwalt+gericht);
   const ewVergleich = form.vergleichsangebot - anwalt*0.8;
   const breakEven = (anwalt+gegnerAnwalt+gericht) / form.streitwert * 100;
-
   const recommendation = ewKlage > ewVergleich + form.streitwert*0.15 ? "KLAGE" : ewVergleich > 0 ? "VERGLEICH" : "AUFGABE";
   const recColor = recommendation==="KLAGE"?"text-green-700":recommendation==="VERGLEICH"?"text-yellow-600":"text-red-600";
 
@@ -130,7 +168,6 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
               </div>
             ))}
           </div>
-
           <div className="mt-4">
             <h4 className="text-xs font-semibold text-gray-600 mb-3">📋 Szenarien-Vergleich</h4>
             <div className="grid grid-cols-3 gap-2 text-xs">
@@ -168,6 +205,63 @@ export default function TabAnalyse({ caseId, caseData, onUpdate }) {
           <p><strong>Break-Even:</strong> Kosten_Niederlage / (Anspruchswert + Kosten_Niederlage)</p>
           <p className={`font-medium mt-1 ${recColor}`}><strong>Empfehlung: {recommendation}</strong> wenn EW_Klage &gt; EW_Vergleich + Risikoaufschlag (15%)</p>
         </div>
+      </div>
+
+      {/* Rechtsprechungs-Suche */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-4">
+        <div className="flex items-center justify-between flex-wrap gap-2">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800">📚 Relevante Rechtsprechung (KI + Internet)</h3>
+            <p className="text-xs text-gray-400 mt-0.5">KI sucht live im Internet nach BGH/OLG/BVerfG oder internationalen Entscheidungen passend zu Ihren Argumenten</p>
+          </div>
+          <Button onClick={sucheRechtsprechung} disabled={rpLoading} size="sm"
+            className="bg-violet-700 hover:bg-violet-800 text-white text-xs rounded-xl gap-1.5">
+            {rpLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+            {rpLoading ? "Suche läuft…" : rechtsprechung ? "Neu suchen" : "Rechtsprechung suchen"}
+          </Button>
+        </div>
+
+        {rpLoading && (
+          <div className="flex items-center gap-3 text-gray-400 text-sm py-6 justify-center">
+            <div className="w-5 h-5 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+            KI durchsucht Rechtsprechungsdatenbanken im Internet…
+          </div>
+        )}
+
+        {rechtsprechung && (
+          <div className="space-y-3">
+            {rechtsprechung.zusammenfassung && (
+              <div className="bg-violet-50 border border-violet-100 rounded-xl p-3">
+                <p className="text-xs text-violet-800">{rechtsprechung.zusammenfassung}</p>
+              </div>
+            )}
+            {(rechtsprechung.entscheidungen || []).map((e, i) => {
+              const staerkeColor = { hoch: "bg-green-100 text-green-700", mittel: "bg-amber-100 text-amber-700", niedrig: "bg-gray-100 text-gray-600" };
+              return (
+                <div key={i} className="border border-gray-100 rounded-xl p-4 space-y-2 hover:border-gray-200 transition-colors">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-gray-800">{e.gericht}</span>
+                        {e.aktenzeichen && <span className="text-xs text-gray-500 font-mono bg-gray-50 px-1.5 py-0.5 rounded">{e.aktenzeichen}</span>}
+                        {e.datum && <span className="text-xs text-gray-400">{e.datum}</span>}
+                        {e.staerke && <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${staerkeColor[e.staerke] || ""}`}>{e.staerke} Relevanz</span>}
+                      </div>
+                      <p className="text-xs font-medium text-gray-700 mt-1.5 italic">„{e.leitsatz}"</p>
+                    </div>
+                    <ExternalLink className="w-3.5 h-3.5 text-gray-300 flex-shrink-0 mt-0.5" />
+                  </div>
+                  {e.relevanz && <p className="text-xs text-blue-700 bg-blue-50 rounded-lg p-2">🎯 Relevanz: {e.relevanz}</p>}
+                  {e.anwendung && <p className="text-xs text-gray-600">💡 Anwendung im Fall: {e.anwendung}</p>}
+                </div>
+              );
+            })}
+          </div>
+        )}
+
+        {!rechtsprechung && !rpLoading && (
+          <p className="text-center text-sm text-gray-400 py-4">Noch keine Suche gestartet — KI nutzt Ihre Argumente und Falldaten als Suchgrundlage.</p>
+        )}
       </div>
     </div>
   );
