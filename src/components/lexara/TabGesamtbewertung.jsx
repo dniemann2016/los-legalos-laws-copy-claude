@@ -121,72 +121,102 @@ export default function TabGesamtbewertung({ caseId, caseData }) {
 
   const runKiAnalysis = async () => {
     setAnalyzing(true);
-    const eigArg = eigeneArgs.map(a => `"${a.title}" Stärke:${a.ki_strength ?? a.strength ?? 5}/10`).join(", ");
-    const gegArg = gegnerArgs.map(a => `"${a.title}" Stärke:${a.ki_strength ?? a.strength ?? 5}/10`).join(", ");
-    const ev = evidence.map(e => `"${e.title}" (${e.type || ""}) Gewicht:${e.ki_weight ?? e.weight ?? 5}/10`).join(", ");
+    try {
+      const eigArg = eigeneArgs.slice(0, 5).map(a => `"${a.title}" Stärke:${a.ki_strength ?? a.strength ?? 5}/10`).join(", ");
+      const gegArg = gegnerArgs.slice(0, 5).map(a => `"${a.title}" Stärke:${a.ki_strength ?? a.strength ?? 5}/10`).join(", ");
+      const ev = evidence.slice(0, 5).map(e => `"${e.title}" Gewicht:${e.ki_weight ?? e.weight ?? 5}/10`).join(", ");
 
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Rechtsanwalt und Prozessstratege. Analysiere folgenden Fall umfassend:
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Du bist Rechtsanwalt. Analysiere diesen Fall:
 
-Fall: "${caseData?.fallname}" | Rechtsgebiet: ${caseData?.rechtsgebiet || ""} | Gericht: ${caseData?.gericht || ""} | Prognose bisher: ${caseData?.prognose || 0}%
-Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
-Prozessziel: ${caseData?.prozessziel || ""}
-Streitwert: ${caseData?.streitwert ? caseData.streitwert.toLocaleString("de-DE") + "€" : "unbekannt"}
-
+Fall: "${caseData?.fallname}" | ${caseData?.rechtsgebiet || ""} | Gericht: ${caseData?.gericht || ""}
+Zentrale Frage: ${caseData?.zentrale_rechtsfrage || ""}
 Eigene Argumente: ${eigArg || "keine"}
 Gegnerargumente: ${gegArg || "keine"}
 Beweise: ${ev || "keine"}
 
-Erstelle eine vollständige Gesamtbewertung mit:
-1. Erfolgswahrscheinlichkeit (0-100%)
-2. Unsere besten 3 Taktiken und wann sie einzusetzen sind
-3. Erwartete Strategie des Gegners (mind. 3 Szenarien)
-4. "Asse im Ärmel" des Gegners – was könnte er überraschend einsetzen?
-5. Unsere kritischsten Schwachstellen
-6. Empfohlene Gesamtstrategie (1 Absatz)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          erfolgswahrscheinlichkeit: { type: "number" },
-          erfolgswahrscheinlichkeit_begruendung: { type: "string" },
-          unsere_taktiken: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: { titel: { type: "string" }, beschreibung: { type: "string" }, wann: { type: "string" } },
-              required: ["titel", "beschreibung"]
-            }
+Gib eine JSON mit:
+1. Erfolgswahrscheinlichkeit (0-100)
+2. 3 unsere beste Taktiken (titel, beschreibung kurz)
+3. 3 Gegner Strategien (titel, beschreibung, gefahr: hoch/mittel/niedrig)
+4. 3 Gegner Asse (titel, beschreibung kurz)
+5. 3 unsere Schwachstellen (titel, risiko kurz)
+6. Gesamtstrategie (1-2 Sätze)`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            erfolgswahrscheinlichkeit: { type: "integer", minimum: 0, maximum: 100 },
+            erfolgswahrscheinlichkeit_begruendung: { type: "string" },
+            unsere_taktiken: {
+              type: "array",
+              maxItems: 3,
+              items: {
+                type: "object",
+                properties: { 
+                  titel: { type: "string", maxLength: 100 }, 
+                  beschreibung: { type: "string", maxLength: 200 }
+                },
+                required: ["titel", "beschreibung"]
+              }
+            },
+            gegner_strategien: {
+              type: "array",
+              maxItems: 3,
+              items: {
+                type: "object",
+                properties: { 
+                  titel: { type: "string", maxLength: 100 }, 
+                  beschreibung: { type: "string", maxLength: 200 }, 
+                  gefahr: { type: "string", enum: ["hoch", "mittel", "niedrig"] }
+                },
+                required: ["titel", "beschreibung", "gefahr"]
+              }
+            },
+            gegner_asse: {
+              type: "array",
+              maxItems: 3,
+              items: {
+                type: "object",
+                properties: { 
+                  titel: { type: "string", maxLength: 100 }, 
+                  beschreibung: { type: "string", maxLength: 200 }
+                },
+                required: ["titel", "beschreibung"]
+              }
+            },
+            unsere_schwachstellen: {
+              type: "array",
+              maxItems: 3,
+              items: { 
+                type: "object", 
+                properties: { 
+                  titel: { type: "string", maxLength: 100 }, 
+                  risiko: { type: "string", maxLength: 150 }
+                }, 
+                required: ["titel"] 
+              }
+            },
+            gesamtstrategie: { type: "string", maxLength: 300 }
           },
-          gegner_strategien: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: { titel: { type: "string" }, beschreibung: { type: "string" }, gefahr: { type: "string", enum: ["hoch", "mittel", "niedrig"] } },
-              required: ["titel", "beschreibung"]
-            }
-          },
-          gegner_asse: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: { titel: { type: "string" }, beschreibung: { type: "string" }, gegenmaßnahme: { type: "string" } },
-              required: ["titel", "beschreibung"]
-            }
-          },
-          unsere_schwachstellen: {
-            type: "array",
-            items: { type: "object", properties: { titel: { type: "string" }, risiko: { type: "string" }, empfehlung: { type: "string" } }, required: ["titel"] }
-          },
-          gesamtstrategie: { type: "string" },
-          gegenargumente_gegner: {
-            type: "array",
-            items: { type: "string" }
-          }
-        }
-      }
-    });
+          required: ["erfolgswahrscheinlichkeit", "unsure_taktiken", "gegner_strategien"]
+        },
+        model: "gemini_3_flash"
+      });
 
-    setKiAnalysis(result);
+      setKiAnalysis(result);
+    } catch (error) {
+      console.error("KI-Analyse fehler:", error);
+      // Fallback mit einfacher Struktur
+      setKiAnalysis({
+        erfolgswahrscheinlichkeit: Math.round(caseData?.prognose || 50),
+        erfolgswahrscheinlichkeit_begruendung: "KI-Analyse konnte nicht vollständig durchgeführt werden. Bitte versuchen Sie es später.",
+        unsere_taktiken: [],
+        gegner_strategien: [],
+        gegner_asse: [],
+        unsere_schwachstellen: [],
+        gesamtstrategie: "Bitte starten Sie die Analyse erneut."
+      });
+    }
     setAnalyzing(false);
   };
 
