@@ -24,7 +24,11 @@
     },
     "strength": {
       "type": "number",
-      "title": "St\u00e4rke (0-10)"
+      "title": "St\u00e4rke manuell (0-10)"
+    },
+    "ki_strength": {
+      "type": "number",
+      "title": "St\u00e4rke KI (0-10)"
     },
     "type": {
       "type": "string",

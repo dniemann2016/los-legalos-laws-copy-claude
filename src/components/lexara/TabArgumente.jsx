@@ -89,14 +89,12 @@ Extrahiere: eigene Argumente, Gegenseite-Argumente, Widersprüche, Druckmittel, 
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `Du bist ein erfahrener Anwalt. Bewerte die Stärke dieses Rechtsarguments auf einer Skala von 0-10.
 Argument: "${arg.title}"
-Beschreibung: "${arg.description||""}"
-Typ: ${arg.type||"Rechtsargument"}, Seite: ${arg.side||"eigen"}
+Beschreibung: "${arg.description||""}"\nTyp: ${arg.type||"Rechtsargument"}, Seite: ${arg.side||"eigen"}
 Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
     });
     const parsed = parseFloat(String(result).replace(/[^0-9.]/g, ""));
     if (!isNaN(parsed)) {
-      const val = Math.min(10, Math.max(0, parsed));
-      await base44.entities.Argument.update(arg.id, { strength: val });
+      await base44.entities.Argument.update(arg.id, { ki_strength: Math.min(10, Math.max(0, parsed)) });
       load();
     }
     setKiWeightingId(null);
@@ -280,7 +278,10 @@ Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
                       onBlur={e => saveStrength(arg.id, e.target.value)}
                       onKeyDown={e => e.key === "Enter" && saveStrength(arg.id, e.target.value)} />
                   ) : (
-                    <span className="text-xs text-gray-500 cursor-pointer hover:text-violet-600" title="Klicken zum Bearbeiten" onClick={() => { setEditStrengthId(arg.id); setEditStrengthVal(arg.strength||5); }}>{arg.strength||5}/10 ✏️</span>
+                    <span className="text-xs text-blue-600 cursor-pointer hover:text-blue-800" title="Manuelle Stärke – klicken zum Bearbeiten" onClick={() => { setEditStrengthId(arg.id); setEditStrengthVal(arg.strength||5); }}>M:{arg.strength||5} ✏️</span>
+                  )}
+                  {arg.ki_strength !== undefined && arg.ki_strength !== null && (
+                    <span className="text-xs text-violet-600" title="KI-Gewichtung">KI:{arg.ki_strength}</span>
                   )}
                   {arg.paragraphs?.length > 0 && <span className="text-[10px] text-gray-400">{arg.paragraphs.length} Beweise</span>}
                   <button onClick={() => kiGewichten(arg)} disabled={kiWeightingId === arg.id}

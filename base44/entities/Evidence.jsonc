@@ -20,7 +20,11 @@
     },
     "weight": {
       "type": "number",
-      "title": "Gewicht (0-10)"
+      "title": "Gewicht manuell (0-10)"
+    },
+    "ki_weight": {
+      "type": "number",
+      "title": "Gewicht KI (0-10)"
     },
     "type": {
       "type": "string",

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Send, RefreshCw, Bot, User, Settings } from "lucide-react";
+import { Send, RefreshCw, Bot, User, Sparkles, ChevronDown, ChevronUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const ROLLEN = [
@@ -25,13 +25,20 @@ export default function TabVerhandlungssimulation({ caseId, caseData }) {
   const [gewaehltRolle, setGewaehltRolle] = useState(null);
   const [gewaehltSzenario, setGewaehltSzenario] = useState(null);
   const [args, setArgs] = useState([]);
+  const [evidence, setEvidence] = useState([]);
   const [started, setStarted] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [showFeedback, setShowFeedback] = useState(false);
+  const [urteilsAnalyse, setUrteilsAnalyse] = useState(null);
+  const [showUrteil, setShowUrteil] = useState(false);
+  const [urteilLoading, setUrteilLoading] = useState(false);
   const bottomRef = useRef(null);
 
   useEffect(() => {
-    base44.entities.Argument.filter({ case_id: caseId }).then(setArgs);
+    Promise.all([
+      base44.entities.Argument.filter({ case_id: caseId }),
+      base44.entities.Evidence.filter({ case_id: caseId }),
+    ]).then(([a, e]) => { setArgs(a); setEvidence(e); });
   }, [caseId]);
 
   useEffect(() => {
@@ -128,6 +135,41 @@ Bewerte: Argumentationsqualität, taktisches Vorgehen, Reaktion auf Angriffe, Ve
     setLoading(false);
   };
 
+  const analyzeUrteil = async () => {
+    setUrteilLoading(true);
+    setShowUrteil(true);
+    const eigeneArgs = args.filter(a => a.side === "eigen");
+    const gegnerArgs = args.filter(a => a.side === "gegner");
+    const res = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Richter und Prozessstratege. Analysiere diesen Fall:
+
+Fall: "${caseData?.fallname}" | ${caseData?.rechtsgebiet || ""} | Gericht: ${caseData?.gericht || ""}
+Streitwert: ${caseData?.streitwert ? caseData.streitwert.toLocaleString("de-DE") + "€" : "unbekannt"}
+
+Eigene Argumente: ${eigeneArgs.map(a => `"${a.title}" (manuell:${a.strength||5}, KI:${a.ki_strength??"n/a"})`).join(", ") || "keine"}
+Gegnerargumente: ${gegnerArgs.map(a => `"${a.title}" (manuell:${a.strength||5}, KI:${a.ki_strength??"n/a"})`).join(", ") || "keine"}
+Beweise: ${evidence.map(e => `"${e.title}" Typ:${e.type||""} (manuell:${e.weight||5}, KI:${e.ki_weight??"n/a"})`).join(", ") || "keine"}
+
+Berechne:
+1. Wahrscheinlichkeit eines erfolgreichen Urteils für uns (%)
+2. Liste spezifischer Gegenargumente der Gegenseite (mind. 5, direkt auf unsere Argumente bezogen)
+3. Welche Beweise könnte die Gegenseite angreifen und wie?
+4. Kritische Rechtsfragen die der Richter stellen wird`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          erfolgswahrscheinlichkeit: { type: "number" },
+          begruendung: { type: "string" },
+          gegenargumente: { type: "array", items: { type: "object", properties: { argument: { type: "string" }, zielt_auf: { type: "string" }, staerke: { type: "number" } }, required: ["argument"] } },
+          beweisangriffe: { type: "array", items: { type: "object", properties: { beweis: { type: "string" }, angriff: { type: "string" } }, required: ["beweis", "angriff"] } },
+          richter_fragen: { type: "array", items: { type: "string" } },
+        }
+      }
+    });
+    setUrteilsAnalyse(res);
+    setUrteilLoading(false);
+  };
+
   const reset = () => {
     setMessages([]);
     setStarted(false);
@@ -135,11 +177,91 @@ Bewerte: Argumentationsqualität, taktisches Vorgehen, Reaktion auf Angriffe, Ve
     setShowFeedback(false);
     setGewaehltRolle(null);
     setGewaehltSzenario(null);
+    setUrteilsAnalyse(null);
+    setShowUrteil(false);
   };
 
   if (!started) {
     return (
       <div className="space-y-5">
+        {/* Urteilswahrscheinlichkeit */}
+        <div className="bg-white border border-gray-100 rounded-2xl overflow-hidden">
+          <button onClick={() => showUrteil ? setShowUrteil(false) : analyzeUrteil()}
+            className="w-full flex items-center gap-3 p-4 hover:bg-gray-50 text-left">
+            <Sparkles className="w-4 h-4 text-violet-500" />
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-800">KI-Urteilsprognose & Gegenargumente</p>
+              <p className="text-xs text-gray-400">Erfolgswahrscheinlichkeit + spezifische Gegenargumente der Gegenseite</p>
+            </div>
+            {urteilsAnalyse && (showUrteil ? <ChevronUp className="w-4 h-4 text-gray-400" /> : <ChevronDown className="w-4 h-4 text-gray-400" />)}
+          </button>
+          {showUrteil && (
+            <div className="border-t border-gray-100 p-4 space-y-4">
+              {urteilLoading ? (
+                <div className="flex items-center gap-2 text-gray-400 text-sm py-4 justify-center">
+                  <div className="w-5 h-5 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin" />
+                  KI analysiert…
+                </div>
+              ) : urteilsAnalyse && (
+                <>
+                  <div className="bg-gray-900 text-white rounded-xl p-4">
+                    <p className="text-xs text-gray-400 mb-1">Erfolgswahrscheinlichkeit</p>
+                    <div className="flex items-end gap-3">
+                      <p className="text-3xl font-bold">{urteilsAnalyse.erfolgswahrscheinlichkeit}%</p>
+                      <div className="flex-1 pb-1"><div className="h-1.5 bg-gray-700 rounded-full"><div className="h-full bg-green-400 rounded-full" style={{width:`${urteilsAnalyse.erfolgswahrscheinlichkeit}%`}} /></div></div>
+                    </div>
+                    {urteilsAnalyse.begruendung && <p className="text-xs text-gray-300 mt-2">{urteilsAnalyse.begruendung}</p>}
+                  </div>
+
+                  {(urteilsAnalyse.gegenargumente||[]).length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">🔴 Spezifische Gegenargumente ({urteilsAnalyse.gegenargumente.length})</p>
+                      <div className="space-y-1.5">
+                        {urteilsAnalyse.gegenargumente.map((g, i) => (
+                          <div key={i} className="bg-red-50 border border-red-100 rounded-lg p-3">
+                            <p className="text-xs font-medium text-red-800">{g.argument}</p>
+                            {g.zielt_auf && <p className="text-[10px] text-red-500 mt-0.5">→ Zielt auf: {g.zielt_auf}</p>}
+                            {g.staerke && <p className="text-[10px] text-gray-400">Stärke: {g.staerke}/10</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(urteilsAnalyse.beweisangriffe||[]).length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">📎 Beweisangriffe des Gegners</p>
+                      <div className="space-y-1.5">
+                        {urteilsAnalyse.beweisangriffe.map((b, i) => (
+                          <div key={i} className="bg-amber-50 border border-amber-100 rounded-lg p-3">
+                            <p className="text-xs font-semibold text-amber-800">{b.beweis}</p>
+                            <p className="text-xs text-amber-700 mt-0.5">{b.angriff}</p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(urteilsAnalyse.richter_fragen||[]).length > 0 && (
+                    <div>
+                      <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">🧑‍⚖️ Erwartete Richterfragen</p>
+                      <div className="space-y-1">
+                        {urteilsAnalyse.richter_fragen.map((f, i) => (
+                          <p key={i} className="text-xs text-gray-700 flex gap-2"><span className="text-blue-400">?</span>{f}</p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <button onClick={analyzeUrteil} className="text-xs text-violet-600 hover:underline flex items-center gap-1">
+                    <RefreshCw className="w-3 h-3" /> Neu berechnen
+                  </button>
+                </>
+              )}
+            </div>
+          )}
+        </div>
+
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
           <h3 className="font-semibold text-gray-900 text-sm mb-1">🎭 Verhandlungssimulation</h3>
           <p className="text-xs text-gray-500">Der KI-Berater übernimmt eine Gegenrolle – testen Sie Ihre Argumentationsstrategie in einer realistischen Simulation.</p>

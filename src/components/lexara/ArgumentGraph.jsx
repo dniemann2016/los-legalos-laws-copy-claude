@@ -269,8 +269,15 @@ export default function ArgumentGraph({ args, onClose }) {
                     <text y={13} textAnchor="middle" dominantBaseline="central" fontSize={8}
                       fill={isEigen ? "#93c5fd" : "#fca5a5"}
                       style={{ pointerEvents: "none", userSelect: "none" }}>
-                      {node.strength}/10
+                      M:{node.strength}
                     </text>
+                    {node.ki_strength !== null && node.ki_strength !== undefined && (
+                      <text y={24} textAnchor="middle" dominantBaseline="central" fontSize={8}
+                        fill="#a78bfa"
+                        style={{ pointerEvents: "none", userSelect: "none" }}>
+                        KI:{node.ki_strength}
+                      </text>
+                    )}
                     <text y={-r - 6} textAnchor="middle" fontSize={8} fontWeight="700"
                       fill={isEigen ? "#3b82f6" : "#ef4444"}
                       style={{ pointerEvents: "none", userSelect: "none" }}>

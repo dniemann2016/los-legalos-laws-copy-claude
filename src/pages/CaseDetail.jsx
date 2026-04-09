@@ -12,7 +12,7 @@ import TabStrategie from "../components/lexara/TabStrategie";
 import TabKIBerater from "../components/lexara/TabKIBerater";
 import TabAnalyse from "../components/lexara/TabAnalyse";
 import TabDokumente from "../components/lexara/TabDokumente";
-import TabNotizen from "../components/lexara/TabNotizen";
+import TabGesamtbewertung from "../components/lexara/TabGesamtbewertung";
 import TabVerhandlung from "../components/lexara/TabVerhandlung";
 import TabRisiko from "../components/lexara/TabRisiko";
 import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
@@ -21,7 +21,7 @@ import { exportCasePDF } from "@/functions/exportCasePDF";
 const TABS = [
   {id:1,label:"Basisdaten"},{id:2,label:"Argumente"},{id:3,label:"Beweise"},
   {id:4,label:"Verkettung"},{id:5,label:"Personen"},{id:6,label:"Fristen"},
-  {id:7,label:"Strategie"},{id:8,label:"KI-Berater"},{id:9,label:"Analyse"},{id:10,label:"Risiken"},{id:11,label:"Simulation"},{id:12,label:"Dokumente"},{id:13,label:"Notizen"},{id:14,label:"Verhandlung"},
+  {id:7,label:"Strategie"},{id:8,label:"KI-Berater"},{id:9,label:"Analyse"},{id:10,label:"Risiken"},{id:11,label:"Simulation"},{id:12,label:"Dokumente"},{id:13,label:"Gesamtbewertung"},{id:14,label:"Verhandlung"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -198,7 +198,7 @@ export default function CaseDetail() {
         {activeTab===10 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
         {activeTab===12 && <TabDokumente caseId={caseId} />}
-        {activeTab===13 && <TabNotizen caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===13 && <TabGesamtbewertung caseId={caseId} caseData={caseData} />}
         {activeTab===14 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
 
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">

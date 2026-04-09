@@ -46,7 +46,7 @@ Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
     });
     const parsed = parseFloat(String(result).replace(/[^0-9.]/g, ""));
     if (!isNaN(parsed)) {
-      await base44.entities.Evidence.update(ev.id, { weight: Math.min(10, Math.max(0, parsed)) });
+      await base44.entities.Evidence.update(ev.id, { ki_weight: Math.min(10, Math.max(0, parsed)) });
       load();
     }
     setKiWeightingId(null);
@@ -122,7 +122,10 @@ Gib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
                                 onBlur={e => saveWeight(ev.id, e.target.value)}
                                 onKeyDown={e => e.key === "Enter" && saveWeight(ev.id, e.target.value)} />
                             ) : (
-                              <span className="text-xs text-gray-500 cursor-pointer hover:text-violet-600" title="Klicken zum Bearbeiten" onClick={() => setEditWeightId(ev.id)}>{ev.weight||5}/10 ✏️</span>
+                              <span className="text-xs text-blue-600 cursor-pointer hover:text-blue-800" title="Manuell – klicken zum Bearbeiten" onClick={() => setEditWeightId(ev.id)}>M:{ev.weight||5} ✏️</span>
+                            )}
+                            {ev.ki_weight !== undefined && ev.ki_weight !== null && (
+                              <span className="text-xs text-violet-600" title="KI-Gewichtung">KI:{ev.ki_weight}</span>
                             )}
                           </div>
                           {ev.description && <p className="text-xs text-gray-500">{ev.description}</p>}
