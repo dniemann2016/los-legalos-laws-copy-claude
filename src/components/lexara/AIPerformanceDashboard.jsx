@@ -23,18 +23,25 @@ export default function AIPerformanceDashboard({ caseId }) {
   };
 
   const handleCreate = async () => {
+    if (!form.gesamtbewertung) {
+      alert('Bitte Gesamtbewertung angeben');
+      return;
+    }
     setSaving(true);
     const caseData = await base44.entities.Case.filter({ id: caseId }).then(c => c[0]);
     await base44.entities.AIPerformanceFeedback.create({
       case_id: caseId,
       case_name: caseData?.fallname || "",
-      ...form,
+      gesamtbewertung: form.gesamtbewertung,
+      prognose_rating: form.prognose_rating,
+      strategie_rating: form.strategie_rating,
+      ki_berater_rating: form.ki_berater_rating,
+      fall_erfolgreich: form.fall_erfolgreich,
     });
     setForm({});
     setShowForm(false);
     await loadData();
     setSaving(false);
-  };
 
   const calculateStats = (data) => {
     if (data.length === 0) {
@@ -144,7 +151,7 @@ export default function AIPerformanceDashboard({ caseId }) {
           </div>
           <div className="flex gap-2 pt-2">
             <button onClick={() => { setForm({}); setShowForm(false); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm text-gray-600 hover:bg-gray-50">Abbrechen</button>
-            <button onClick={handleCreate} disabled={saving} className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50">
+            <button onClick={handleCreate} disabled={saving || !form.gesamtbewertung} className="flex-1 px-4 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium hover:bg-gray-800 disabled:opacity-50">
               {saving ? "Speichert..." : "Speichern"}
             </button>
           </div>
@@ -275,3 +282,5 @@ export default function AIPerformanceDashboard({ caseId }) {
     </div>
   );
 }
+
+export default AIPerformanceDashboard;
