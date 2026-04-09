@@ -468,7 +468,7 @@ export function computeRisikoFaktoren({ args = [], evidence = [], deadlines = []
   // 7. Reputationsrisiko ─────────────────────────────────────────────────────
   // Ohne explizite Daten: heuristisch basierend auf Rechtsgebiet und Streitwert
   const reputationsMatrix = { Strafrecht: 0.8, Familienrecht: 0.5, Arbeitsrecht: 0.4, default: 0.25 };
-  const repBasis = reputationsMatrix[rechtsgebiet] ?? reputationsMatrix.default;
+  const repBasis = reputationsMatrix[caseData?.rechtsgebiet] ?? reputationsMatrix.default;
   const streitwertFaktor = caseData?.streitwert > 500000 ? 0.2 : caseData?.streitwert > 100000 ? 0.1 : 0;
   const repRisiko = clamp(repBasis + streitwertFaktor);
   const repScore = Math.round(repRisiko * 10);
@@ -477,9 +477,9 @@ export function computeRisikoFaktoren({ args = [], evidence = [], deadlines = []
     key: "reputation_risiko",
     score: repScore,
     level: repScore <= 3 ? "niedrig" : repScore <= 5 ? "mittel" : "hoch",
-    bewertung: `Rechtsgebiet ${rechtsgebiet}, Streitwert-Faktor: +${(streitwertFaktor * 100).toFixed(0)}%`,
+    bewertung: `Rechtsgebiet ${caseData?.rechtsgebiet || "unbekannt"}, Streitwert-Faktor: +${(streitwertFaktor * 100).toFixed(0)}%`,
     massnahme: repScore > 5 ? "Medien- und PR-Strategie abstimmen, Informationskontrolle sicherstellen" : "Niedrige Reputationsexponierung",
-    formel: `Risiko = Basisrate(${rechtsgebiet}) + Streitwertfaktor = ${repBasis} + ${streitwertFaktor} = ${repRisiko.toFixed(2)}`,
+    formel: `Risiko = Basisrate(${caseData?.rechtsgebiet || "default"}) + Streitwertfaktor = ${repBasis} + ${streitwertFaktor} = ${repRisiko.toFixed(2)}`,
   });
 
   // 8. Vergleichschance ──────────────────────────────────────────────────────
