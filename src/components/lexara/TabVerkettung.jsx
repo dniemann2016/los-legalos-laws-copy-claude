@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, X, Sparkles, RefreshCw, Pencil, Check } from "lucide-react";
+import { Plus, X, Sparkles, RefreshCw, Pencil, Check, Network } from "lucide-react";
+import ArgumentGraph from "./ArgumentGraph";
 import { Button } from "@/components/ui/button";
 
 const CONN_TYPES = ["stützt", "entkräftet", "schließt aus", "kausal", "widerspricht", "schwächt", "verstärkt"];
@@ -21,6 +22,7 @@ export default function TabVerkettung({ caseId }) {
   const [editConn, setEditConn] = useState(null); // { fromId, toId, type, explanation, intensitaet }
   const [kiAnalyzing, setKiAnalyzing] = useState(false);
   const [kiSuggestions, setKiSuggestions] = useState([]);
+  const [showGraph, setShowGraph] = useState(false);
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -127,9 +129,16 @@ export default function TabVerkettung({ caseId }) {
 
   return (
     <div className="space-y-4">
+      {showGraph && <ArgumentGraph args={args} onClose={() => setShowGraph(false)} />}
+
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-semibold text-gray-700">🔗 Argumentketten & Kausalzusammenhänge</h3>
         <div className="flex gap-2">
+          <button onClick={() => setShowGraph(true)} disabled={args.length === 0}
+            className="flex items-center gap-1 text-xs border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors">
+            <Network className="w-3 h-3" />
+            Graph
+          </button>
           <button onClick={kiAnalyze} disabled={kiAnalyzing || args.length < 2}
             className="flex items-center gap-1 text-xs border border-violet-300 text-violet-700 bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors">
             {kiAnalyzing ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
