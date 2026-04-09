@@ -1,0 +1,121 @@
+{
+  "name": "CaseWarning",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "warning_type": {
+      "type": "string",
+      "title": "Warn-Typ",
+      "enum": [
+        "diskrepanz",
+        "fehlender_beleg",
+        "veraltete_rspr",
+        "unterstuetzung_fehlt",
+        "widerspruch"
+      ]
+    },
+    "severity": {
+      "type": "string",
+      "title": "Priorit\u00e4t",
+      "enum": [
+        "kritisch",
+        "hoch",
+        "mittel",
+        "niedrig"
+      ]
+    },
+    "element_type": {
+      "type": "string",
+      "title": "Element-Typ",
+      "enum": [
+        "argument",
+        "beweis",
+        "frist",
+        "person"
+      ]
+    },
+    "element_id": {
+      "type": "string",
+      "title": "Element ID"
+    },
+    "element_title": {
+      "type": "string",
+      "title": "Element Titel"
+    },
+    "title": {
+      "type": "string",
+      "title": "Warnungs-Titel"
+    },
+    "description": {
+      "type": "string",
+      "title": "Beschreibung"
+    },
+    "suggestion": {
+      "type": "string",
+      "title": "Empfohlene Ma\u00dfnahme"
+    },
+    "rspr_reference": {
+      "type": "string",
+      "title": "Rechtsprechungs-Referenz"
+    },
+    "resolved": {
+      "type": "boolean",
+      "title": "Behoben"
+    },
+    "resolved_date": {
+      "type": "string",
+      "title": "Behobenes Datum"
+    },
+    "resolved_by": {
+      "type": "string",
+      "title": "Behoben von (Email)"
+    }
+  },
+  "required": [
+    "case_id",
+    "warning_type",
+    "title"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

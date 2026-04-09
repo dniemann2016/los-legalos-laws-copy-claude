@@ -9,6 +9,7 @@ import TabFristen from "../components/lexara/TabFristen";
 import TabStrategie from "../components/lexara/TabStrategie";
 import TabKIBerater from "../components/lexara/TabKIBerater";
 import TabAnalyse from "../components/lexara/TabAnalyse";
+import ComplianceChecker from "../components/lexara/ComplianceChecker";
 import TabRisiko from "../components/lexara/TabRisiko";
 import RiskMatrix from "../components/lexara/RiskMatrix";
 import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
@@ -196,7 +197,12 @@ export default function CaseDetail() {
         {activeTab===5 && <TabFristen caseId={caseId} onCountChange={loadCase} />}
         {activeTab===6 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===7 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===8 && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===8 && (
+          <div className="space-y-6">
+            <ComplianceChecker caseId={caseId} caseData={caseData} />
+            <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />
+          </div>
+        )}
         {activeTab===9 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
         {activeTab===10 && <RiskMatrix caseId={caseId} caseData={caseData} />}
         {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}

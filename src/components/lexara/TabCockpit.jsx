@@ -25,13 +25,15 @@ export default function TabCockpit({ caseId, caseData }) {
   const [args, setArgs] = useState([]);
   const [lastMinute, setLastMinute] = useState(null);
   const [loadingCheck, setLoadingCheck] = useState(false);
+  const [warnings, setWarnings] = useState([]);
 
   useEffect(() => {
     Promise.all([
       base44.entities.Deadline.filter({ case_id: caseId }),
       base44.entities.Task.filter({ case_id: caseId }),
       base44.entities.Argument.filter({ case_id: caseId }),
-    ]).then(([d, t, a]) => { setDeadlines(d); setTasks(t); setArgs(a); });
+      base44.entities.CaseWarning.filter({ case_id: caseId, resolved: false }),
+    ]).then(([d, t, a, w]) => { setDeadlines(d); setTasks(t); setArgs(a); setWarnings(w); });
   }, [caseId]);
 
   const now = new Date();
@@ -53,6 +55,26 @@ export default function TabCockpit({ caseId, caseData }) {
 
   // Event-Alerts
   const alerts = [];
+  
+  // Compliance-Warnungen hinzufügen
+  if (criticalWarnings.length > 0) {
+    alerts.push({
+      type: "compliance",
+      severity: "critical",
+      title: `⚠️ ${criticalWarnings.length} KRITISCHE Compliance-Warnung(en)`,
+      description: criticalWarnings.map(w => w.title).slice(0, 2).join(" | "),
+      icon: "🔴"
+    });
+  } else if (highWarnings.length > 0) {
+    alerts.push({
+      type: "compliance",
+      severity: "high",
+      title: `${highWarnings.length} Compliance-Warnung(en)`,
+      description: "Überprüfen Sie die Analyse für Details",
+      icon: "🟠"
+    });
+  }
+  
   const missedDeadlines = deadlines.filter(d => d.status === "versaeumt");
   const missedDeadlinesThisWeek = missedDeadlines.filter(d => {
     const daysAgo = (now - new Date(d.due_date)) / 86400000;
@@ -87,6 +109,10 @@ export default function TabCockpit({ caseId, caseData }) {
   }
 
   const gegnerArgs = args.filter(a => a.side === "gegner").sort((a, b) => (b.strength || 5) - (a.strength || 5)).slice(0, 4);
+
+  // Compliance-Warnungen
+  const criticalWarnings = warnings.filter(w => w.severity === "kritisch");
+  const highWarnings = warnings.filter(w => w.severity === "hoch");
 
   const daysUntil = (d) => Math.ceil((new Date(d) - now) / 86400000);
   const formatDate = (d) => { try { return new Date(d).toLocaleDateString("de-DE", { day: "2-digit", month: "short" }); } catch { return d; } };
