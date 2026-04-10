@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import ArgumentEvidenceGraph from "./ArgumentEvidenceGraph";
 import WasWaereWennSimulation from "./WasWaereWennSimulation";
+import TimelineVisualization from "./TimelineVisualization";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
@@ -103,7 +104,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
     <div className="space-y-6">
       {/* View Switcher */}
       <div className="flex gap-2">
-        {[["strategie","📊 Strategie & Graph"],["simulation","🔮 Was-wäre-wenn"]].map(([v,l]) => (
+        {[["strategie","📊 Strategie & Graph"],["simulation","🔮 Was-wäre-wenn"],["timeline","📅 Zeitstrahl"]].map(([v,l]) => (
           <button key={v} onClick={() => setActiveView(v)}
             className={`text-sm px-4 py-2 rounded-xl border font-medium transition-all ${activeView===v?"bg-gray-900 text-white border-gray-900":"bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
             {l}
@@ -120,6 +121,13 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
           caseData={caseData}
           basePrognose={prognose}
         />
+      )}
+
+      {activeView === "timeline" && (
+        <div className="bg-white rounded-2xl border border-gray-100 p-5">
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">📅 Zeitstrahl — Fristen & Ereignisse</h3>
+          <TimelineVisualization caseId={caseId} args={args} />
+        </div>
       )}
 
       {activeView === "strategie" && !kiMode && (
