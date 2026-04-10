@@ -84,8 +84,9 @@ export default function WasWaereWennSimulation({ args, evidence, deadlines, pers
 
   const resetAll = () => setHiddenIds(new Set());
 
+  const baseSimPrognose = computePrognose(args, evidence, persons, deadlines, new Set(), caseData);
   const simPrognose = computePrognose(args, evidence, persons, deadlines, hiddenIds, caseData);
-  const delta = simPrognose - (basePrognose || 0);
+  const delta = simPrognose - baseSimPrognose;
 
   const eigenArgs = args.filter(a => a.side === "eigen");
   const gegnerArgs = args.filter(a => a.side === "gegner");
@@ -164,7 +165,7 @@ Analysiere:
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <PrognoseBar value={basePrognose || 0} label="Aktuelle Prognose (real)" />
+          <PrognoseBar value={baseSimPrognose} label="Basis (alle Elemente aktiv)" />
           <PrognoseBar value={simPrognose} label="Simulierte Prognose" delta={delta} />
         </div>
 
