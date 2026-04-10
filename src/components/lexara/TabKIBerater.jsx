@@ -20,45 +20,40 @@ export default function TabKIBerater({ caseId, caseData, onUpdate }) {
     setLoading(true);
     setAnalysisError(null);
     try {
-    const eigene = args.filter(a=>a.side==="eigen");
-    const gegner = args.filter(a=>a.side==="gegner");
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein strategischer Berater für juristische Verhandlungen (Machiavelli + Harvard + FBI-Taktiken).
-Fall: ${caseData?.fallname||""}, Rechtsgebiet: ${caseData?.rechtsgebiet||""}, Prognose: ${caseData?.prognose||0}%
-Eigene Argumente (${eigene.length}): ${eigene.map(a=>`${a.title} (${a.strength}/10)`).join(", ")}
-Gegner-Argumente (${gegner.length}): ${gegner.map(a=>`${a.title} (${a.strength}/10)`).join(", ")}
-Gegner-Profil: ${JSON.stringify(profil)}
+      const eigene = args.filter(a=>a.side==="eigen");
+      const gegner = args.filter(a=>a.side==="gegner");
+      const res = await base44.integrations.Core.InvokeLLM({
+        prompt: `Du bist ein strategischer Rechtsberater. Analysiere diesen Fall und gib NUR valides JSON zurück (kein Markdown, keine Erklärung).
 
-Gib eine JSON-Analyse mit diesen Feldern:
-- psychologisches_profil: { big_five: {Offenheit:Zahl, Gewissenhaftigkeit:Zahl, Extraversion:Zahl, Verträglichkeit:Zahl, Neurotizismus:Zahl}, dark_triad: {Narzissmus:Zahl, Machiavelismus:Zahl, Psychopathie:Zahl}, trigger: [{trigger:String, beschreibung:String, intensitaet:String}], empfehlung:String }
-- druckmittel: [{titel:String, kategorie:String, wie_nutzen:String, timing:String, risiko:String, staerke:Zahl}] (max 4)
-- strategien: [{name:String, stil:String, schritte:[String], risiko:String, zitat:String, erfolg_pct:Zahl}] (max 3)
-- timing: { momentum:String, momentum_pct:Zahl, zeitfenster:[{zeitraum:String, aktion:String}], naechster_schritt:String }
-- informationsstrategie: { sofort_offenlegen:[String], verbergen:[String], als_bluff:[String] }
-- verhandlungsskript: { vorbereitung:String, opening:String, argumentation:String, closing:String, einwand:String, backup:String, psycho_notizen:[String] }
-- empfehlung: String`,
-      model: "gemini_3_flash",
-      response_json_schema: {
-        type: "object",
-        properties: {
-          psychologisches_profil: { type: "object" },
-          druckmittel: { type: "array", items: { type: "object" } },
-          strategien: { type: "array", items: { type: "object" } },
-          timing: { type: "object" },
-          informationsstrategie: { type: "object" },
-          verhandlungsskript: { type: "object" },
-          empfehlung: { type: "string" }
-        }
+Fall: ${caseData?.fallname||""}, Rechtsgebiet: ${caseData?.rechtsgebiet||""}, Prognose: ${caseData?.prognose||0}%
+Eigene Argumente: ${eigene.map(a=>a.title).join(", ")||"keine"}
+Gegner-Argumente: ${gegner.map(a=>a.title).join(", ")||"keine"}
+Gegner: ${profil.gegner_name||"unbekannt"}
+
+JSON-Format:
+{
+  "psychologisches_profil": { "big_five": {"Offenheit":7,"Gewissenhaftigkeit":8,"Extraversion":5,"Verträglichkeit":4,"Neurotizismus":6}, "dark_triad": {"Narzissmus":5,"Machiavelismus":6,"Psychopathie":3}, "trigger": [{"trigger":"...","beschreibung":"...","intensitaet":"hoch"}], "empfehlung":"..." },
+  "druckmittel": [{"titel":"...","kategorie":"...","wie_nutzen":"...","timing":"...","risiko":"...","staerke":7}],
+  "strategien": [{"name":"...","stil":"...","schritte":["..."],"risiko":"...","zitat":"...","erfolg_pct":65}],
+  "timing": {"momentum":"...","momentum_pct":60,"zeitfenster":[{"zeitraum":"...","aktion":"..."}],"naechster_schritt":"..."},
+  "informationsstrategie": {"sofort_offenlegen":["..."],"verbergen":["..."],"als_bluff":["..."]},
+  "verhandlungsskript": {"vorbereitung":"...","opening":"...","argumentation":"...","closing":"...","einwand":"...","backup":"...","psycho_notizen":["..."]},
+  "empfehlung":"..."
+}`,
+      });
+      let parsed;
+      if (typeof res === "string") {
+        const match = res.match(/\{[\s\S]*\}/);
+        parsed = JSON.parse(match ? match[0] : res);
+      } else {
+        parsed = res;
       }
-    });
-    if (!res || Object.keys(res).length === 0) {
-      setAnalysisError("KI-Analyse fehlgeschlagen oder kein Ergebnis. Bitte erneut versuchen.");
-      setLoading(false);
-      return;
-    }
-    setResult(res);
-    const updated = await base44.entities.Case.update(caseId, { ki_berater_result: res, gegner_profil: profil });
-    onUpdate(updated);
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("Kein gültiges Ergebnis erhalten.");
+      }
+      setResult(parsed);
+      const updated = await base44.entities.Case.update(caseId, { ki_berater_result: parsed, gegner_profil: profil });
+      onUpdate(updated);
     } catch (err) {
       setAnalysisError(`Fehler: ${err?.message || "Unbekannter Fehler. Bitte erneut versuchen."}`);
     }
