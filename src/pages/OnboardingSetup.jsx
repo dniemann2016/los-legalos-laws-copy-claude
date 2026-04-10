@@ -7,9 +7,9 @@ import LanguageStep from "../components/onboarding/LanguageStep";
 import JurisdictionStep from "../components/onboarding/JurisdictionStep";
 
 const STEP_LABELS = {
-  DE: ["Datenschutz", "Sprache", "Rechtsordnung"],
-  EN: ["Privacy", "Language", "Jurisdiction"],
-  FR: ["Confidentialité", "Langue", "Juridiction"],
+  DE: ["Datenschutz"],
+  EN: ["Privacy"],
+  FR: ["Confidentialité"],
 };
 
 export default function OnboardingSetup() {
@@ -24,6 +24,11 @@ export default function OnboardingSetup() {
 
   const labels = STEP_LABELS[language] || STEP_LABELS.DE;
 
+  const handleDisclaimerAccept = async () => {
+    await completeOnboarding();
+    navigate("/", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-[#F5F6F8] flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-lg">
@@ -37,7 +42,7 @@ export default function OnboardingSetup() {
           </div>
           {/* Step indicators */}
           <div className="flex items-center justify-center gap-0">
-            {[1, 2, 3].map((s, i) => (
+            {[1].map((s, i) => (
               <div key={s} className="flex items-center">
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
                   s === step
@@ -51,28 +56,13 @@ export default function OnboardingSetup() {
                   }`}>{s}</span>
                   {labels[i]}
                 </div>
-                {i < 2 && <div className={`w-6 h-px ${s < step ? "bg-slate-300" : "bg-slate-200"}`} />}
               </div>
             ))}
           </div>
         </div>
 
         {step === 1 && (
-          <DisclaimerStep language={language} onAccept={() => setStep(2)} />
-        )}
-        {step === 2 && (
-          <LanguageStep language={language} onSelect={(lang) => { setLanguage(lang); setStep(3); }} onBack={() => setStep(1)} />
-        )}
-        {step === 3 && (
-          <JurisdictionStep
-            jurisdiction={jurisdiction}
-            usState={usState}
-            language={language}
-            onSelect={setJurisdiction}
-            onSelectState={setUsState}
-            onComplete={handleComplete}
-            onBack={() => setStep(2)}
-          />
+          <DisclaimerStep language={language} onAccept={handleDisclaimerAccept} />
         )}
 
         <p className="text-center text-[10px] text-slate-400 mt-4">
