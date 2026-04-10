@@ -19,6 +19,7 @@ export default function TabKIBerater({ caseId, caseData, onUpdate }) {
   const runAnalysis = async () => {
     setLoading(true);
     setAnalysisError(null);
+    try {
     const eigene = args.filter(a=>a.side==="eigen");
     const gegner = args.filter(a=>a.side==="gegner");
     const res = await base44.integrations.Core.InvokeLLM({
@@ -27,7 +28,7 @@ Fall: ${caseData?.fallname||""}, Rechtsgebiet: ${caseData?.rechtsgebiet||""}, Pr
 Eigene Argumente (${eigene.length}): ${eigene.map(a=>`${a.title} (${a.strength}/10)`).join(", ")}
 Gegner-Argumente (${gegner.length}): ${gegner.map(a=>`${a.title} (${a.strength}/10)`).join(", ")}
 Gegner-Profil: ${JSON.stringify(profil)}
-Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad), Druckmittel-Analyse, Strategieempfehlungen (Win-Win, Controlled Escalation, Hardball, Trojanisches Pferd, Divide et Impera), Timing & Momentum, Informationsstrategie, Verhandlungsskript mit Opening/Argumentation/Closing/Einwandbehandlung.`,
+Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad Assessment der Gegenpartei. Identifiziert Trigger, Schwachpunkte und optimalen Verhandlungsansatz.), Druckmittel-Analyse (Systematische Identifikation aller Schwachstellen: Zeitdruck, Finanzen, Reputation, persönliche Risiken.), Strategieempfehlungen (3–5 taktische Optionen von kooperativ bis aggressiv. Erfolgswahrscheinlichkeit und Risikoabwägung.), Timing & Momentum (Optimaler Zeitpunkt für jeden Schritt. Identifiziert kritische Zeitfenster und Schwächephasen des Gegners.), Informationsstrategie (Was offenlegen, verbergen oder als Bluff nutzen? Ethische Klassifizierung jeder Maßnahme.), Verhandlungsskript mit Opening/Argumentation/Closing/Einwandbehandlung (Maßgeschneidertes Skript mit FBI-Taktiken (Calibrated Questions) und konkreten Formulierungen.).`,
       model: "claude_sonnet_4_6",
       response_json_schema: {
         type: "object",
@@ -50,6 +51,9 @@ Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad), 
     setResult(res);
     const updated = await base44.entities.Case.update(caseId, { ki_berater_result: res, gegner_profil: profil });
     onUpdate(updated);
+    } catch (err) {
+      setAnalysisError(`Fehler: ${err?.message || "Unbekannter Fehler. Bitte erneut versuchen."}`);
+    }
     setLoading(false);
   };
 
