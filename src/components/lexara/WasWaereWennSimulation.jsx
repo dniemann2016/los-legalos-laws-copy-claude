@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Eye, EyeOff, RefreshCw, Brain, AlertTriangle, Clock, ChevronDown, ChevronUp } from "lucide-react";
+import { Eye, EyeOff, RefreshCw, Brain, AlertTriangle, Clock, ChevronDown, ChevronUp, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { jsPDF } from "jspdf";
 
 function computePrognose(args, evidence, persons, deadlines, hiddenIds, caseData) {
   const activeArgs = args.filter(a => !hiddenIds.has(a.id));
@@ -82,6 +83,7 @@ function Section({ id, label, children, expandedSection, setExpandedSection }) {
 
 export default function WasWaereWennSimulation({ args, evidence, deadlines, persons, caseData, basePrognose }) {
   const [hiddenIds, setHiddenIds] = useState({});
+  const [exportLoading, setExportLoading] = useState(false);
   const [motives, setMotives] = useState(null);
   const [loadingMotives, setLoadingMotives] = useState(false);
   const [motiveError, setMotiveError] = useState(null);
@@ -105,6 +107,224 @@ export default function WasWaereWennSimulation({ args, evidence, deadlines, pers
 
   const eigenArgs = args.filter(a => a.side === "eigen");
   const gegnerArgs = args.filter(a => a.side === "gegner");
+
+  const exportPDF = async () => {
+    setExportLoading(true);
+    try {
+      const eigenArgs = args.filter(a => a.side === "eigen");
+      const gegnerArgs = args.filter(a => a.side === "gegner");
+      const gegnerDeadlines = deadlines.filter(d => d.side === "Gegner");
+
+      const analysis = await base44.integrations.Core.InvokeLLM({
+        prompt: `Du bist ein erfahrener Prozessanwalt. Erstelle eine vollständige taktische Analyse für folgendes Verfahren.
+
+Fall: ${caseData?.fallname || ""}
+Aktenzeichen: ${caseData?.aktenzeichen || ""}
+Gericht: ${caseData?.gericht || ""}
+Rechtsgebiet: ${caseData?.rechtsgebiet || ""}
+Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
+Instanz: ${caseData?.instanz || ""}
+Prognose: ${baseSimPrognose}%
+
+EIGENE ARGUMENTE (${eigenArgs.length}):
+${eigenArgs.map(a => `- ${a.title} (Stärke: ${a.strength || 5}/10): ${a.description || ""}`).join("\n")}
+
+GEGNER-ARGUMENTE (${gegnerArgs.length}):
+${gegnerArgs.map(a => `- ${a.title} (Stärke: ${a.strength || 5}/10): ${a.description || ""}`).join("\n")}
+
+GEGNER-FRISTEN:
+${gegnerDeadlines.map(d => `- ${d.title} bis ${d.due_date} [${d.status}]`).join("\n")}
+
+Erstelle eine umfassende Prozessnotiz mit:
+1. ALLE möglichen Strategien der Gegenseite (mindestens 5-8)
+2. Für jede Strategie: konkrete Gegenmaßnahme
+3. Timing-Analyse: Warum agiert der Gegner JETZT so?
+4. Psychologische Taktiken der Gegenseite
+5. Empfohlene Verhandlungsführung
+6. Kritische Warnsignale
+7. Gesamtstrategie-Empfehlung`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            zusammenfassung: { type: "string" },
+            gegner_strategien: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  strategie: { type: "string" },
+                  beschreibung: { type: "string" },
+                  wahrscheinlichkeit: { type: "string" },
+                  gegenmasnahme: { type: "string" },
+                  timing: { type: "string" }
+                }
+              }
+            },
+            timing_analyse: { type: "string" },
+            psychologische_taktiken: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  taktik: { type: "string" },
+                  beschreibung: { type: "string" },
+                  gegenmasnahme: { type: "string" }
+                }
+              }
+            },
+            verhandlungsfuehrung: { type: "string" },
+            warnsignale: { type: "array", items: { type: "string" } },
+            gesamtempfehlung: { type: "string" }
+          }
+        },
+        model: "claude_sonnet_4_6"
+      });
+
+      // Generate PDF
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const pageW = 210, margin = 18, contentW = pageW - margin * 2;
+      let y = 20;
+
+      const checkPage = (needed = 10) => {
+        if (y + needed > 275) { doc.addPage(); y = 20; }
+      };
+
+      const addText = (text, size = 10, style = "normal", color = [30,30,30]) => {
+        doc.setFontSize(size);
+        doc.setFont("helvetica", style);
+        doc.setTextColor(...color);
+        const lines = doc.splitTextToSize(String(text || ""), contentW);
+        checkPage(lines.length * (size * 0.4 + 1.5));
+        doc.text(lines, margin, y);
+        y += lines.length * (size * 0.4 + 1.5) + 2;
+      };
+
+      const addSection = (title) => {
+        checkPage(14);
+        y += 4;
+        doc.setFillColor(20, 40, 80);
+        doc.rect(margin, y, contentW, 7, "F");
+        doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(255, 255, 255);
+        doc.text(title, margin + 3, y + 5);
+        y += 10;
+        doc.setTextColor(30, 30, 30);
+      };
+
+      const addBox = (color, text, size = 9) => {
+        const lines = doc.splitTextToSize(String(text || ""), contentW - 8);
+        const h = lines.length * (size * 0.4 + 1.5) + 6;
+        checkPage(h + 4);
+        doc.setFillColor(...color);
+        doc.roundedRect(margin, y, contentW, h, 2, 2, "F");
+        doc.setFontSize(size); doc.setFont("helvetica", "normal"); doc.setTextColor(30,30,30);
+        doc.text(lines, margin + 4, y + 5);
+        y += h + 3;
+      };
+
+      // Header
+      doc.setFillColor(20, 40, 80);
+      doc.rect(0, 0, 210, 35, "F");
+      doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.setTextColor(255,255,255);
+      doc.text("PROZESSNOTIZ — TAKTISCHE ANALYSE", margin, 14);
+      doc.setFontSize(10); doc.setFont("helvetica", "normal");
+      doc.text(`Fall: ${caseData?.fallname || ""}`, margin, 21);
+      doc.text(`Az: ${caseData?.aktenzeichen || "–"}  |  Gericht: ${caseData?.gericht || "–"}  |  Prognose: ${baseSimPrognose}%`, margin, 27);
+      doc.text(`Erstellt: ${new Date().toLocaleDateString("de-DE")}  |  VERTRAULICH — Anwaltsgeheimnis § 203 StGB`, margin, 33);
+      y = 42;
+
+      // Zusammenfassung
+      if (analysis.zusammenfassung) {
+        addSection("EXECUTIVE SUMMARY");
+        addBox([240,245,255], analysis.zusammenfassung);
+      }
+
+      // Gegner-Strategien
+      if (analysis.gegner_strategien?.length) {
+        addSection(`MÖGLICHE STRATEGIEN DER GEGENSEITE (${analysis.gegner_strategien.length})`);
+        analysis.gegner_strategien.forEach((s, i) => {
+          checkPage(30);
+          doc.setFillColor(248, 250, 252);
+          const estimatedH = 28;
+          doc.roundedRect(margin, y, contentW, estimatedH, 2, 2, "F");
+          doc.setFillColor(220, 38, 38);
+          doc.circle(margin + 5, y + 5, 3.5, "F");
+          doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(255,255,255);
+          doc.text(String(i+1), margin + 3.8, y + 6.2);
+          doc.setTextColor(30,30,30);
+          doc.setFontSize(10); doc.setFont("helvetica", "bold");
+          doc.text(s.strategie || "", margin + 11, y + 5.5);
+          if (s.wahrscheinlichkeit) {
+            doc.setFontSize(8); doc.setFont("helvetica", "normal"); doc.setTextColor(100,100,100);
+            doc.text(`Wahrscheinlichkeit: ${s.wahrscheinlichkeit}`, margin + 11, y + 10);
+          }
+          doc.setTextColor(30,30,30);
+          const descLines = doc.splitTextToSize(s.beschreibung || "", contentW - 14);
+          doc.setFontSize(9); doc.setFont("helvetica", "normal");
+          doc.text(descLines, margin + 11, y + 14);
+          y += Math.max(estimatedH, descLines.length * 4.5 + 16);
+          // Counter
+          checkPage(14);
+          doc.setFillColor(220, 252, 231);
+          const cLines = doc.splitTextToSize(`→ GEGENMASSNAHME: ${s.gegenmasnahme || ""}`, contentW - 8);
+          const cH = cLines.length * 4.5 + 6;
+          doc.roundedRect(margin, y, contentW, cH, 2, 2, "F");
+          doc.setFontSize(9); doc.setFont("helvetica", "bold"); doc.setTextColor(21, 128, 61);
+          doc.text(cLines, margin + 4, y + 5);
+          y += cH + 5;
+        });
+      }
+
+      // Timing
+      if (analysis.timing_analyse) {
+        addSection("TIMING-ANALYSE — WARUM JETZT?");
+        addBox([255, 251, 235], analysis.timing_analyse);
+      }
+
+      // Psychologische Taktiken
+      if (analysis.psychologische_taktiken?.length) {
+        addSection("PSYCHOLOGISCHE TAKTIKEN DER GEGENSEITE");
+        analysis.psychologische_taktiken.forEach(t => {
+          checkPage(20);
+          addText(t.taktik, 10, "bold");
+          addText(t.beschreibung, 9, "normal", [60,60,60]);
+          if (t.gegenmasnahme) addBox([240,253,244], `→ ${t.gegenmasnahme}`, 9);
+          y += 2;
+        });
+      }
+
+      // Verhandlungsführung
+      if (analysis.verhandlungsfuehrung) {
+        addSection("EMPFOHLENE VERHANDLUNGSFÜHRUNG");
+        addBox([240,245,255], analysis.verhandlungsfuehrung);
+      }
+
+      // Warnsignale
+      if (analysis.warnsignale?.length) {
+        addSection("KRITISCHE WARNSIGNALE");
+        analysis.warnsignale.forEach(w => addBox([255, 243, 243], `⚠ ${w}`, 9));
+      }
+
+      // Gesamtempfehlung
+      if (analysis.gesamtempfehlung) {
+        addSection("GESAMTSTRATEGIE-EMPFEHLUNG");
+        addBox([20,40,80], analysis.gesamtempfehlung, 10);
+        // Fix text color for dark box
+      }
+
+      // Footer
+      const pageCount = doc.getNumberOfPages();
+      for (let i = 1; i <= pageCount; i++) {
+        doc.setPage(i);
+        doc.setFontSize(7); doc.setFont("helvetica", "normal"); doc.setTextColor(150,150,150);
+        doc.text(`VERTRAULICH — Anwaltsgeheimnis § 203 StGB | ${caseData?.fallname || ""} | Seite ${i}/${pageCount}`, margin, 290);
+      }
+
+      doc.save(`Prozessnotiz_${(caseData?.fallname || "Fall").replace(/\s+/g, "_")}_${new Date().toISOString().slice(0,10)}.pdf`);
+    } catch (e) {
+      alert("PDF-Export fehlgeschlagen: " + e.message);
+    }
+    setExportLoading(false);
+  };
 
   const runMotiveAnalysis = async () => {
     setLoadingMotives(true);
@@ -165,9 +385,15 @@ Analysiere:
             <h3 className="text-sm font-bold text-gray-900">🔮 Was-wäre-wenn-Simulation</h3>
             <p className="text-[11px] text-gray-500 mt-0.5">Blende Argumente, Beweise oder Fristen aus, um ihre Auswirkung zu messen.</p>
           </div>
-          <Button variant="outline" size="sm" onClick={resetAll} className="text-xs gap-1.5">
-            <RefreshCw className="w-3 h-3" /> Zurücksetzen
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={resetAll} className="text-xs gap-1.5">
+              <RefreshCw className="w-3 h-3" /> Zurücksetzen
+            </Button>
+            <Button size="sm" onClick={exportPDF} disabled={exportLoading} className="text-xs gap-1.5 bg-gray-900 text-white hover:bg-gray-800">
+              <FileDown className="w-3 h-3" />
+              {exportLoading ? "Erstelle PDF…" : "Prozessnotiz PDF"}
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
