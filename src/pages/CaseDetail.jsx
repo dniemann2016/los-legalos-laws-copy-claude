@@ -2,32 +2,29 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, ArrowRight, Check, Download } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
-import TabBasisdaten from "../components/lexara/TabBasisdaten";
-import TabArgumenteBeweisVerkettung from "../components/lexara/TabArgumenteBeweisVerkettung";
-import TabPersonen from "../components/lexara/TabPersonen";
-import TabFristen from "../components/lexara/TabFristen";
+import Tab1Fallerfassung from "../components/lexara/Tab1Fallerfassung";
+import Tab2Fallsubstanz from "../components/lexara/Tab2Fallsubstanz";
+import Tab3Gegneranalyse from "../components/lexara/Tab3Gegneranalyse";
+import Tab4RechtlicheAnalyse from "../components/lexara/Tab4RechtlicheAnalyse";
 import TabStrategie from "../components/lexara/TabStrategie";
-import TabKIBerater from "../components/lexara/TabKIBerater";
-import TabAnalyse from "../components/lexara/TabAnalyse";
-import ComplianceChecker from "../components/lexara/ComplianceChecker";
-import TabRisiko from "../components/lexara/TabRisiko";
-import RiskMatrix from "../components/lexara/RiskMatrix";
-import TabVerhandlungssimulation from "../components/lexara/TabVerhandlungssimulation";
-import TabDokumenteAnalyse from "../components/lexara/TabDokumenteAnalyse";
-import TabGesamtbewertung from "../components/lexara/TabGesamtbewertung";
-import TabVerhandlung from "../components/lexara/TabVerhandlung";
-import TabSchriftsatz from "../components/lexara/TabSchriftsatz";
-import TabCockpit from "../components/lexara/TabCockpit";
+import Tab6Risiko from "../components/lexara/Tab6Risiko";
+import Tab7Simulation from "../components/lexara/Tab7Simulation";
+import Tab8Aktion from "../components/lexara/Tab8Aktion";
+import Tab9Cockpit from "../components/lexara/Tab9Cockpit";
 import TabHistory from "../components/lexara/TabHistory";
-import CaseInfluenceGraph from "../components/lexara/CaseInfluenceGraph";
-import AIPerformanceDashboard from "../components/lexara/AIPerformanceDashboard";
-import GegnerRisikoMatrix from "../components/lexara/GegnerRisikoMatrix";
-import GegnerVerhaltenDashboard from "../components/lexara/GegnerVerhaltenDashboard";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
-  {id:1,label:"Basisdaten"},{id:2,label:"Dokumente"},{id:3,label:"Argumente & Beweise"},{id:4,label:"Personen"},
-  {id:5,label:"Fristen"},{id:6,label:"Strategie"},{id:7,label:"KI-Berater"},{id:8,label:"Analyse"},{id:9,label:"Risiken"},{id:10,label:"Risikomatrix"},{id:11,label:"Simulation"},{id:12,label:"Gesamtbewertung"},{id:13,label:"Verhandlung"},{id:14,label:"Schriftsatz"},{id:15,label:"Cockpit"},{id:16,label:"Fallanalyse-Netzwerk"},{id:17,label:"Historie"},{id:18,label:"KI-Performance"},{id:19,label:"Gegner-Risiken"},{id:20,label:"Gegner-Verhalten"},
+  {id:1,label:"Fallerfassung"},
+  {id:2,label:"Fallsubstanz"},
+  {id:3,label:"Gegneranalyse"},
+  {id:4,label:"Rechtl. Analyse"},
+  {id:5,label:"Strategie"},
+  {id:6,label:"Risiko"},
+  {id:7,label:"Simulation"},
+  {id:8,label:"Aktion"},
+  {id:9,label:"Cockpit"},
+  {id:10,label:"Abschluss"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -152,7 +149,18 @@ export default function CaseDetail() {
   if (loading) return <div className="min-h-screen bg-gray-50 flex items-center justify-center"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin"/></div>;
   if (!caseData) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Fall nicht gefunden.</p></div>;
 
-  const completedTabs = [!!caseData.fallname,false,(counts.args>0 && counts.evidence>0),counts.persons>0,counts.deadlines>0,!!caseData.prognose,!!caseData.ki_berater_result,!!caseData.streitwert,!!(caseData.ki_berater_result?.risiko_analyse),false,false,false,!!caseData.notes,false,false,false,false];
+  const completedTabs = [
+    !!caseData.fallname,
+    counts.args > 0 && counts.evidence > 0,
+    !!caseData.ki_berater_result,
+    !!caseData.streitwert,
+    !!caseData.prognose,
+    !!(caseData.ki_berater_result?.risiko_analyse),
+    false,
+    !!caseData.notes,
+    false,
+    false,
+  ];
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -209,32 +217,17 @@ export default function CaseDetail() {
       </div>
 
       <div className="max-w-5xl mx-auto px-4 py-6">
-        <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 20</p>
-        {activeTab===1 && <TabBasisdaten caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===2 && <TabDokumenteAnalyse caseId={caseId} caseData={caseData} onDataImport={loadCase} kiMode={kiMode} />}
-        {activeTab===3 && <TabArgumenteBeweisVerkettung caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} />}
-        {activeTab===4 && <TabPersonen caseId={caseId} onCountChange={loadCase} kiMode={kiMode} />}
-        {activeTab===5 && <TabFristen caseId={caseId} onCountChange={loadCase} />}
-        {activeTab===6 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />}
-        {activeTab===7 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />}
-        {activeTab===8 && (
-          <div className="space-y-6">
-            <ComplianceChecker caseId={caseId} caseData={caseData} kiMode={kiMode} />
-            <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />
-          </div>
-        )}
-        {activeTab===9 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />}
-        {activeTab===10 && <RiskMatrix caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===12 && <TabGesamtbewertung caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===13 && <TabVerhandlung caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===14 && <TabSchriftsatz caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===15 && <TabCockpit caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===16 && <CaseInfluenceGraph caseId={caseId} />}
-        {activeTab===17 && <TabHistory caseId={caseId} />}
-        {activeTab===18 && <AIPerformanceDashboard caseId={caseId} />}
-        {activeTab===19 && <GegnerRisikoMatrix caseId={caseId} caseData={caseData} />}
-        {activeTab===20 && <GegnerVerhaltenDashboard caseId={caseId} caseData={caseData} />}
+        <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 10</p>
+        {activeTab===1 && <Tab1Fallerfassung caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} onDataImport={loadCase} kiMode={kiMode} />}
+        {activeTab===2 && <Tab2Fallsubstanz caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} />}
+        {activeTab===3 && <Tab3Gegneranalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
+        {activeTab===4 && <Tab4RechtlicheAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
+        {activeTab===5 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
+        {activeTab===6 && <Tab6Risiko caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
+        {activeTab===7 && <Tab7Simulation caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===8 && <Tab8Aktion caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===9 && <Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===10 && <TabHistory caseId={caseId} />}
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">
             <ArrowLeft className="w-4 h-4"/> Zurück
@@ -242,7 +235,7 @@ export default function CaseDetail() {
           <div className="flex gap-1">
             {TABS.map((_,i) => <div key={i} className={`w-2 h-2 rounded-full transition-all ${activeTab===i+1?"bg-gray-800":completedTabs[i]?"bg-gray-400":"bg-gray-200"}`}/>)}
           </div>
-          <button onClick={() => setActiveTab(t=>Math.min(20,t+1))} disabled={activeTab===20} className="flex items-center gap-1 text-sm text-gray-800 font-medium hover:text-gray-600 disabled:opacity-30">
+          <button onClick={() => setActiveTab(t=>Math.min(10,t+1))} disabled={activeTab===10} className="flex items-center gap-1 text-sm text-gray-800 font-medium hover:text-gray-600 disabled:opacity-30">
             Weiter <ArrowRight className="w-4 h-4"/>
           </button>
         </div>
