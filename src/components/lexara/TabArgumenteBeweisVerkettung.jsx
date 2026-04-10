@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import TabArgumente from "./TabArgumente";
 import TabBeweise from "./TabBeweise";
 import TabVerkettung from "./TabVerkettung";
+import PraezedenzfallSuche from "./PraezedenzfallSuche";
 
 export default function TabArgumenteBeweisVerkettung({ caseId, caseData, onCountChange }) {
   const [activeSubTab, setActiveSubTab] = useState("argumente");
@@ -40,12 +41,23 @@ export default function TabArgumenteBeweisVerkettung({ caseId, caseData, onCount
         >
           Verkettung
         </button>
+        <button
+          onClick={() => setActiveSubTab("praezedenz")}
+          className={`px-3 py-2 text-sm font-medium border-b-2 transition-all ${
+            activeSubTab === "praezedenz"
+              ? "border-blue-600 text-blue-700"
+              : "border-transparent text-gray-400 hover:text-gray-600"
+          }`}
+        >
+          🔍 Präzedenzfälle
+        </button>
       </div>
 
       {/* Content */}
       {activeSubTab === "argumente" && <TabArgumente caseId={caseId} caseData={caseData} onCountChange={onCountChange} />}
       {activeSubTab === "beweise" && <TabBeweise caseId={caseId} />}
       {activeSubTab === "verkettung" && <TabVerkettung caseId={caseId} />}
+      {activeSubTab === "praezedenz" && <PraezedenzfallSuche caseId={caseId} caseData={caseData} onImport={onCountChange} />}
     </div>
   );
 }
