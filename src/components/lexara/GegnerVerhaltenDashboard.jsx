@@ -157,14 +157,18 @@ Analysiere:
             variant="outline"
             onClick={async () => {
               setExporting(true);
-              const res = await exportGegnerVerhaltenPDF({ caseId });
-              const blob = new Blob([res.data], { type: "application/pdf" });
-              const url = URL.createObjectURL(blob);
-              const a = document.createElement("a");
-              a.href = url;
-              a.download = `Gegner-Verhaltensanalyse_${caseId}.pdf`;
-              a.click();
-              URL.revokeObjectURL(url);
+              try {
+                const res = await exportGegnerVerhaltenPDF({ caseId });
+                const blob = new Blob([res.data || res], { type: "application/pdf" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `Gegner-Verhaltensanalyse_${caseId}.pdf`;
+                a.click();
+                URL.revokeObjectURL(url);
+              } catch (err) {
+                console.error("PDF-Export fehlgeschlagen:", err);
+              }
               setExporting(false);
             }}
             disabled={exporting}
