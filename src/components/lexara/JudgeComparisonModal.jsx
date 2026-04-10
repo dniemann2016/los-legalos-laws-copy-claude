@@ -18,8 +18,19 @@ export default function JudgeComparisonModal({ isOpen, onClose, currentJudgeName
 
   useEffect(() => {
     if (!selectedJudge || !basePrognose) return;
-    const modified = { ...caseData, richter_name: selectedJudge.name, richter_klaeger_rate: selectedJudge.klaeger_rate };
-    const alt = computePrognose({ args, evidence, deadlines, persons, caseData: modified });
+    // Richter im persons-Array durch den neuen Richter ersetzen (oder hinzufügen)
+    const existingNonJudges = persons.filter(p => p.role !== "Richter");
+    const fakeRichter = {
+      id: "__alt_richter__",
+      name: selectedJudge.name,
+      role: "Richter",
+      klaeger_rate: selectedJudge.klaeger_rate,
+      vergleich_rate: selectedJudge.vergleich_rate,
+      glaubwuerdigkeit: 80,
+    };
+    const altPersons = [...existingNonJudges, fakeRichter];
+    const modifiedCaseData = { ...caseData, richter_name: selectedJudge.name, richter_klaeger_rate: selectedJudge.klaeger_rate };
+    const alt = computePrognose({ args, evidence, deadlines, persons: altPersons, caseData: modifiedCaseData });
     setAltPrognose(alt);
   }, [selectedJudge]);
 
