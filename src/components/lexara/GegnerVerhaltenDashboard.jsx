@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, TrendingUp, AlertTriangle, CheckCircle2, XCircle, Clock } from "lucide-react";
+import { Plus, Trash2, TrendingUp, AlertTriangle, CheckCircle2, XCircle, Clock, Download } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { exportGegnerVerhaltenPDF } from "@/functions/exportGegnerVerhaltenPDF";
 
 const TYP_LABELS = {
   versaeumte_frist: { label: "Versäumte Frist", color: "bg-red-100 text-red-700", icon: "⏰" },
@@ -36,6 +37,7 @@ const EMPTY_FORM = {
 };
 
 export default function GegnerVerhaltenDashboard({ caseId, caseData }) {
+  const [exporting, setExporting] = useState(false);
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -147,6 +149,28 @@ Analysiere:
         {entries.length >= 2 && (
           <Button size="sm" variant="outline" onClick={analyzePatterns} disabled={analyzingPattern} className="text-xs gap-1.5">
             {analyzingPattern ? "Analysiere..." : "🧠 Muster-Analyse"}
+          </Button>
+        )}
+        {entries.length > 0 && (
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              setExporting(true);
+              const res = await exportGegnerVerhaltenPDF({ caseId });
+              const blob = new Blob([res.data], { type: "application/pdf" });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement("a");
+              a.href = url;
+              a.download = `Gegner-Verhaltensanalyse_${caseId}.pdf`;
+              a.click();
+              URL.revokeObjectURL(url);
+              setExporting(false);
+            }}
+            disabled={exporting}
+            className="text-xs gap-1.5"
+          >
+            <Download className="w-3.5 h-3.5" /> {exporting ? "PDF wird generiert..." : "PDF-Bericht"}
           </Button>
         )}
       </div>
