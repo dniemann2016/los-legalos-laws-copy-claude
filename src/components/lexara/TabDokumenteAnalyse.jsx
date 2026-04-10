@@ -11,6 +11,7 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
   const [analyzing_doc, setAnalyzing_doc] = useState(null);
   const [results, setResults] = useState({});
   const [loading, setLoading] = useState(true);
+  const [ocr_status, setOcr_status] = useState({});
   const fileRef = useRef(null);
 
   const loadDocs = async () => {
@@ -27,22 +28,27 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
   const analyzeDocument = async (doc) => {
     setAnalyzing_doc(doc.id);
     try {
+      // OCR: Volltext aus PDF extrahieren (nur bei PDF)
+      let ocrText = "";
+      const isPdf = doc.file_type?.includes("pdf") || doc.file_url?.toLowerCase().endsWith(".pdf");
+      if (isPdf && doc.file_url) {
+        setOcr_status(prev => ({ ...prev, [doc.id]: "extracting" }));
+        const ocrResult = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url: doc.file_url,
+          json_schema: {
+            type: "object",
+            properties: { volltext: { type: "string", description: "Kompletter Textinhalt des Dokuments" } }
+          }
+        });
+        if (ocrResult.status === "success" && ocrResult.output?.volltext) {
+          ocrText = ocrResult.output.volltext;
+          await base44.entities.Document.update(doc.id, { ai_raw: { ...(doc.ai_raw || {}), ocr_text: ocrText } });
+        }
+        setOcr_status(prev => ({ ...prev, [doc.id]: "done" }));
+      }
+
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein Rechtsanwalt. Analysiere dieses juristische Dokument gründlich und extrahiere ALLE relevanten Informationen:
-
-Fall: ${caseData?.fallname || ""}
-Rechtsgebiet: ${caseData?.rechtsgebiet || ""}
-Zentrale Frage: ${caseData?.zentrale_rechtsfrage || ""}
-
-Dokument: ${doc.title}
-
-Extrahiere und strukturiere:
-1. ARGUMENTE (welche unterstützen unsere Position, welche die Gegenseite)
-2. BEWEISE (konkrete Fakten, Klauseln, Unterschriften)
-3. FRISTEN (Deadlines, Fristen)
-4. BETEILIGTE (Personen, Organisationen)
-5. LITERATUR & RECHTSPRECHUNG (falls erwähnt)
-6. VERTRÄGE / SONSTIGE (andere wichtige Dokumente/Informationen)`,
+        prompt: `Du bist ein Rechtsanwalt. Analysiere dieses juristische Dokument gründlich und extrahiere ALLE relevanten Informationen:\n\nFall: ${caseData?.fallname || ""}\nRechtsgebiet: ${caseData?.rechtsgebiet || ""}\nZentrale Frage: ${caseData?.zentrale_rechtsfrage || ""}\n\nDokument: ${doc.title}\n${ocrText ? `\nVOLLTEXT (OCR-extrahiert):\n${ocrText.slice(0, 8000)}` : ""}\n\nExtrahiere und strukturiere:\n1. ARGUMENTE (welche unterstützen unsere Position, welche die Gegenseite)\n2. BEWEISE (konkrete Fakten, Klauseln, Unterschriften)\n3. FRISTEN (Deadlines, Fristen)\n4. BETEILIGTE (Personen, Organisationen)\n5. LITERATUR & RECHTSPRECHUNG (falls erwähnt)\n6. VERTRÄGE / SONSTIGE (andere wichtige Dokumente/Informationen)`,
         file_urls: doc.file_url ? [doc.file_url] : undefined,
         response_json_schema: {
           type: "object",
@@ -277,7 +283,8 @@ Extrahiere und strukturiere:
                       </span>
                     ) : analyzing_doc === doc.id ? (
                       <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                        <Loader2 className="w-3 h-3 animate-spin" /> Analysiere...
+                        <Loader2 className="w-3 h-3 animate-spin" />
+                        {ocr_status[doc.id] === "extracting" ? "OCR läuft..." : "Analysiere..."}
                       </span>
                     ) : (
                       <button
