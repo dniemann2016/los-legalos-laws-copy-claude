@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { Sparkles, RefreshCw, ExternalLink } from "lucide-react";
 
-export default function TabAnalyse({ caseId, caseData, onUpdate }) {
+export default function TabAnalyse({ caseId, caseData, onUpdate, kiMode = true }) {
   const [args, setArgs] = useState([]);
   const [rechtsprechung, setRechtsprechung] = useState(null);
   const [rpLoading, setRpLoading] = useState(false);
@@ -263,11 +263,15 @@ Finde 5-8 relevante Gerichtsentscheidungen aus Deutschland (BGH, BVerfG, OLG, BA
               <p className="text-[10px] text-violet-600 mt-0.5">🧠 {savedInsights.length} Einträge aus der Wissensbasis verfügbar{savingInsights ? " · Speichere neue Erkenntnisse…" : ""}</p>
             )}
           </div>
-          <Button onClick={sucheRechtsprechung} disabled={rpLoading} size="sm"
-            className="bg-violet-700 hover:bg-violet-800 text-white text-xs rounded-xl gap-1.5">
-            {rpLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-            {rpLoading ? "Suche läuft…" : rechtsprechung ? "Neu suchen" : "Rechtsprechung suchen"}
-          </Button>
+          {kiMode ? (
+            <Button onClick={sucheRechtsprechung} disabled={rpLoading} size="sm"
+              className="bg-violet-700 hover:bg-violet-800 text-white text-xs rounded-xl gap-1.5">
+              {rpLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+              {rpLoading ? "Suche läuft…" : rechtsprechung ? "Neu suchen" : "Rechtsprechung suchen"}
+            </Button>
+          ) : (
+            <span className="text-xs bg-amber-100 text-amber-700 px-3 py-1.5 rounded-lg border border-amber-200">✏️ Manuell-Modus</span>
+          )}
         </div>
 
         {rpLoading && (

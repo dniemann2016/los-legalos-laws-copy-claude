@@ -51,6 +51,13 @@ export default function CaseDetail() {
   const [counts, setCounts] = useState({args:0,evidence:0,persons:0,deadlines:0});
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
+  const [kiMode, setKiMode] = useState(() => localStorage.getItem('lexara_ki_mode') !== 'false');
+
+  const toggleKiMode = () => setKiMode(prev => {
+    const next = !prev;
+    localStorage.setItem('lexara_ki_mode', String(next));
+    return next;
+  });
 
   const handleExportCSV = async () => {
     setExporting(true);
@@ -166,6 +173,17 @@ export default function CaseDetail() {
               </button>
             </div>
             <div className="flex items-center gap-2">
+              {/* KI / Manuell Toggle */}
+              <button
+                onClick={toggleKiMode}
+                title={kiMode ? "KI-Modus aktiv – klicken um zu deaktivieren" : "Manuell-Modus aktiv – klicken um KI zu aktivieren"}
+                className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg border transition-all ${
+                  kiMode
+                    ? "bg-violet-600 text-white border-violet-600 hover:bg-violet-700"
+                    : "bg-amber-100 text-amber-700 border-amber-300 hover:bg-amber-200"
+                }`}>
+                {kiMode ? "🤖 KI-Modus" : "✏️ Manuell"}
+              </button>
               {caseData.rechtsgebiet && <span className="text-xs bg-gray-100 text-gray-600 rounded-full px-2 py-0.5">{caseData.rechtsgebiet}</span>}
               {caseData.status && <span className="text-xs bg-blue-100 text-blue-700 rounded-full px-2 py-0.5">{caseData.status}</span>}
               <PrognoseCircle value={caseData.prognose||0}/>
@@ -191,25 +209,25 @@ export default function CaseDetail() {
       <div className="max-w-5xl mx-auto px-4 py-6">
         <p className="text-xs text-gray-400 mb-4">SCHRITT {activeTab} VON 17</p>
         {activeTab===1 && <TabBasisdaten caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===2 && <TabDokumenteAnalyse caseId={caseId} caseData={caseData} onDataImport={loadCase} />}
-        {activeTab===3 && <TabArgumenteBeweisVerkettung caseId={caseId} caseData={caseData} onCountChange={loadCase} />}
-        {activeTab===4 && <TabPersonen caseId={caseId} onCountChange={loadCase} />}
+        {activeTab===2 && <TabDokumenteAnalyse caseId={caseId} caseData={caseData} onDataImport={loadCase} kiMode={kiMode} />}
+        {activeTab===3 && <TabArgumenteBeweisVerkettung caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} />}
+        {activeTab===4 && <TabPersonen caseId={caseId} onCountChange={loadCase} kiMode={kiMode} />}
         {activeTab===5 && <TabFristen caseId={caseId} onCountChange={loadCase} />}
-        {activeTab===6 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===7 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
+        {activeTab===6 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />}
+        {activeTab===7 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />}
         {activeTab===8 && (
           <div className="space-y-6">
-            <ComplianceChecker caseId={caseId} caseData={caseData} />
-            <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />
+            <ComplianceChecker caseId={caseId} caseData={caseData} kiMode={kiMode} />
+            <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />
           </div>
         )}
-        {activeTab===9 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} />}
-        {activeTab===10 && <RiskMatrix caseId={caseId} caseData={caseData} />}
-        {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} />}
-        {activeTab===12 && <TabGesamtbewertung caseId={caseId} caseData={caseData} />}
-        {activeTab===13 && <TabVerhandlung caseId={caseId} caseData={caseData} />}
-        {activeTab===14 && <TabSchriftsatz caseId={caseId} caseData={caseData} />}
-        {activeTab===15 && <TabCockpit caseId={caseId} caseData={caseData} />}
+        {activeTab===9 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={d=>{setCaseData(d);}} kiMode={kiMode} />}
+        {activeTab===10 && <RiskMatrix caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===11 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===12 && <TabGesamtbewertung caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===13 && <TabVerhandlung caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===14 && <TabSchriftsatz caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+        {activeTab===15 && <TabCockpit caseId={caseId} caseData={caseData} kiMode={kiMode} />}
         {activeTab===16 && <CaseInfluenceGraph caseId={caseId} />}
         {activeTab===17 && <TabHistory caseId={caseId} />}
         {activeTab===18 && <AIPerformanceDashboard caseId={caseId} />}

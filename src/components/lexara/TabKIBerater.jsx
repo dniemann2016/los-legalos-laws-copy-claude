@@ -37,7 +37,7 @@ function InfoBtn({ title, explanation, formula }) {
 
 const EMPTY_PROFIL = { gegner_name:"", gegner_groesse:"", gegner_finanzlage:"", gegner_branche:"", entscheider_name:"", entscheider_alter:"", entscheider_persoenlichkeit:"", entscheider_karriere:"", entscheider_schwaechen:"", anwalt_kanzlei:"", anwalt_bekannt_fuer:"", anwalt_schwaechen:"", verhalten_verhandlung:"", verhalten_taktik:"", verhalten_fehler:"", eigene_staerken:"", eigene_schwaechen:"", ziel_maximal:"", ziel_realistisch:"", ziel_minimal:"", nicht_verhandelbar:"", kontext_oeffentlichkeit:"", kontext_zeitdruck:"", kontext_weitere:"" };
 
-export default function TabKIBerater({ caseId, caseData, onUpdate }) {
+export default function TabKIBerater({ caseId, caseData, onUpdate, kiMode = true }) {
   const [acknowledged, setAcknowledged] = useState(!!(caseData?.ki_berater_result));
   const [profil, setProfil] = useState(caseData?.gegner_profil || EMPTY_PROFIL);
   const [showProfil, setShowProfil] = useState(false);
@@ -137,6 +137,16 @@ JSON-Format:
         )}
       </div>
 
+      {!kiMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+          <span className="text-lg">✏️</span>
+          <div>
+            <p className="text-sm font-semibold text-amber-800">Manuell-Modus — KI-Analyse deaktiviert</p>
+            <p className="text-xs text-amber-600">Der KI-Berater ist ausgeschaltet. Aktiviere den KI-Modus oben, um die Analyse zu starten.</p>
+          </div>
+        </div>
+      )}
+
       {/* Analyse-Module */}
       <div className="bg-white rounded-2xl border border-gray-100 p-4">
         <h3 className="text-sm font-semibold text-gray-700 mb-4">🎯 Analyse-Module</h3>
@@ -150,9 +160,15 @@ JSON-Format:
             </div>
           ))}
         </div>
-        <Button onClick={runAnalysis} disabled={loading} className="w-full bg-gray-900 text-white rounded-xl gap-2">
-          {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analysiere mit KI...</> : "🎯 Vollständige Analyse starten"}
-        </Button>
+        {kiMode ? (
+          <Button onClick={runAnalysis} disabled={loading} className="w-full bg-gray-900 text-white rounded-xl gap-2">
+            {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analysiere mit KI...</> : "🎯 Vollständige Analyse starten"}
+          </Button>
+        ) : (
+          <div className="text-center py-3 text-sm text-amber-600 bg-amber-50 rounded-xl border border-amber-200">
+            ✏️ KI-Analyse ist im Manuell-Modus deaktiviert
+          </div>
+        )}
         {analysisError && <p className="text-xs text-red-500 mt-2 text-center">⚠️ {analysisError}</p>}
         <p className="text-[10px] text-amber-600 text-center mt-2">⚠️ Diese Analyse kann 30–60 Sekunden dauern</p>
       </div>

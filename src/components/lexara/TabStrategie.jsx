@@ -21,7 +21,7 @@ function PrognoseCircle({ value }) {
   );
 }
 
-export default function TabStrategie({ caseId, caseData, onUpdate }) {
+export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true }) {
   const [args, setArgs] = useState([]);
   const [evidence, setEvidence] = useState([]);
   const [persons, setPersons] = useState([]);
@@ -59,7 +59,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
     const raw = argBasis*beweisBoost*kantenEffekt*zeugenMult*richterAdj*fristenFaktor;
     const final = Math.min(99, Math.max(1, Math.round(raw)));
     setAlgorithm({argBasis:Math.round(argBasis),beweisBoost:Math.round((beweisBoost-1)*100),kantenEffekt:Math.round(kantenEffekt*100)+"%",zeugenMult:Math.round(zeugenMult*100)+"%",richterAdj:Math.round(richterAdj*100)+"%",fristenFaktor:Math.round(fristenFaktor*100)+"%"});
-    setPrognose(final);
+    if (kiMode) setPrognose(final);
   };
 
   const savePrognose = async () => {
@@ -74,25 +74,19 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
   const recommendation = prognose>=55?"Streitiges Verfahren — Vollsieg anstreben":prognose>=40?"Vergleich anstreben":"Risiken abwägen — Aufgabe prüfen";
   const recTag = prognose>=55?"Klage":prognose>=40?"Vergleich":"Aufgabe";
 
-  // Overlapping chart: align eigen vs gegner by index
   const maxLen = Math.max(eigenArgs.length, gegnerArgs.length, 1);
   const overlapData = Array.from({length: maxLen}, (_,i) => ({
     name: `Arg ${i+1}`,
     Eigene: eigenArgs[i] ? (eigenArgs[i].strength||5)*10 : null,
     Gegner: gegnerArgs[i] ? (gegnerArgs[i].strength||5)*10 : null,
-    EigenLabel: eigenArgs[i]?.title?.slice(0,12) || "",
-    GegnerLabel: gegnerArgs[i]?.title?.slice(0,12) || "",
   }));
 
-  // Evidence weights per argument
   const evidenceData = args.slice(0,8).map(a => ({
     name: a.title?.slice(0,12) || "?",
     Stärke: (a.strength||5)*10,
     Beweise: evidence.filter(e=>e.argument_id===a.id).reduce((s,e)=>s+(e.weight||5),0)*10 || 10,
-    seite: a.side,
   }));
 
-  // Radar: algorithm factors
   const radarData = [
     {subject: "Argumente", Eigen: eigenArgs.length>0?Math.round(eigenArgs.reduce((s,a)=>s+(a.strength||5),0)/eigenArgs.length*10):0, Gegner: gegnerArgs.length>0?Math.round(gegnerArgs.reduce((s,a)=>s+(a.strength||5),0)/gegnerArgs.length*10):0},
     {subject: "Beweise", Eigen: evidence.filter(e=>eigenArgs.find(a=>a.id===e.argument_id)).length*15, Gegner: evidence.filter(e=>gegnerArgs.find(a=>a.id===e.argument_id)).length*15},
@@ -104,8 +98,29 @@ export default function TabStrategie({ caseId, caseData, onUpdate }) {
 
   return (
     <div className="space-y-6">
+      {!kiMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
+          <span className="text-lg">✏️</span>
+          <div className="flex-1">
+            <p className="text-sm font-semibold text-amber-800">Manuell-Modus aktiv — KI-Funktionen deaktiviert</p>
+            <p className="text-xs text-amber-600">Alle Prognose-Werte können manuell eingestellt werden. Wechsle zu KI-Modus für automatische Berechnungen.</p>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">GESAMTPROGNOSE — {caseData?.fallname?.toUpperCase()}</p>
+        {!kiMode && (
+          <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
+            <label className="text-xs text-amber-700 font-medium block mb-1">Prognose manuell einstellen (%)</label>
+            <input
+              type="number" min={1} max={99} step={1}
+              className="border border-amber-300 rounded-lg px-3 py-1.5 text-sm w-32 bg-white"
+              value={prognose}
+              onChange={e => setPrognose(Math.min(99, Math.max(1, +e.target.value)))}
+            />
+          </div>
+        )}
         <div className="flex items-start gap-6">
           <PrognoseCircle value={prognose} />
           <div className="flex-1">
