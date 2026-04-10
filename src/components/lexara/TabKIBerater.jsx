@@ -28,18 +28,26 @@ Fall: ${caseData?.fallname||""}, Rechtsgebiet: ${caseData?.rechtsgebiet||""}, Pr
 Eigene Argumente (${eigene.length}): ${eigene.map(a=>`${a.title} (${a.strength}/10)`).join(", ")}
 Gegner-Argumente (${gegner.length}): ${gegner.map(a=>`${a.title} (${a.strength}/10)`).join(", ")}
 Gegner-Profil: ${JSON.stringify(profil)}
-Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad Assessment der Gegenpartei. Identifiziert Trigger, Schwachpunkte und optimalen Verhandlungsansatz.), Druckmittel-Analyse (Systematische Identifikation aller Schwachstellen: Zeitdruck, Finanzen, Reputation, persönliche Risiken.), Strategieempfehlungen (3–5 taktische Optionen von kooperativ bis aggressiv. Erfolgswahrscheinlichkeit und Risikoabwägung.), Timing & Momentum (Optimaler Zeitpunkt für jeden Schritt. Identifiziert kritische Zeitfenster und Schwächephasen des Gegners.), Informationsstrategie (Was offenlegen, verbergen oder als Bluff nutzen? Ethische Klassifizierung jeder Maßnahme.), Verhandlungsskript mit Opening/Argumentation/Closing/Einwandbehandlung (Maßgeschneidertes Skript mit FBI-Taktiken (Calibrated Questions) und konkreten Formulierungen.).`,
-      model: "claude_sonnet_4_6",
+
+Gib eine JSON-Analyse mit diesen Feldern:
+- psychologisches_profil: { big_five: {Offenheit:Zahl, Gewissenhaftigkeit:Zahl, Extraversion:Zahl, Verträglichkeit:Zahl, Neurotizismus:Zahl}, dark_triad: {Narzissmus:Zahl, Machiavelismus:Zahl, Psychopathie:Zahl}, trigger: [{trigger:String, beschreibung:String, intensitaet:String}], empfehlung:String }
+- druckmittel: [{titel:String, kategorie:String, wie_nutzen:String, timing:String, risiko:String, staerke:Zahl}] (max 4)
+- strategien: [{name:String, stil:String, schritte:[String], risiko:String, zitat:String, erfolg_pct:Zahl}] (max 3)
+- timing: { momentum:String, momentum_pct:Zahl, zeitfenster:[{zeitraum:String, aktion:String}], naechster_schritt:String }
+- informationsstrategie: { sofort_offenlegen:[String], verbergen:[String], als_bluff:[String] }
+- verhandlungsskript: { vorbereitung:String, opening:String, argumentation:String, closing:String, einwand:String, backup:String, psycho_notizen:[String] }
+- empfehlung: String`,
+      model: "gemini_3_flash",
       response_json_schema: {
         type: "object",
         properties: {
-          psychologisches_profil: { type: "object", properties: { big_five: {type:"object"}, dark_triad: {type:"object"}, trigger: {type:"array",items:{type:"object"}}, empfehlung: {type:"string"} } },
-          druckmittel: { type: "array", items: { type:"object", properties: { kategorie:{type:"string"}, titel:{type:"string"}, wie_nutzen:{type:"string"}, timing:{type:"string"}, risiko:{type:"string"}, staerke:{type:"number"} } } },
-          strategien: { type: "array", items: { type:"object", properties: { name:{type:"string"}, stil:{type:"string"}, schritte:{type:"array",items:{type:"string"}}, risiko:{type:"string"}, zitat:{type:"string"}, erfolg_pct:{type:"number"} } } },
-          timing: { type: "object", properties: { momentum:{type:"string"}, momentum_pct:{type:"number"}, zeitfenster:{type:"array",items:{type:"object"}}, naechster_schritt:{type:"string"} } },
-          informationsstrategie: { type: "object", properties: { sofort_offenlegen:{type:"array",items:{type:"string"}}, verbergen:{type:"array",items:{type:"string"}}, als_bluff:{type:"array",items:{type:"string"}} } },
-          verhandlungsskript: { type: "object", properties: { vorbereitung:{type:"string"}, opening:{type:"string"}, argumentation:{type:"string"}, closing:{type:"string"}, einwand:{type:"string"}, backup:{type:"string"}, psycho_notizen:{type:"array",items:{type:"string"}} } },
-          empfehlung: { type: "string" },
+          psychologisches_profil: { type: "object" },
+          druckmittel: { type: "array", items: { type: "object" } },
+          strategien: { type: "array", items: { type: "object" } },
+          timing: { type: "object" },
+          informationsstrategie: { type: "object" },
+          verhandlungsskript: { type: "object" },
+          empfehlung: { type: "string" }
         }
       }
     });
@@ -119,7 +127,7 @@ Führe folgende Analysen durch: Psychologisches Profil (Big Five + Dark Triad As
           {loading ? <><RefreshCw className="w-4 h-4 animate-spin" /> Analysiere mit KI...</> : "🎯 Vollständige Analyse starten"}
         </Button>
         {analysisError && <p className="text-xs text-red-500 mt-2 text-center">⚠️ {analysisError}</p>}
-        <p className="text-[10px] text-amber-600 text-center mt-2">⚠️ Diese Analyse verwendet Claude Sonnet (mehr KI-Credits)</p>
+        <p className="text-[10px] text-amber-600 text-center mt-2">⚠️ Diese Analyse kann 30–60 Sekunden dauern</p>
       </div>
 
       {/* Results */}
