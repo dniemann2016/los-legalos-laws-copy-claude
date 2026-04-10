@@ -7,9 +7,9 @@ import LanguageStep from "../components/onboarding/LanguageStep";
 import JurisdictionStep from "../components/onboarding/JurisdictionStep";
 
 const STEP_LABELS = {
-  DE: ["Datenschutz", "Sprache", "Rechtsordnung"],
-  EN: ["Privacy", "Language", "Jurisdiction"],
-  FR: ["Confidentialité", "Langue", "Juridiction"],
+  DE: ["Sprache", "Nutzungsbedingungen", "Rechtsordnung"],
+  EN: ["Language", "Terms of Use", "Jurisdiction"],
+  FR: ["Langue", "Conditions d'utilisation", "Juridiction"],
 };
 
 export default function OnboardingSetup() {
@@ -69,10 +69,10 @@ export default function OnboardingSetup() {
         </div>
 
         {step === 1 && (
-          <DisclaimerStep language={language} onAccept={() => setStep(2)} />
+          <LanguageStep language={language} onSelect={(lang) => { setLanguage(lang); setStep(2); }} onBack={() => {}} />
         )}
         {step === 2 && (
-          <LanguageStep language={language} onSelect={(lang) => { setLanguage(lang); setStep(3); }} onBack={() => setStep(1)} />
+          <DisclaimerStep language={language} onAccept={() => setStep(3)} onBack={() => setStep(1)} />
         )}
         {step === 3 && (
           <JurisdictionStep

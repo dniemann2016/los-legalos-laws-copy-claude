@@ -30,6 +30,8 @@ const CONTENT = {
    • Schäden durch unbefugten Zugriff Dritter
    • Wirtschaftliche Nachteile oder Prozessverluste
 
+8. SALVATORISCHE KLAUSEL: Sollte eine Bestimmung dieses Vertrags oder seiner Anwendung ganz oder teilweise unzulässig oder nicht durchsetzbar sein, bleiben die übrigen Bestimmungen gültig. Die Parteien verpflichten sich, die ungültige Bestimmung durch eine zulässige zu ersetzen, die dem Wirtschaftszweck der ursprünglichen Bestimmung am nächsten kommt.
+
 Dieser Vertrag unterliegt deutschem Recht. Gerichtsstand ist Deutschland.`,
     checkbox: "Ich habe die Nutzungsbedingungen, die Geheimhaltungsverpflichtung und die Sanktionsregelungen vollständig gelesen und erkenne diese rechtsverbindlich an.",
     btn: "Verbindlich akzeptieren & Zugang erhalten",
@@ -61,6 +63,8 @@ Dieser Vertrag unterliegt deutschem Recht. Gerichtsstand ist Deutschland.`,
    • Technical failures, server outages or data loss
    • Damages caused by unauthorized third-party access
    • Financial losses or adverse court outcomes
+
+8. SEVERABILITY CLAUSE: Should any provision of this agreement or its application be wholly or partly invalid or unenforceable, the remaining provisions shall remain valid. The parties undertake to replace the invalid provision with a valid provision that comes closest to the economic purpose of the original provision.
 
 This agreement is governed by German law. Place of jurisdiction is Germany.`,
     checkbox: "I have fully read the terms of use, the confidentiality obligation and the penalty provisions, and I accept them as legally binding.",
@@ -94,13 +98,15 @@ This agreement is governed by German law. Place of jurisdiction is Germany.`,
    • Dommages causés par un accès non autorisé de tiers
    • Pertes financières ou issues défavorables de procédures judiciaires
 
+8. CLAUSE DÉROGATOIRE : Si une disposition du présent accord ou son application était totalement ou partiellement nulle ou inçéxécutable, les autres dispositions restent valides. Les parties s'engagent à remplacer la disposition invalide par une disposition valide qui correspond le plus près au but économique de la disposition initiale.
+
 Cet accord est régi par le droit allemand. Le tribunal compétent est en Allemagne.`,
     checkbox: "J'ai lu intégralement les conditions d'utilisation, l'obligation de confidentialité et les dispositions de sanction, et je les accepte comme juridiquement contraignantes.",
     btn: "Accepter légalement & Obtenir l'accès",
   },
 };
 
-export default function DisclaimerStep({ language, onAccept }) {
+export default function DisclaimerStep({ language, onAccept, onBack }) {
   const [checked, setChecked] = useState(false);
   const c = CONTENT[language] || CONTENT.DE;
 
@@ -129,10 +135,18 @@ export default function DisclaimerStep({ language, onAccept }) {
         <span className="text-xs text-slate-800 font-medium leading-relaxed">{c.checkbox}</span>
       </label>
 
-      <button disabled={!checked} onClick={onAccept}
-        className="w-full py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[#1a3560] text-white hover:bg-[#142a4d]">
-        {c.btn}
-      </button>
+      <div className="flex gap-3">
+        {onBack && (
+          <button onClick={onBack}
+            className="flex-1 py-3 rounded-xl text-sm font-semibold border border-slate-200 text-slate-700 hover:bg-slate-50 transition-all">
+            Zurück
+          </button>
+        )}
+        <button disabled={!checked} onClick={onAccept}
+          className="flex-1 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-40 disabled:cursor-not-allowed bg-[#1a3560] text-white hover:bg-[#142a4d]">
+          {c.btn}
+        </button>
+      </div>
     </div>
   );
 }
