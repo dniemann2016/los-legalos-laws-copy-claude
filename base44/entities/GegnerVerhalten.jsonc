@@ -1,0 +1,123 @@
+{
+  "name": "GegnerVerhalten",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "typ": {
+      "type": "string",
+      "title": "Typ",
+      "enum": [
+        "versaeumte_frist",
+        "vergleichsreaktion",
+        "taktik",
+        "prozessverhalten",
+        "sonstiges"
+      ]
+    },
+    "datum": {
+      "type": "string",
+      "title": "Datum"
+    },
+    "titel": {
+      "type": "string",
+      "title": "Kurztitel"
+    },
+    "beschreibung": {
+      "type": "string",
+      "title": "Beschreibung des Verhaltens"
+    },
+    "reaktion": {
+      "type": "string",
+      "title": "Reaktion der Gegenseite",
+      "enum": [
+        "abgelehnt",
+        "angenommen",
+        "ignoriert",
+        "verzoegert",
+        "gegenvorschlag",
+        "keine_reaktion"
+      ]
+    },
+    "unser_angebot": {
+      "type": "number",
+      "title": "Unser Angebot / Forderung (\u20ac)"
+    },
+    "gegner_angebot": {
+      "type": "number",
+      "title": "Gegner-Gegenangebot (\u20ac)"
+    },
+    "verzoegerung_tage": {
+      "type": "number",
+      "title": "Verz\u00f6gerung (Tage)"
+    },
+    "ergebnis": {
+      "type": "string",
+      "title": "Ergebnis / Ausgang"
+    },
+    "pattern_tag": {
+      "type": "string",
+      "title": "Muster-Tag",
+      "enum": [
+        "verzoegerungstaktik",
+        "druckmittel",
+        "konzessionsbereit",
+        "konfrontativ",
+        "kooperativ",
+        "unberechenbar"
+      ]
+    },
+    "auswirkung_prognose": {
+      "type": "number",
+      "title": "Auswirkung auf Prognose (%)",
+      "minimum": -30,
+      "maximum": 30
+    }
+  },
+  "required": [
+    "case_id",
+    "typ",
+    "titel"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Eye, EyeOff, RefreshCw, Brain, AlertTriangle, Clock, ChevronDown, ChevronUp, FileDown } from "lucide-react";
+import { Eye, EyeOff, RefreshCw, Brain, AlertTriangle, Clock, ChevronDown, ChevronUp, FileDown, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { jsPDF } from "jspdf";
 
@@ -84,6 +84,8 @@ function Section({ id, label, children, expandedSection, setExpandedSection }) {
 export default function WasWaereWennSimulation({ args, evidence, deadlines, persons, caseData, basePrognose }) {
   const [hiddenIds, setHiddenIds] = useState({});
   const [exportLoading, setExportLoading] = useState(false);
+  const [dossierLoading, setDossierLoading] = useState(false);
+  const [dossier, setDossier] = useState(null);
   const [motives, setMotives] = useState(null);
   const [loadingMotives, setLoadingMotives] = useState(false);
   const [motiveError, setMotiveError] = useState(null);
@@ -326,6 +328,69 @@ Erstelle eine umfassende Prozessnotiz mit:
     setExportLoading(false);
   };
 
+  const generateDossier = async () => {
+    setDossierLoading(true);
+    setDossier(null);
+    try {
+      const activeEigenArgs = eigenArgs.filter(a => !hiddenIds[a.id]);
+      const activeGegnerArgs = gegnerArgs.filter(a => !hiddenIds[a.id]);
+
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Du bist ein erfahrener Prozessanwalt. Erstelle ein kompaktes Verhandlungs-Dossier für die nächste Sitzung.
+
+Fall: ${caseData?.fallname || ""} | Aktenzeichen: ${caseData?.aktenzeichen || ""}
+Aktuelle Prognose: ${simPrognose}% (Basis: ${baseSimPrognose}%)
+Ausgeblendete Elemente in Simulation: ${hiddenCount}
+
+STARKE EIGENE ARGUMENTE (aktiv in Simulation):
+${activeEigenArgs.filter(a => (a.strength || 5) >= 6).map(a => `- "${a.title}" (${a.strength}/10): ${a.description || ""}`).join("\n") || "Keine starken Argumente"}
+
+GEGNERISCHE SCHWACHSTELLEN (aktive Gegner-Argumente mit Stärke < 6):
+${activeGegnerArgs.filter(a => (a.strength || 5) < 6).map(a => `- "${a.title}" (${a.strength}/10): ${a.description || ""}`).join("\n") || "Keine Schwachstellen identifiziert"}
+
+ALLE AKTIVEN GEGNER-ARGUMENTE:
+${activeGegnerArgs.map(a => `- "${a.title}" (${a.strength}/10)`).join("\n") || "Keine"}
+
+Erstelle ein prägnantes Dossier für die nächste Verhandlung.`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            staerkste_argumente: {
+              type: "array",
+              items: { type: "object", properties: {
+                argument: { type: "string" },
+                einsatz: { type: "string" },
+                formulierung: { type: "string" }
+              }}
+            },
+            gegner_schwachstellen: {
+              type: "array",
+              items: { type: "object", properties: {
+                schwachstelle: { type: "string" },
+                angriffspunkt: { type: "string" }
+              }}
+            },
+            verhandlungsziele: {
+              type: "array",
+              maxItems: 3,
+              items: { type: "object", properties: {
+                ziel: { type: "string" },
+                prioritaet: { type: "string" },
+                taktik: { type: "string" }
+              }}
+            },
+            opening_statement: { type: "string" },
+            rote_linien: { type: "array", items: { type: "string" } }
+          }
+        }
+      });
+      setDossier(result);
+    } catch (e) {
+      alert("Fehler: " + e.message);
+    }
+    setDossierLoading(false);
+  };
+
   const runMotiveAnalysis = async () => {
     setLoadingMotives(true);
     setMotiveError(null);
@@ -385,9 +450,13 @@ Analysiere:
             <h3 className="text-sm font-bold text-gray-900">🔮 Was-wäre-wenn-Simulation</h3>
             <p className="text-[11px] text-gray-500 mt-0.5">Blende Argumente, Beweise oder Fristen aus, um ihre Auswirkung zu messen.</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
             <Button variant="outline" size="sm" onClick={resetAll} className="text-xs gap-1.5">
               <RefreshCw className="w-3 h-3" /> Zurücksetzen
+            </Button>
+            <Button size="sm" onClick={generateDossier} disabled={dossierLoading} variant="outline" className="text-xs gap-1.5 border-blue-300 text-blue-700 hover:bg-blue-50">
+              <BookOpen className="w-3 h-3" />
+              {dossierLoading ? "Erstelle..." : "Verhandlungs-Dossier"}
             </Button>
             <Button size="sm" onClick={exportPDF} disabled={exportLoading} className="text-xs gap-1.5 bg-gray-900 text-white hover:bg-gray-800">
               <FileDown className="w-3 h-3" />
@@ -411,6 +480,72 @@ Analysiere:
           </div>
         )}
       </div>
+
+      {/* Dossier */}
+      {dossier && (
+        <div className="bg-white rounded-2xl border border-blue-200 p-5 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-sm font-bold text-blue-900 flex items-center gap-2"><BookOpen className="w-4 h-4" /> Verhandlungs-Dossier</h3>
+            <button onClick={() => setDossier(null)} className="text-gray-400 hover:text-gray-600 text-xs">✕</button>
+          </div>
+          {dossier.opening_statement && (
+            <div className="bg-blue-900 text-white rounded-xl p-4">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-1 text-blue-300">📢 ERÖFFNUNGSSTATEMENT</p>
+              <p className="text-sm italic">„{dossier.opening_statement}“</p>
+            </div>
+          )}
+          {dossier.staerkste_argumente?.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">💪 STÄRKSTE EIGENE ARGUMENTE</p>
+              <div className="space-y-2">
+                {dossier.staerkste_argumente.map((a, i) => (
+                  <div key={i} className="border border-green-200 rounded-xl p-3 bg-green-50">
+                    <p className="text-xs font-semibold text-green-900">{a.argument}</p>
+                    {a.einsatz && <p className="text-[10px] text-green-700 mt-1">Einsatz: {a.einsatz}</p>}
+                    {a.formulierung && <p className="text-[10px] text-gray-600 mt-1 italic">„{a.formulierung}“</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {dossier.gegner_schwachstellen?.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">⚔️ GEGNERISCHE SCHWACHSTELLEN</p>
+              <div className="space-y-2">
+                {dossier.gegner_schwachstellen.map((s, i) => (
+                  <div key={i} className="border border-red-100 rounded-xl p-3 bg-red-50">
+                    <p className="text-xs font-semibold text-red-800">{s.schwachstelle}</p>
+                    {s.angriffspunkt && <p className="text-[10px] text-red-600 mt-1">→ {s.angriffspunkt}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {dossier.verhandlungsziele?.length > 0 && (
+            <div>
+              <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">🎯 DIE 3 WICHTIGSTEN VERHANDLUNGSZIELE</p>
+              <div className="space-y-2">
+                {dossier.verhandlungsziele.slice(0,3).map((z, i) => (
+                  <div key={i} className="flex gap-3 border border-gray-200 rounded-xl p-3 bg-white">
+                    <div className="w-6 h-6 rounded-full bg-gray-900 text-white text-[10px] font-bold flex items-center justify-center flex-shrink-0">{i+1}</div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-800">{z.ziel}</p>
+                      {z.prioritaet && <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${z.prioritaet==="hoch"?"bg-red-100 text-red-700":"bg-amber-100 text-amber-700"}`}>{z.prioritaet}</span>}
+                      {z.taktik && <p className="text-[10px] text-gray-500 mt-1">{z.taktik}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {dossier.rote_linien?.length > 0 && (
+            <div className="bg-red-900 text-white rounded-xl p-3">
+              <p className="text-[10px] font-bold uppercase tracking-widest mb-2 text-red-300">🛑 ROTE LINIEN</p>
+              {dossier.rote_linien.map((r, i) => <p key={i} className="text-xs">• {r}</p>)}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Toggle Lists */}
       <div className="space-y-2">
