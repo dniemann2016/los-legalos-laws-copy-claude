@@ -67,12 +67,25 @@ function PrognoseBar({ value, label, delta }) {
   );
 }
 
+function Section({ id, label, children, expandedSection, setExpandedSection }) {
+  return (
+    <div className="border border-gray-200 rounded-xl overflow-hidden">
+      <button onClick={() => setExpandedSection(expandedSection === id ? null : id)}
+        className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-left">
+        <span className="text-xs font-semibold text-gray-700">{label}</span>
+        {expandedSection === id ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+      </button>
+      {expandedSection === id && <div className="p-3 space-y-2 bg-white">{children}</div>}
+    </div>
+  );
+}
+
 export default function WasWaereWennSimulation({ args, evidence, deadlines, persons, caseData, basePrognose }) {
   const [hiddenIds, setHiddenIds] = useState({});
   const [motives, setMotives] = useState(null);
   const [loadingMotives, setLoadingMotives] = useState(false);
   const [motiveError, setMotiveError] = useState(null);
-  const [expandedSection, setExpandedSection] = useState("args");
+  const [expandedSection, setExpandedSection] = useState("args_e");
 
   const toggleHidden = (id) => {
     setHiddenIds(prev => {
@@ -141,16 +154,7 @@ Analysiere:
     setLoadingMotives(false);
   };
 
-  const Section = ({ id, label, children }) => (
-    <div className="border border-gray-200 rounded-xl overflow-hidden">
-      <button onClick={() => setExpandedSection(expandedSection === id ? null : id)}
-        className="w-full flex items-center justify-between px-4 py-2.5 bg-gray-50 hover:bg-gray-100 transition-colors text-left">
-        <span className="text-xs font-semibold text-gray-700">{label}</span>
-        {expandedSection === id ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
-      </button>
-      {expandedSection === id && <div className="p-3 space-y-2 bg-white">{children}</div>}
-    </div>
-  );
+
 
   return (
     <div className="space-y-5">
@@ -184,7 +188,7 @@ Analysiere:
 
       {/* Toggle Lists */}
       <div className="space-y-2">
-        <Section id="args_e" label={`✅ Eigene Argumente (${eigenArgs.length})`}>
+        <Section id="args_e" label={`✅ Eigene Argumente (${eigenArgs.length})`} expandedSection={expandedSection} setExpandedSection={setExpandedSection}>
           {eigenArgs.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine eigenen Argumente</p>}
           {eigenArgs.map(a => (
             <ToggleRow key={a.id} item={a} type="arg" isHidden={!!hiddenIds[a.id]} onToggle={toggleHidden}
@@ -192,7 +196,7 @@ Analysiere:
           ))}
         </Section>
 
-        <Section id="args_g" label={`⚔️ Gegner-Argumente (${gegnerArgs.length})`}>
+        <Section id="args_g" label={`⚔️ Gegner-Argumente (${gegnerArgs.length})`} expandedSection={expandedSection} setExpandedSection={setExpandedSection}>
           {gegnerArgs.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine Gegner-Argumente</p>}
           {gegnerArgs.map(a => (
             <ToggleRow key={a.id} item={a} type="arg" isHidden={!!hiddenIds[a.id]} onToggle={toggleHidden}
@@ -200,7 +204,7 @@ Analysiere:
           ))}
         </Section>
 
-        <Section id="evidence" label={`🔍 Beweise (${evidence.length})`}>
+        <Section id="evidence" label={`🔍 Beweise (${evidence.length})`} expandedSection={expandedSection} setExpandedSection={setExpandedSection}>
           {evidence.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine Beweise</p>}
           {evidence.map(e => (
             <ToggleRow key={e.id} item={e} type="ev" isHidden={!!hiddenIds[e.id]} onToggle={toggleHidden}
@@ -208,7 +212,7 @@ Analysiere:
           ))}
         </Section>
 
-        <Section id="deadlines" label={`⏰ Fristen (${deadlines.length})`}>
+        <Section id="deadlines" label={`⏰ Fristen (${deadlines.length})`} expandedSection={expandedSection} setExpandedSection={setExpandedSection}>
           {deadlines.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine Fristen</p>}
           {deadlines.map(d => (
             <ToggleRow key={d.id} item={{ ...d, title: d.title }} type="dl" isHidden={!!hiddenIds[d.id]} onToggle={toggleHidden}
