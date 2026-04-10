@@ -16,8 +16,8 @@ export default function Tab1Fallerfassung({ caseId, caseData, onUpdate, onDataIm
           </button>
         ))}
       </div>
-      {sub === 0 && <TabBasisdaten caseId={caseId} caseData={caseData} onUpdate={onUpdate} />}
-      {sub === 1 && <TabDokumenteAnalyse caseId={caseId} caseData={caseData} onDataImport={onDataImport} kiMode={kiMode} />}
+      <div className={sub === 0 ? "" : "hidden"}><TabBasisdaten caseId={caseId} caseData={caseData} onUpdate={onUpdate} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><TabDokumenteAnalyse caseId={caseId} caseData={caseData} onDataImport={onDataImport} kiMode={kiMode} /></div>
     </div>
   );
 }

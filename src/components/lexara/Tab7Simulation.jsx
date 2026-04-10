@@ -16,8 +16,8 @@ export default function Tab7Simulation({ caseId, caseData, kiMode }) {
           </button>
         ))}
       </div>
-      {sub === 0 && <TabVerhandlungssimulation caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-      {sub === 1 && <TabGesamtbewertung caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+      <div className={sub === 0 ? "" : "hidden"}><TabVerhandlungssimulation caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><TabGesamtbewertung caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
     </div>
   );
 }

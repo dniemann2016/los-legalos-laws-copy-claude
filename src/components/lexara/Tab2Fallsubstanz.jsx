@@ -17,9 +17,9 @@ export default function Tab2Fallsubstanz({ caseId, caseData, onCountChange, kiMo
           </button>
         ))}
       </div>
-      {sub === 0 && <TabArgumenteBeweisVerkettung caseId={caseId} caseData={caseData} onCountChange={onCountChange} kiMode={kiMode} />}
-      {sub === 1 && <TabPersonen caseId={caseId} onCountChange={onCountChange} kiMode={kiMode} />}
-      {sub === 2 && <TabFristen caseId={caseId} onCountChange={onCountChange} />}
+      <div className={sub === 0 ? "" : "hidden"}><TabArgumenteBeweisVerkettung caseId={caseId} caseData={caseData} onCountChange={onCountChange} kiMode={kiMode} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><TabPersonen caseId={caseId} onCountChange={onCountChange} kiMode={kiMode} /></div>
+      <div className={sub === 2 ? "" : "hidden"}><TabFristen caseId={caseId} onCountChange={onCountChange} /></div>
     </div>
   );
 }

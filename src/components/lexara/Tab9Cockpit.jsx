@@ -16,8 +16,8 @@ export default function Tab9Cockpit({ caseId, caseData, kiMode }) {
           </button>
         ))}
       </div>
-      {sub === 0 && <TabCockpit caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-      {sub === 1 && <CaseInfluenceGraph caseId={caseId} />}
+      <div className={sub === 0 ? "" : "hidden"}><TabCockpit caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><CaseInfluenceGraph caseId={caseId} /></div>
     </div>
   );
 }

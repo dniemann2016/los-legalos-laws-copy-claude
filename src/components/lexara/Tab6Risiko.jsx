@@ -16,8 +16,8 @@ export default function Tab6Risiko({ caseId, caseData, onUpdate, kiMode }) {
           </button>
         ))}
       </div>
-      {sub === 0 && <TabRisiko caseId={caseId} caseData={caseData} onUpdate={onUpdate} kiMode={kiMode} />}
-      {sub === 1 && <RiskMatrix caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+      <div className={sub === 0 ? "" : "hidden"}><TabRisiko caseId={caseId} caseData={caseData} onUpdate={onUpdate} kiMode={kiMode} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><RiskMatrix caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
     </div>
   );
 }

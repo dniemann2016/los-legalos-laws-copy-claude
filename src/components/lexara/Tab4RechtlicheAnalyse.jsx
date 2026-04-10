@@ -17,9 +17,9 @@ export default function Tab4RechtlicheAnalyse({ caseId, caseData, onUpdate, kiMo
           </button>
         ))}
       </div>
-      {sub === 0 && <ComplianceChecker caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-      {sub === 1 && <TabAnalyse caseId={caseId} caseData={caseData} onUpdate={onUpdate} kiMode={kiMode} />}
-      {sub === 2 && <PraezedenzfallSuche caseId={caseId} caseData={caseData} />}
+      <div className={sub === 0 ? "" : "hidden"}><ComplianceChecker caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><TabAnalyse caseId={caseId} caseData={caseData} onUpdate={onUpdate} kiMode={kiMode} /></div>
+      <div className={sub === 2 ? "" : "hidden"}><PraezedenzfallSuche caseId={caseId} caseData={caseData} /></div>
     </div>
   );
 }

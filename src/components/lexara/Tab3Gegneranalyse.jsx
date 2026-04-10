@@ -17,9 +17,9 @@ export default function Tab3Gegneranalyse({ caseId, caseData, onUpdate, kiMode }
           </button>
         ))}
       </div>
-      {sub === 0 && <TabKIBerater caseId={caseId} caseData={caseData} onUpdate={onUpdate} kiMode={kiMode} />}
-      {sub === 1 && <GegnerVerhaltenDashboard caseId={caseId} caseData={caseData} />}
-      {sub === 2 && <GegnerRisikoMatrix caseId={caseId} caseData={caseData} />}
+      <div className={sub === 0 ? "" : "hidden"}><TabKIBerater caseId={caseId} caseData={caseData} onUpdate={onUpdate} kiMode={kiMode} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><GegnerVerhaltenDashboard caseId={caseId} caseData={caseData} /></div>
+      <div className={sub === 2 ? "" : "hidden"}><GegnerRisikoMatrix caseId={caseId} caseData={caseData} /></div>
     </div>
   );
 }

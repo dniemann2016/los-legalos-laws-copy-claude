@@ -11,6 +11,7 @@ import Tab6Risiko from "../components/lexara/Tab6Risiko";
 import Tab7Simulation from "../components/lexara/Tab7Simulation";
 import Tab8Aktion from "../components/lexara/Tab8Aktion";
 import Tab9Cockpit from "../components/lexara/Tab9Cockpit";
+import Tab10Abschluss from "../components/lexara/Tab10Abschluss";
 import TabHistory from "../components/lexara/TabHistory";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
@@ -24,7 +25,7 @@ const TABS = [
   {id:7,label:"Simulation"},
   {id:8,label:"Aktion"},
   {id:9,label:"Cockpit"},
-  {id:10,label:"Abschluss"},
+  {id:10,label:"Abschluss & KI-Kalibrierung"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -226,8 +227,8 @@ export default function CaseDetail() {
         {activeTab===6 && <Tab6Risiko caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
         {activeTab===7 && <Tab7Simulation caseId={caseId} caseData={caseData} kiMode={kiMode} />}
         {activeTab===8 && <Tab8Aktion caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===9 && <Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===10 && <TabHistory caseId={caseId} />}
+        <div className={activeTab===9 ? "" : "hidden"}><Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
+        <div className={activeTab===10 ? "" : "hidden"}><Tab10Abschluss caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">
             <ArrowLeft className="w-4 h-4"/> Zurück

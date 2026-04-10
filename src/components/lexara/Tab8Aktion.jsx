@@ -16,8 +16,8 @@ export default function Tab8Aktion({ caseId, caseData, kiMode }) {
           </button>
         ))}
       </div>
-      {sub === 0 && <TabVerhandlung caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-      {sub === 1 && <TabSchriftsatz caseId={caseId} caseData={caseData} kiMode={kiMode} />}
+      <div className={sub === 0 ? "" : "hidden"}><TabVerhandlung caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><TabSchriftsatz caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
     </div>
   );
 }
