@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import ArgumentEvidenceGraph from "./ArgumentEvidenceGraph";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
@@ -228,6 +229,12 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
             <p className="text-[10px] text-gray-400 mt-1 text-center">Argumentstärke vs. Beweisstärke je Argument</p>
           </div>
         )}
+      </div>
+
+      {/* Argument-Beweis-Graph */}
+      <div className="bg-white rounded-2xl border border-gray-100 p-6">
+        <h3 className="text-sm font-semibold text-gray-700 mb-4">🔗 Beweisketten-Graph</h3>
+        <ArgumentEvidenceGraph args={args} evidence={evidence} />
       </div>
 
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
