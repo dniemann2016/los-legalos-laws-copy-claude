@@ -68,7 +68,7 @@ function PrognoseBar({ value, label, delta }) {
 }
 
 export default function WasWaereWennSimulation({ args, evidence, deadlines, persons, caseData, basePrognose }) {
-  const [hiddenIds, setHiddenIds] = useState(new Set());
+  const [hiddenIds, setHiddenIds] = useState({});
   const [motives, setMotives] = useState(null);
   const [loadingMotives, setLoadingMotives] = useState(false);
   const [motiveError, setMotiveError] = useState(null);
@@ -76,17 +76,19 @@ export default function WasWaereWennSimulation({ args, evidence, deadlines, pers
 
   const toggleHidden = (id) => {
     setHiddenIds(prev => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
+      const next = { ...prev };
+      next[id] ? delete next[id] : (next[id] = true);
       return next;
     });
   };
 
-  const resetAll = () => setHiddenIds(new Set());
+  const resetAll = () => setHiddenIds({});
 
+  const hiddenSet = new Set(Object.keys(hiddenIds));
   const baseSimPrognose = computePrognose(args, evidence, persons, deadlines, new Set(), caseData);
-  const simPrognose = computePrognose(args, evidence, persons, deadlines, hiddenIds, caseData);
+  const simPrognose = computePrognose(args, evidence, persons, deadlines, hiddenSet, caseData);
   const delta = simPrognose - baseSimPrognose;
+  const hiddenCount = Object.keys(hiddenIds).length;
 
   const eigenArgs = args.filter(a => a.side === "eigen");
   const gegnerArgs = args.filter(a => a.side === "gegner");
@@ -169,11 +171,11 @@ Analysiere:
           <PrognoseBar value={simPrognose} label="Simulierte Prognose" delta={delta} />
         </div>
 
-        {hiddenIds.size > 0 && (
+        {hiddenCount > 0 && (
           <div className={`mt-4 rounded-xl px-4 py-3 border text-sm font-medium flex items-center gap-2 ${delta > 0 ? "bg-green-50 border-green-200 text-green-800" : delta < 0 ? "bg-red-50 border-red-200 text-red-700" : "bg-gray-50 border-gray-200 text-gray-600"}`}>
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
             <span>
-              {hiddenIds.size} Element{hiddenIds.size > 1 ? "e" : ""} ausgeblendet →{" "}
+              {hiddenCount} Element{hiddenCount > 1 ? "e" : ""} ausgeblendet →{" "}
               {delta > 0 ? `Prognose steigt um ${delta}% wenn wir diese Elemente gewinnen` : delta < 0 ? `Prognose sinkt um ${Math.abs(delta)}% ohne diese Elemente` : "Kein Einfluss auf Prognose"}
             </span>
           </div>
@@ -185,7 +187,7 @@ Analysiere:
         <Section id="args_e" label={`✅ Eigene Argumente (${eigenArgs.length})`}>
           {eigenArgs.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine eigenen Argumente</p>}
           {eigenArgs.map(a => (
-            <ToggleRow key={a.id} item={a} type="arg" isHidden={hiddenIds.has(a.id)} onToggle={toggleHidden}
+            <ToggleRow key={a.id} item={a} type="arg" isHidden={!!hiddenIds[a.id]} onToggle={toggleHidden}
               badge={`${a.strength || 5}/10`} badgeColor="bg-green-100 text-green-700" />
           ))}
         </Section>
@@ -193,7 +195,7 @@ Analysiere:
         <Section id="args_g" label={`⚔️ Gegner-Argumente (${gegnerArgs.length})`}>
           {gegnerArgs.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine Gegner-Argumente</p>}
           {gegnerArgs.map(a => (
-            <ToggleRow key={a.id} item={a} type="arg" isHidden={hiddenIds.has(a.id)} onToggle={toggleHidden}
+            <ToggleRow key={a.id} item={a} type="arg" isHidden={!!hiddenIds[a.id]} onToggle={toggleHidden}
               badge={`${a.strength || 5}/10`} badgeColor="bg-red-100 text-red-700" />
           ))}
         </Section>
@@ -201,7 +203,7 @@ Analysiere:
         <Section id="evidence" label={`🔍 Beweise (${evidence.length})`}>
           {evidence.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine Beweise</p>}
           {evidence.map(e => (
-            <ToggleRow key={e.id} item={e} type="ev" isHidden={hiddenIds.has(e.id)} onToggle={toggleHidden}
+            <ToggleRow key={e.id} item={e} type="ev" isHidden={!!hiddenIds[e.id]} onToggle={toggleHidden}
               badge={`${e.weight || 5}/10`} badgeColor="bg-blue-100 text-blue-700" />
           ))}
         </Section>
@@ -209,7 +211,7 @@ Analysiere:
         <Section id="deadlines" label={`⏰ Fristen (${deadlines.length})`}>
           {deadlines.length === 0 && <p className="text-xs text-gray-400 text-center py-2">Keine Fristen</p>}
           {deadlines.map(d => (
-            <ToggleRow key={d.id} item={{ ...d, title: d.title }} type="dl" isHidden={hiddenIds.has(d.id)} onToggle={toggleHidden}
+            <ToggleRow key={d.id} item={{ ...d, title: d.title }} type="dl" isHidden={!!hiddenIds[d.id]} onToggle={toggleHidden}
               badge={d.side || "–"} badgeColor={d.side === "Gegner" ? "bg-red-100 text-red-700" : "bg-gray-100 text-gray-600"} />
           ))}
         </Section>
