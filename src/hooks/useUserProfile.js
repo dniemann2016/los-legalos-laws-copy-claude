@@ -50,13 +50,19 @@ export function useUserProfile() {
   const completeOnboarding = async () => {
     const updated = { ...profile, disclaimerAccepted: true, onboardingDone: true };
     setProfile(updated);
-    await base44.auth.updateMe({
-      language: updated.language,
-      jurisdiction: updated.jurisdiction,
-      usState: updated.usState,
-      disclaimerAccepted: true,
-      onboardingDone: true,
-    });
+    const authed = await base44.auth.isAuthenticated();
+    if (!authed) return;
+    try {
+      await base44.auth.updateMe({
+        language: updated.language,
+        jurisdiction: updated.jurisdiction,
+        usState: updated.usState,
+        disclaimerAccepted: true,
+        onboardingDone: true,
+      });
+    } catch (e) {
+      console.warn("Could not persist onboarding state:", e?.message);
+    }
   };
 
   return {
