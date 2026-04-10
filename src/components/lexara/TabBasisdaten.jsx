@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Scale, File } from "lucide-react";
 import FallAbschlussFragebogen from "./FallAbschlussFragebogen";
 import JudgeComparisonModal from "./JudgeComparisonModal";
+import RechtsgebietZusatzfelder, { RECHTSGEBIETE } from "./RechtsgebietFelder";
 
 export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
   const [form, setForm] = useState({
@@ -18,6 +19,7 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
     richter_name: caseData?.richter_name || "",
     richter_klaeger_rate: caseData?.richter_klaeger_rate || 50,
   });
+  const [rechtsgebietMeta, setRechtsgebietMeta] = useState(caseData?.ki_berater_result?._rg_meta || {});
   const [saving, setSaving] = useState(false);
   const [showFragebogen, setShowFragebogen] = useState(false);
   const [showJudgeComparison, setShowJudgeComparison] = useState(false);
@@ -39,7 +41,8 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
 
   const handleSave = async () => {
     setSaving(true);
-    const updated = await base44.entities.Case.update(caseId, form);
+    const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
+    const updated = await base44.entities.Case.update(caseId, { ...form, ki_berater_result });
     onUpdate(updated);
     setSaving(false);
     // Trigger questionnaire when status set to Abgeschlossen
@@ -71,12 +74,30 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
           {f("Fallname","fallname","text",null,"z.B. Muster ./. GmbH")}
           {f("Aktenzeichen","aktenzeichen","text",null,"z.B. LG-2024-1234")}
           {f("Gericht","gericht","text",null,"z.B. LG Hamburg")}
-          {f("Rechtsgebiet","rechtsgebiet","text",null,"z.B. Markenrecht")}
+          <div>
+            <label className="text-xs text-gray-400 block mb-1">Rechtsgebiet</label>
+            <select
+              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white"
+              value={form.rechtsgebiet}
+              onChange={e => setForm({ ...form, rechtsgebiet: e.target.value })}
+            >
+              <option value="">– bitte wählen –</option>
+              {RECHTSGEBIETE.map(r => <option key={r} value={r}>{r}</option>)}
+            </select>
+          </div>
           {f("Prozessziel","prozessziel","text",null,"z.B. Unterlassung + Schadensersatz")}
           {f("Status","status","text",["Aktiv","Vorbereitung","Abgeschlossen","Ruhend"])}
           {f("Instanz","instanz","text",["Erstinstanz","Berufung","Revision"])}
         </div>
       </div>
+
+      {form.rechtsgebiet && (
+        <RechtsgebietZusatzfelder
+          rechtsgebiet={form.rechtsgebiet}
+          meta={rechtsgebietMeta}
+          onChange={setRechtsgebietMeta}
+        />
+      )}
 
       <div className="bg-white rounded-2xl border border-gray-100 p-6">
         <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">ZENTRALE RECHTSFRAGE</h3>
