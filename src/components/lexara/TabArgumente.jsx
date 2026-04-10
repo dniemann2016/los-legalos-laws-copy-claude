@@ -280,7 +280,7 @@ ${!fileUrl ? "TEXT: " + text : ""}`,
     const evidenceMap = {};
     if (extracted.beweise && Array.isArray(extracted.beweise)) {
       for (const ev of extracted.beweise) {
-        const evId = await base44.entities.Evidence.create({
+        const evEntity = await base44.entities.Evidence.create({
           case_id: caseId,
           title: ev.titel || "Beweis",
           description: ev.beschreibung || "",
@@ -288,7 +288,7 @@ ${!fileUrl ? "TEXT: " + text : ""}`,
           source: "Vertrag",
           weight: ev.gewicht || 5
         });
-        evidenceMap[ev.titel] = evId;
+        evidenceMap[ev.titel] = evEntity?.id || evEntity;
       }
     }
     
