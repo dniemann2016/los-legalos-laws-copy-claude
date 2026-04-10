@@ -16,8 +16,8 @@ function runMonteCarlo(inputs, n = 2000) {
   const RISK_STD = 7;
 
   const randn = () => {
-    // Box-Muller
-    const u = 1 - Math.random(), v = Math.random();
+    // Box-Muller (safe: avoid log(0))
+    const u = Math.max(1e-10, 1 - Math.random()), v = Math.random();
     return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
   };
 
@@ -44,7 +44,7 @@ function runMonteCarlo(inputs, n = 2000) {
   const std = Math.sqrt(results.reduce((s, v) => s + (v - mean) ** 2, 0) / n);
 
   // Histogram buckets 0-100 in steps of 5
-  const hist = Array.from({ length: 20 }, (_, i) => ({ range: `${i * 5}–${i * 5 + 5}`, count: 0 }));
+  const hist = Array.from({ length: 20 }, (_, i) => ({ range: `${i * 5}-${i * 5 + 5}`, count: 0 }));
   results.forEach(v => { const b = Math.min(19, Math.floor(v / 5)); hist[b].count++; });
 
   // KI influence: how much variance comes from KI vs. algo
@@ -280,11 +280,13 @@ export default function Tab10Abschluss({ caseId, caseData, kiMode }) {
             <p className="text-[11px] text-gray-400 mb-4">Häufigkeit der simulierten Ergebnisse — breitere Verteilung = höhere Unsicherheit</p>
             <ResponsiveContainer width="100%" height={160}>
               <BarChart data={mcResult.hist} barSize={12}>
-                <XAxis dataKey="range" tick={{ fontSize: 8 }} interval={2} />
+                <XAxis dataKey="range" tick={{ fontSize: 8 }} interval={3} />
                 <YAxis hide />
                 <Tooltip formatter={(v) => [`${v} Simulationen`]} labelFormatter={(l) => `Bereich: ${l}%`} />
-                <ReferenceLine x={`${Math.floor(mcResult.mean / 5) * 5}–${Math.floor(mcResult.mean / 5) * 5 + 5}`} stroke="#1d4ed8" strokeDasharray="4 2" label={{ value: "Ø", fontSize: 9, fill: "#1d4ed8" }} />
-                <Bar dataKey="count" fill="#6366f1" radius={[2, 2, 0, 0]} />
+                <Bar dataKey="count" fill="#6366f1" radius={[2, 2, 0, 0]}
+                  label={false}
+                  isAnimationActive={false}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
