@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { RefreshCw, Save, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
+import KIFeedbackPanel, { useFeedbackAdjustedAccuracy } from "./KIFeedbackPanel";
 
 // ─── Info Tooltip ─────────────────────────────────────────────────────────────
 function InfoTip({ title, formula, explanation }) {
@@ -173,6 +174,7 @@ export default function Tab10Abschluss({ caseId, caseData, kiMode }) {
   const [kiAccData, setKiAccData] = useState(null);
   const [manualNotes, setManualNotes] = useState(caseData?.notes || "");
   const [saved, setSaved] = useState(false);
+  const feedbackAdjustedAccuracy = useFeedbackAdjustedAccuracy(caseId, kiAccData?.accuracy ?? 50);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -204,12 +206,12 @@ export default function Tab10Abschluss({ caseId, caseData, kiMode }) {
 
     const kiAcc = estimateKiAccuracy(data.args, data.evs, data.warnings, data.behaviors, kiResult);
     setKiAccData(kiAcc);
-
+    // feedbackAdjustedAccuracy will update reactively via hook
     const inputs = {
       algoPrognose, kiPrognose, kiAvail: !!kiResult,
       complianceScore, risikoScore,
       argCount: data.args.length, evidenceCount: data.evs.length,
-      kiAccuracy: kiAcc.accuracy,
+      kiAccuracy: feedbackAdjustedAccuracy,
     };
 
     setTimeout(() => {
@@ -524,6 +526,9 @@ export default function Tab10Abschluss({ caseId, caseData, kiMode }) {
           </div>
         </>
       )}
+
+      {/* Feedback Panel */}
+      <KIFeedbackPanel caseId={caseId} />
 
       {/* Notes + Save */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5 space-y-3">
