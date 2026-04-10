@@ -1,7 +1,39 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+function InfoModal({ title, explanation, formula, onClose }) {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40" onClick={onClose}>
+      <div className="bg-white rounded-2xl shadow-xl p-6 max-w-md w-full mx-4" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-start justify-between mb-3">
+          <h4 className="text-sm font-bold text-gray-800">{title}</h4>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+        </div>
+        <p className="text-sm text-gray-600 leading-relaxed mb-3">{explanation}</p>
+        {formula && (
+          <div className="bg-gray-50 border border-gray-200 rounded-xl p-3">
+            <p className="text-[10px] font-bold text-gray-400 uppercase mb-1">Formel / Methodik</p>
+            <code className="text-xs text-blue-800 font-mono whitespace-pre-wrap">{formula}</code>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function InfoBtn({ title, explanation, formula }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <>
+      <button onClick={() => setOpen(true)} className="text-gray-400 hover:text-blue-500 transition-colors ml-1" title="Wie kommt die KI darauf?">
+        <Info className="w-3.5 h-3.5" />
+      </button>
+      {open && <InfoModal title={title} explanation={explanation} formula={formula} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
 
 const EMPTY_PROFIL = { gegner_name:"", gegner_groesse:"", gegner_finanzlage:"", gegner_branche:"", entscheider_name:"", entscheider_alter:"", entscheider_persoenlichkeit:"", entscheider_karriere:"", entscheider_schwaechen:"", anwalt_kanzlei:"", anwalt_bekannt_fuer:"", anwalt_schwaechen:"", verhalten_verhandlung:"", verhalten_taktik:"", verhalten_fehler:"", eigene_staerken:"", eigene_schwaechen:"", ziel_maximal:"", ziel_realistisch:"", ziel_minimal:"", nicht_verhandelbar:"", kontext_oeffentlichkeit:"", kontext_zeitdruck:"", kontext_weitere:"" };
 
@@ -131,7 +163,9 @@ JSON-Format:
           {/* Psychologisches Profil */}
           {result.psychologisches_profil && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">👤 Psychologisches Profil – Ergebnis</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">👤 Psychologisches Profil – Ergebnis
+                <InfoBtn title="Wie wird das psychologische Profil berechnet?" explanation="Die KI analysiert alle eingegebenen Informationen über den Gegner (Name, Branche, Verhalten, Entscheider-Persönlichkeit) und ordnet diese den wissenschaftlich anerkannten Persönlichkeitsmodellen zu. Das Big Five Modell (OCEAN) bewertet 5 Dimensionen von 1–10. Das Dark Triad Modell erfasst Narzissmus, Machiavelismus und Psychopathie anhand typischer Verhaltensweisen in Verhandlungen. Trigger werden aus Schwächen und bekannten Verhaltensmustern abgeleitet." formula={"Big Five Score (1–10):\nBasiert auf Verhaltenssignalen im Profil.\nz.B. Extraversion hoch → Gegner dominant, öffentlichkeitswirksam\n\nDark Triad (1–10):\nNarzissmus = Ego-Signale / Karrierephase\nMachiavelismus = Taktik-Signale / Verhandlungsverhalten\nPsychopathie = Impulsivitäts-Signale / Fehler-Muster"} />
+              </h3>
               <div className="grid grid-cols-2 gap-6">
                 <div>
                   <p className="text-xs font-semibold text-gray-600 mb-2">📊 Big Five Analyse</p>
@@ -172,7 +206,9 @@ JSON-Format:
           {/* Druckmittel */}
           {(result.druckmittel||[]).length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">🎯 Druckmittel-Analyse – Ergebnis</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">🎯 Druckmittel-Analyse – Ergebnis
+                <InfoBtn title="Wie wird die Druckmittel-Stärke berechnet?" explanation="Die KI identifiziert Hebelpunkte des Gegners aus dem Profil (Finanzlage, Zeitdruck, Reputationsrisiken, persönliche Schwächen). Jedes Druckmittel erhält eine Stärke (1–10) basierend auf: Wie stark trifft es den Gegner? Wie risikolos ist die Anwendung für uns? Wie zeitnah ist es einsetzbar?" formula={"Stärke (1–10) = Gewichtetes Mittel aus:\n  Wirksamkeit (0–10) × 0.5\n+ Risikofreiheit (0–10) × 0.3\n+ Zeitnähe (0–10) × 0.2\n\nBeispiel: Reputationsschaden\nWirksamkeit=8, Risikofreiheit=6, Zeitnähe=9\n→ Stärke = 8×0.5 + 6×0.3 + 9×0.2 = 4+1.8+1.8 = 7.6 ≈ 8"} />
+              </h3>
               <div className="space-y-3">
                 {result.druckmittel.map((d,i) => (
                   <div key={i} className="border border-gray-100 rounded-xl p-3">
@@ -198,7 +234,9 @@ JSON-Format:
           {/* Timing & Momentum */}
           {result.timing && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">⏰ Timing & Momentum – Ergebnis</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">⏰ Timing & Momentum – Ergebnis
+                <InfoBtn title="Wie wird das Momentum berechnet?" explanation="Das Momentum (0–100%) bewertet, wie günstig der aktuelle Zeitpunkt für unsere Seite ist. Die KI berücksichtigt: externe Faktoren (Fusion, Hauptversammlung, Medieninteresse), den bisherigen Verhandlungsverlauf (Fehler des Gegners, eigene Stärken), und die Prognose (hohe Erfolgsquote = hohes Momentum)." formula={"Momentum (%) = Gewichtetes Mittel:\n  Externe Faktoren-Score × 0.35\n+ Prognose-Score × 0.35\n+ Verhandlungspositions-Score × 0.30\n\nZeitkritische Fenster werden aus Eingaben\n(Fusion, HV, Fristen) direkt abgeleitet."} />
+              </h3>
               {result.timing.momentum && (
                 <div className="mb-3">
                   <div className="flex items-center gap-3 mb-1">
@@ -229,7 +267,9 @@ JSON-Format:
           {/* Informationsstrategie */}
           {result.informationsstrategie && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-3">🔒 Informationsstrategie – Ergebnis</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-3 flex items-center">🔒 Informationsstrategie – Ergebnis
+                <InfoBtn title="Wie klassifiziert die KI die Informationen?" explanation="Die KI bewertet jede Information nach zwei Dimensionen: (1) Schadet die Offenlegung uns? (2) Schwächt das Verbergen den Gegner? Daraus ergibt sich die Einstufung: Sofort offenlegen (stärkt uns, schadet nicht), Verbergen (würde Gegner stärken), Als Bluff nutzen (Gegner glaubt es hat mehr Gewicht als es hat). Ethisch-rechtliche Grenzen (§ 138 ZPO) werden berücksichtigt." formula={"Klassifizierung je Information:\n  Offenlegen: Eigenwert hoch + Kein Schaden > 0.6\n  Verbergen:  Gegnervorteil wenn bekannt > 0.5\n  Bluff:      Wahrnehmungswert >> tatsächlicher Wert\n\nEthik-Filter: Jede Maßnahme wird auf\nVereinbarkeit mit §138 ZPO geprüft."} />
+              </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 {[[["sofort_offenlegen","✅ Sofort offenlegen","bg-green-50 border-green-100 text-green-700"],["verbergen","🔒 Verbergen","bg-red-50 border-red-100 text-red-700"],["als_bluff","🎭 Als Bluff nutzen","bg-amber-50 border-amber-100 text-amber-700"]]].flat().map(([key,label,cls]) => (
                   (result.informationsstrategie[key]||[]).length > 0 && (
@@ -246,7 +286,9 @@ JSON-Format:
           {/* Strategien */}
           {(result.strategien||[]).length > 0 && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">⚔️ Strategieempfehlungen – Ergebnis</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">⚔️ Strategieempfehlungen – Ergebnis
+                <InfoBtn title="Wie werden die Erfolgswahrscheinlichkeiten berechnet?" explanation="Die KI berechnet für jede Strategie eine Erfolgswahrscheinlichkeit basierend auf: der algorithmischen Fallprognose, dem psychologischen Profil des Gegners, der Stärke unserer Argumente im Vergleich zur Gegenseite, und dem verfügbaren Timing/Momentum. Jede Strategie wird auf einem Risiko-Nutzen-Spektrum von kooperativ bis aggressiv positioniert." formula={"Erfolg_pct je Strategie =\n  Basis_Prognose (%)\n× Strategie-Profil-Match (0.7–1.3)\n× Druckmittel-Verfügbarkeit (0.8–1.2)\n× Timing-Faktor (0.9–1.1)\n\nBeispiel: Prognose 65% × 1.1 × 1.0 × 1.05 ≈ 75%"} />
+              </h3>
               <div className="space-y-4">
                 {result.strategien.map((s,i) => (
                   <div key={i} className="border-b border-gray-100 pb-4 last:border-0 last:pb-0">
@@ -267,7 +309,9 @@ JSON-Format:
           {/* Verhandlungsskript */}
           {result.verhandlungsskript && (
             <div className="bg-white rounded-2xl border border-gray-100 p-5">
-              <h3 className="text-sm font-semibold text-gray-700 mb-4">💬 Verhandlungsskript – Ergebnis</h3>
+              <h3 className="text-sm font-semibold text-gray-700 mb-4 flex items-center">💬 Verhandlungsskript – Ergebnis
+                <InfoBtn title="Wie wird das Verhandlungsskript generiert?" explanation="Das Skript kombiniert drei wissenschaftliche Ansätze: (1) Harvard-Methode (sachbezogenes Verhandeln, Interessen statt Positionen), (2) FBI-Taktiken nach Chris Voss (Calibrated Questions, Mirroring, Tactical Empathy), (3) Machiavelli-Prinzipien (Machtdynamik, strategisches Framing). Das psychologische Profil des Gegners bestimmt, welche Techniken priorisiert werden." formula={"Skript-Gewichtung nach Gegner-Profil:\n  Hoher Narzissmus → Ego-Framing (Harvard)\n  Hoher Machiavelismus → Gegentaktik (FBI)\n  Hohe Psychopathie → Eskalations-Kontrolle\n\nCalibrierte Fragen (FBI):\n'Wie soll ich das verstehen?' statt direkter Forderung\n→ Gegner gibt Informationen preis ohne Druck zu fühlen"} />
+              </h3>
               {[["🎯 Vorbereitung","vorbereitung"],["🎬 Opening (Erste Minuten)","opening"],["⚔️ Argumentation","argumentation"],["🤝 Closing","closing"],["📋 Backup Plan","backup"],["💬 Einwandbehandlung","einwand"]].map(([label, key]) => (
                 result.verhandlungsskript[key] ? (
                   <div key={key} className="mb-4">
