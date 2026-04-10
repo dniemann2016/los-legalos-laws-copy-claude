@@ -71,6 +71,7 @@ export default function WasWaereWennSimulation({ args, evidence, deadlines, pers
   const [hiddenIds, setHiddenIds] = useState(new Set());
   const [motives, setMotives] = useState(null);
   const [loadingMotives, setLoadingMotives] = useState(false);
+  const [motiveError, setMotiveError] = useState(null);
   const [expandedSection, setExpandedSection] = useState("args");
 
   const toggleHidden = (id) => {
@@ -91,9 +92,9 @@ export default function WasWaereWennSimulation({ args, evidence, deadlines, pers
 
   const runMotiveAnalysis = async () => {
     setLoadingMotives(true);
+    setMotiveError(null);
     try {
       const gegnerDeadlines = deadlines.filter(d => d.side === "Gegner");
-      const lateArgs = gegnerArgs.filter(a => a.created_date && new Date(a.created_date) > new Date(Date.now() - 14 * 86400000));
       const result = await base44.integrations.Core.InvokeLLM({
         prompt: `Du bist ein erfahrener Prozessanwalt und Verhaltensstratege (Sun Tzu + Machiavelli).
 Analysiere die TIMING-STRATEGIE der Gegenseite in diesem Rechtstreit.
@@ -129,11 +130,10 @@ Analysiere:
             rote_flaggen: { type: "array", items: { type: "string" } },
           }
         },
-        model: "claude_sonnet_4_6",
       });
       setMotives(result);
     } catch (e) {
-      console.error(e);
+      setMotiveError(e?.message || "Unbekannter Fehler. Bitte erneut versuchen.");
     }
     setLoadingMotives(false);
   };
@@ -227,6 +227,9 @@ Analysiere:
         </div>
         {loadingMotives && (
           <div className="text-center py-6 text-xs text-gray-400">KI analysiert Timing-Strategie der Gegenseite… (30–60s)</div>
+        )}
+        {motiveError && (
+          <div className="mt-3 bg-red-50 border border-red-200 rounded-xl px-4 py-3 text-xs text-red-600">⚠️ {motiveError}</div>
         )}
         {motives && (
           <div className="space-y-4 mt-4">
