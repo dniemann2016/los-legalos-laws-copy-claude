@@ -26,7 +26,6 @@ import { useUserProfile } from './hooks/useUserProfile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
-  const { onboardingDone, disclaimerAccepted, isLoadingProfile } = useUserProfile();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -38,18 +37,6 @@ const AuthenticatedApp = () => {
 
   if (authError?.type === 'user_not_registered') {
     return <UserNotRegisteredError />;
-  }
-
-  if (isLoadingProfile) {
-    return (
-      <div className="fixed inset-0 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-muted border-t-foreground rounded-full animate-spin" />
-      </div>
-    );
-  }
-
-  if (!onboardingDone || !disclaimerAccepted) {
-    return <OnboardingSetup />;
   }
 
   return (
