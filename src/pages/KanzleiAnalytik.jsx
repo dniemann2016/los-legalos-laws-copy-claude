@@ -8,9 +8,10 @@ import JurisdictionToggle from "../components/JurisdictionToggle";
 import { useUserProfile } from "../hooks/useUserProfile";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  PieChart, Pie, Cell, LineChart, Line, Legend, RadarChart, Radar, PolarGrid, PolarAngleAxis
+  PieChart, Pie, Cell, Legend
 } from "recharts";
 import FallAnalyseModal from "../components/dashboard/FallAnalyseModal";
+import AkteureAnalytik from "../components/lexara/AkteureAnalytik";
 
 const COLORS = ["#1a3560", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"];
 
@@ -56,7 +57,6 @@ export default function KanzleiAnalytik() {
     setLoading(false);
   };
 
-  // Derived stats
   const activeCases = cases.filter(c => c.status === "Aktiv").length;
   const openDeadlines = deadlines.filter(d => d.status === "offen").length;
   const overdueDeadlines = deadlines.filter(d => {
@@ -67,13 +67,11 @@ export default function KanzleiAnalytik() {
     ? Math.round(cases.filter(c => c.prognose).reduce((a, c) => a + (c.prognose || 0), 0) / cases.filter(c => c.prognose).length || 0)
     : 0;
 
-  // Chart: Status-Verteilung
   const statusData = ["Aktiv", "Vorbereitung", "Abgeschlossen", "Ruhend"].map(s => ({
     name: s,
     value: cases.filter(c => c.status === s).length,
   })).filter(d => d.value > 0);
 
-  // Chart: Fälle nach Rechtsgebiet
   const rechtsgebietMap = {};
   cases.forEach(c => {
     if (c.rechtsgebiet) rechtsgebietMap[c.rechtsgebiet] = (rechtsgebietMap[c.rechtsgebiet] || 0) + 1;
@@ -83,28 +81,24 @@ export default function KanzleiAnalytik() {
     .sort((a, b) => b.count - a.count)
     .slice(0, 7);
 
-  // Chart: Fristen-Status
   const fristenData = [
     { name: "Offen", value: deadlines.filter(d => d.status === "offen" && new Date(d.due_date) >= new Date()).length },
-    { name: "Überfällig", value: overdueDeadlines },
+    { name: "Ueberfaellig", value: overdueDeadlines },
     { name: "Erledigt", value: deadlines.filter(d => d.status === "erledigt").length },
-    { name: "Versäumt", value: deadlines.filter(d => d.status === "versaeumt").length },
+    { name: "Versaeumt", value: deadlines.filter(d => d.status === "versaeumt").length },
   ].filter(d => d.value > 0);
 
-  // Chart: Prognose-Verteilung
   const prognoseRanges = [
-    { name: "0–25%", count: cases.filter(c => (c.prognose || 0) <= 25).length },
-    { name: "26–50%", count: cases.filter(c => (c.prognose || 0) > 25 && (c.prognose || 0) <= 50).length },
-    { name: "51–75%", count: cases.filter(c => (c.prognose || 0) > 50 && (c.prognose || 0) <= 75).length },
-    { name: "76–100%", count: cases.filter(c => (c.prognose || 0) > 75).length },
+    { name: "0-25%", count: cases.filter(c => (c.prognose || 0) <= 25).length },
+    { name: "26-50%", count: cases.filter(c => (c.prognose || 0) > 25 && (c.prognose || 0) <= 50).length },
+    { name: "51-75%", count: cases.filter(c => (c.prognose || 0) > 50 && (c.prognose || 0) <= 75).length },
+    { name: "76-100%", count: cases.filter(c => (c.prognose || 0) > 75).length },
   ];
 
-  // Chart: Instanz-Verteilung
   const instanzMap = {};
   cases.forEach(c => { if (c.instanz) instanzMap[c.instanz] = (instanzMap[c.instanz] || 0) + 1; });
   const instanzData = Object.entries(instanzMap).map(([name, value]) => ({ name, value }));
 
-  // Upcoming deadlines (next 14 days)
   const upcoming = deadlines
     .filter(d => d.status === "offen")
     .map(d => ({ ...d, daysLeft: Math.ceil((new Date(d.due_date) - new Date()) / 86400000) }))
@@ -249,8 +243,8 @@ export default function KanzleiAnalytik() {
                   <Pie data={fristenData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" paddingAngle={3}>
                     {fristenData.map((entry, i) => (
                       <Cell key={i} fill={
-                        entry.name === "Überfällig" ? "#dc2626" :
-                        entry.name === "Versäumt" ? "#d97706" :
+                        entry.name === "Ueberfaellig" ? "#dc2626" :
+                        entry.name === "Versaeumt" ? "#d97706" :
                         entry.name === "Erledigt" ? "#16a34a" : "#3b82f6"
                       } />
                     ))}
@@ -309,6 +303,9 @@ export default function KanzleiAnalytik() {
             )}
           </div>
         </div>
+
+        {/* Akteurs-Analytics */}
+        <AkteureAnalytik />
       </div>
 
       {showModal && (
