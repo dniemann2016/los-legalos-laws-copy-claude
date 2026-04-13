@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, X, Sparkles, RefreshCw, Pencil, Check, Network } from "lucide-react";
+import { Plus, X, Sparkles, RefreshCw, Pencil, Check, Network, BarChart3 } from "lucide-react";
 import ArgumentGraphiOS from "./ArgumentGraphiOS";
+import ArgumentZeitstrahlChart from "./ArgumentZeitstrahlChart";
 import { Button } from "@/components/ui/button";
 
 const CONN_TYPES = ["stützt", "entkräftet", "schließt aus", "kausal", "widerspricht", "schwächt", "verstärkt"];
@@ -17,7 +18,9 @@ const COLORS = {
 
 export default function TabVerkettung({ caseId }) {
   const [args, setArgs] = useState([]);
+  const [deadlines, setDeadlines] = useState([]);
   const [showAddConn, setShowAddConn] = useState(false);
+  const [view, setView] = useState("zeitstrahl"); // "zeitstrahl" | "liste" | "graph"
   const [newConn, setNewConn] = useState({ from: "", to: "", type: "stützt", explanation: "", intensitaet: 5 });
   const [editConn, setEditConn] = useState(null); // { fromId, toId, type, explanation, intensitaet }
   const [kiAnalyzing, setKiAnalyzing] = useState(false);
@@ -27,8 +30,12 @@ export default function TabVerkettung({ caseId }) {
   useEffect(() => { load(); }, [caseId]);
 
   const load = async () => {
-    const a = await base44.entities.Argument.filter({ case_id: caseId });
+    const [a, dl] = await Promise.all([
+      base44.entities.Argument.filter({ case_id: caseId }),
+      base44.entities.Deadline.filter({ case_id: caseId }),
+    ]);
     setArgs(a);
+    setDeadlines(dl);
   };
 
   const addConnection = async () => {
@@ -133,12 +140,19 @@ export default function TabVerkettung({ caseId }) {
 
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h3 className="text-sm font-semibold text-gray-700">🔗 Argumentketten & Kausalzusammenhänge</h3>
-        <div className="flex gap-2">
-          <button onClick={() => setShowGraph(true)} disabled={args.length === 0}
-            className="flex items-center gap-1 text-xs border border-blue-300 text-blue-700 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors">
-            <Network className="w-3 h-3" />
-            Graph
-          </button>
+        <div className="flex gap-2 flex-wrap">
+          {/* View Toggle */}
+          <div className="flex border border-slate-200 rounded-lg overflow-hidden">
+            {[["zeitstrahl", <BarChart3 className="w-3 h-3" />, "Zeitstrahl"],["liste", null, "Liste"],["graph", <Network className="w-3 h-3" />, "Graph"]].map(([v, icon, label]) => (
+              <button key={v} onClick={() => setView(v)}
+                className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                  view === v ? "bg-[#1a3560] text-white" : "text-slate-500 hover:bg-slate-50"
+                }`}>
+                {icon}{label}
+              </button>
+            ))}
+          </div>
+
           <button onClick={kiAnalyze} disabled={kiAnalyzing || args.length < 2}
             className="flex items-center gap-1 text-xs border border-violet-300 text-violet-700 bg-violet-50 hover:bg-violet-100 px-3 py-1.5 rounded-lg disabled:opacity-40 transition-colors">
             {kiAnalyzing ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
@@ -209,7 +223,18 @@ export default function TabVerkettung({ caseId }) {
         </div>
       )}
 
-      {/* Arguments overview */}
+      {/* Zeitstrahl View */}
+      {view === "zeitstrahl" && (
+        <ArgumentZeitstrahlChart
+          caseId={caseId}
+          args={args}
+          deadlines={deadlines}
+          connections={connections}
+        />
+      )}
+
+      {/* Liste View */}
+      {view === "liste" && (
       <div className="bg-white rounded-2xl border border-gray-100 p-4">
         {args.length === 0 ? (
           <div className="text-center text-gray-400 text-sm py-10">Noch keine Argumente vorhanden.</div>
@@ -248,6 +273,7 @@ export default function TabVerkettung({ caseId }) {
           </div>
         )}
       </div>
+      )}
 
       {/* Connections list */}
       {connections.length > 0 && (
