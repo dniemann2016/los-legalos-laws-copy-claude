@@ -6,21 +6,35 @@
       "type": "string",
       "title": "Name"
     },
+    "kategorie": {
+      "type": "string",
+      "title": "Kategorie",
+      "enum": [
+        "Richter",
+        "Anwalt",
+        "Kanzlei",
+        "Zeuge",
+        "Sachverst\u00e4ndiger",
+        "Partei",
+        "Sonstiges"
+      ],
+      "default": "Richter"
+    },
     "gericht": {
       "type": "string",
-      "title": "Gericht"
+      "title": "Gericht / Institution / Kanzlei"
     },
     "kammer": {
       "type": "string",
-      "title": "Kammer / Senat"
+      "title": "Kammer / Senat / Abteilung"
     },
     "rechtsgebiet": {
       "type": "string",
-      "title": "Rechtsgebiet"
+      "title": "Rechtsgebiet / Spezialisierung"
     },
     "klaeger_rate": {
       "type": "number",
-      "title": "Kl\u00e4gerquote %"
+      "title": "Kl\u00e4gerquote / Erfolgsquote %"
     },
     "vergleich_rate": {
       "type": "number",
@@ -32,7 +46,7 @@
     },
     "urteile_gesamt": {
       "type": "number",
-      "title": "Urteile gesamt"
+      "title": "Urteile / F\u00e4lle gesamt"
     },
     "stil": {
       "type": "string",
@@ -51,7 +65,7 @@
     },
     "schwerpunkte": {
       "type": "array",
-      "title": "Rechtliche Schwerpunkte",
+      "title": "Schwerpunkte",
       "items": {
         "type": "string"
       }
@@ -93,10 +107,28 @@
     "ki_analyse": {
       "type": "object",
       "title": "KI-Analyse"
+    },
+    "erfolgs_matrix": {
+      "type": "object",
+      "title": "Erfolgswahrscheinlichkeits-Matrix"
     }
   },
   "required": [
     "name",
     "gericht"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "created_by": "{{user.email}}"
+    },
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
 }

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Plus, RefreshCw, Star } from "lucide-react";
+import ErfolgsMatrix from "./ErfolgsMatrix";
 import { Button } from "@/components/ui/button";
 import { getTByLanguage } from "../../lib/jurisdictionConfig";
 import { useUserProfile } from "../../hooks/useUserProfile";
@@ -181,6 +182,9 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
           </div>
         )}
       </div>
+
+      {/* Erfolgsmatrix */}
+      <ErfolgsMatrix profile={profile} onUpdate={onUpdate} />
 
       {/* Erfahrungen */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">

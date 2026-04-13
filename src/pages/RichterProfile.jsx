@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import RichterDetail from "../components/richter/RichterDetail";
 
 const STILE = ["Neutral","Kooperativ","Streng","Prozessaktiv","Vergleichsorientiert"];
-const EMPTY = { name:"", gericht:"", kammer:"", rechtsgebiet:"", klaeger_rate:50, vergleich_rate:30, durchschnitt_dauer_monate:12, urteile_gesamt:0, stil:"Neutral", bekannt_fuer:"", notizen:"" };
+const KATEGORIEN = ["Richter","Anwalt","Kanzlei","Zeuge","Sachverständiger","Partei","Sonstiges"];
+const EMPTY = { name:"", gericht:"", kammer:"", rechtsgebiet:"", kategorie:"Richter", klaeger_rate:50, vergleich_rate:30, durchschnitt_dauer_monate:12, urteile_gesamt:0, stil:"Neutral", bekannt_fuer:"", notizen:"" };
+const KAT_ICONS = { Richter:"⚖️", Anwalt:"👔", Kanzlei:"🏛️", Zeuge:"👁️", Sachverständiger:"🔬", Partei:"🏢", Sonstiges:"📋" };
 const STIL_COLOR = { Kooperativ:"bg-green-100 text-green-700", Streng:"bg-red-100 text-red-700", Neutral:"bg-gray-100 text-gray-600", Prozessaktiv:"bg-blue-100 text-blue-700", Vergleichsorientiert:"bg-purple-100 text-purple-700" };
 
 function GaugeBar({ value, max = 100, color = "bg-gray-800" }) {
@@ -32,6 +34,7 @@ export default function RichterProfile() {
   const [linkingId, setLinkingId] = useState(null);
   const [selectedCase, setSelectedCase] = useState("");
   const [detailProfile, setDetailProfile] = useState(null);
+  const [katFilter, setKatFilter] = useState("Alle");
 
   useEffect(() => { load(); }, []);
 
@@ -82,17 +85,21 @@ export default function RichterProfile() {
     load();
   };
 
-  const filtered = profiles.filter(p =>
-    p.name?.toLowerCase().includes(search.toLowerCase()) ||
-    p.gericht?.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = profiles.filter(p => {
+    const matchSearch = p.name?.toLowerCase().includes(search.toLowerCase()) || p.gericht?.toLowerCase().includes(search.toLowerCase());
+    const matchKat = katFilter === "Alle" || (p.kategorie || "Richter") === katFilter;
+    return matchSearch && matchKat;
+  });
 
   const ProfileForm = () => (
     <div className="bg-gray-50 border border-gray-200 rounded-2xl p-5 space-y-4">
-      <h3 className="text-sm font-semibold text-gray-800">{editing ? "Profil bearbeiten" : "Neues Richterprofil"}</h3>
+      <h3 className="text-sm font-semibold text-gray-800">{editing ? "Profil bearbeiten" : "Neues Profil"}</h3>
       <div className="grid grid-cols-2 gap-3">
         <input className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white col-span-2" placeholder="Name *" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} />
-        <input className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white" placeholder="Gericht *" value={form.gericht} onChange={e => setForm({ ...form, gericht: e.target.value })} />
+        <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white" value={form.kategorie} onChange={e => setForm({ ...form, kategorie: e.target.value })}>
+          {KATEGORIEN.map(k => <option key={k}>{k}</option>)}
+        </select>
+        <input className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white" placeholder="Gericht / Kanzlei / Institution *" value={form.gericht} onChange={e => setForm({ ...form, gericht: e.target.value })} />
         <input className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white" placeholder="Kammer / Senat" value={form.kammer} onChange={e => setForm({ ...form, kammer: e.target.value })} />
         <input className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white" placeholder="Rechtsgebiet" value={form.rechtsgebiet} onChange={e => setForm({ ...form, rechtsgebiet: e.target.value })} />
         <select className="border border-gray-200 rounded-xl px-3 py-2 text-sm bg-white" value={form.stil} onChange={e => setForm({ ...form, stil: e.target.value })}>
@@ -138,19 +145,31 @@ export default function RichterProfile() {
           <button onClick={() => navigate("/modules")} className="text-slate-400 hover:text-slate-700 transition-colors"><ArrowLeft className="w-4 h-4" /></button>
           <div className="w-px h-4 bg-slate-200" />
           <div className="flex-1">
-            <h1 className="text-sm font-bold text-slate-900">Richterprofile</h1>
-            <p className="text-[11px] text-slate-400">{profiles.length} Profile · Erfahrungen & KI-Taktikanalyse</p>
+            <h1 className="text-sm font-bold text-slate-900">Prozessbeteiligte</h1>
+            <p className="text-[11px] text-slate-400">{profiles.length} Profile · Richter, Anwälte, Kanzleien & mehr</p>
           </div>
           <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)}
             className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-40 bg-slate-50 focus:outline-none focus:border-slate-400" />
           <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm(EMPTY); }}
             className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
-            <Plus className="w-3.5 h-3.5" /> Richter
+            <Plus className="w-3.5 h-3.5" /> Profil
           </button>
         </div>
       </div>
       <div className="max-w-4xl mx-auto px-6 py-8">
         {showForm && !editing && <div className="mb-5"><ProfileForm /></div>}
+
+        {/* Kategorie-Filter */}
+        <div className="flex gap-2 flex-wrap mb-5">
+          {["Alle", ...KATEGORIEN].map(k => (
+            <button key={k} onClick={() => setKatFilter(k)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                katFilter === k ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-500 hover:border-gray-400"
+              }`}>
+              {k !== "Alle" && KAT_ICONS[k] + " "}{k}
+            </button>
+          ))}
+        </div>
 
         {loading ? (
           <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" /></div>
@@ -168,7 +187,10 @@ export default function RichterProfile() {
                     <div className="flex items-start justify-between mb-4">
                       <div>
                         <div className="flex items-center gap-2 mb-0.5">
-                          <h3 className="font-semibold text-slate-900 text-sm">{p.name}</h3>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-sm">{KAT_ICONS[p.kategorie || "Richter"]}</span>
+                            <h3 className="font-semibold text-slate-900 text-sm">{p.name}</h3>
+                          </div>
                           {p.stil && <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold ${STIL_COLOR[p.stil] || "bg-slate-100 text-slate-600"}`}>{p.stil}</span>}
                         </div>
                         <p className="text-xs text-slate-500">{p.gericht}{p.kammer ? ` · ${p.kammer}` : ""}</p>
