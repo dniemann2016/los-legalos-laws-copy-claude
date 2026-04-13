@@ -29,6 +29,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
   const [evidence, setEvidence] = useState([]);
   const [persons, setPersons] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
+  const [gegnerVerhalten, setGegnerVerhalten] = useState([]);
   const [sortMode, setSortMode] = useState("staerke");
   const [prognose, setPrognose] = useState(caseData?.prognose || 0);
   const [algorithm, setAlgorithm] = useState({});
@@ -40,8 +41,8 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
   useEffect(() => { load(); }, [caseId]);
 
   const load = async () => {
-    const [a,e,p,d] = await Promise.all([base44.entities.Argument.filter({case_id:caseId}),base44.entities.Evidence.filter({case_id:caseId}),base44.entities.Person.filter({case_id:caseId}),base44.entities.Deadline.filter({case_id:caseId})]);
-    setArgs(a); setEvidence(e); setPersons(p); setDeadlines(d);
+    const [a,e,p,d,gv] = await Promise.all([base44.entities.Argument.filter({case_id:caseId}),base44.entities.Evidence.filter({case_id:caseId}),base44.entities.Person.filter({case_id:caseId}),base44.entities.Deadline.filter({case_id:caseId}),base44.entities.GegnerVerhalten.filter({case_id:caseId})]);
+    setArgs(a); setEvidence(e); setPersons(p); setDeadlines(d); setGegnerVerhalten(gv);
     computePrognose(a, e, p, d);
   };
 
@@ -165,10 +166,60 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
             </div>
           </div>
 
+          {/* Prozessstärke-Gesamtscore */}
+          {(() => {
+            const eigenArgs = args.filter(a=>a.side==="eigen"), gegnerArgs = args.filter(a=>a.side==="gegner");
+            const eigenStaerke = eigenArgs.length ? eigenArgs.reduce((s,a)=>s+(a.strength||5),0)/eigenArgs.length : 5;
+            const gegnerStaerke = gegnerArgs.length ? gegnerArgs.reduce((s,a)=>s+(a.strength||5),0)/gegnerArgs.length : 5;
+            const argScore = Math.min(100, Math.max(0, (eigenStaerke - gegnerStaerke) * 5 + 50));
+            const beweisScore = evidence.length > 0 ? Math.min(100, evidence.reduce((s,e)=>s+(e.weight||5),0)/evidence.length*10) : 50;
+            const versaeumtCount = deadlines.filter(d=>d.status==="versaeumt").length;
+            const ueberfaellig = deadlines.filter(d=>d.status==="offen" && d.due_date && new Date(d.due_date) < new Date()).length;
+            const fristenScore = Math.max(0, 100 - versaeumtCount*25 - ueberfaellig*10);
+            const gvSum = gegnerVerhalten.reduce((s,g)=>s+(g.auswirkung_prognose||0),0);
+            const gegnerScore = Math.min(100, Math.max(0, 50 + gvSum));
+            const richterScore = caseData?.richter_klaeger_rate || 50;
+            const gesamtScore = Math.round(argScore*0.30 + beweisScore*0.20 + fristenScore*0.20 + gegnerScore*0.15 + richterScore*0.15);
+            const scoreColor = gesamtScore>=60?"text-green-700 bg-green-50 border-green-200":gesamtScore>=40?"text-amber-700 bg-amber-50 border-amber-200":"text-red-700 bg-red-50 border-red-200";
+            const faktoren = [
+              {label:"Argumente-Balance",score:Math.round(argScore),gewicht:"30%",desc:`Ø ${eigenStaerke.toFixed(1)} eigen vs. ${gegnerStaerke.toFixed(1)} gegner`},
+              {label:"Beweislage",score:Math.round(beweisScore),gewicht:"20%",desc:`${evidence.length} Beweise · Ø-Gewicht ${evidence.length?Math.round(evidence.reduce((s,e)=>s+(e.weight||5),0)/evidence.length*10)/10:"–"}/10`},
+              {label:"Fristen-Risiko",score:fristenScore,gewicht:"20%",desc:`${versaeumtCount} versäumt · ${ueberfaellig} überfällig`},
+              {label:"Gegnerverhalten",score:Math.round(gegnerScore),gewicht:"15%",desc:`${gegnerVerhalten.length} Einträge · Σ Auswirkung: ${gvSum>0?"+":""}${gvSum}%`},
+              {label:"Richter-Profil",score:richterScore,gewicht:"15%",desc:`Klägerquote ${richterScore}%`},
+            ];
+            return (
+              <div className="bg-white rounded-2xl border border-gray-100 p-6">
+                <h3 className="text-sm font-semibold text-gray-700 mb-1">⚖️ Prozessstärke-Gesamtscore (Algorithmus)</h3>
+                <p className="text-[10px] text-gray-400 mb-4">Rein algorithmisch · keine KI · gewichtete Faktoren</p>
+                <div className="flex items-center gap-5 mb-5">
+                  <div className={`text-3xl font-black px-5 py-3 rounded-2xl border-2 ${scoreColor}`}>{gesamtScore}<span className="text-base font-medium">/100</span></div>
+                  <div>
+                    <p className="font-semibold text-sm text-gray-900">{gesamtScore>=60?"Starke Prozessposition":gesamtScore>=40?"Ausgeglichene Lage":"Kritische Prozesslage"}</p>
+                    <p className="text-xs text-gray-400 mt-0.5">{gesamtScore>=60?"Vollsieg anstreben — klarer Vorteil":gesamtScore>=40?"Vergleich prüfen — Balance der Kräfte":"Risiken abwägen — strukturelle Schwächen"}</p>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {faktoren.map(f => (
+                    <div key={f.label} className="flex items-center gap-3">
+                      <span className="text-xs text-gray-500 w-36 flex-shrink-0">{f.label}</span>
+                      <span className="text-[10px] text-gray-300 w-7 flex-shrink-0">{f.gewicht}</span>
+                      <div className="flex-1 h-2 bg-gray-100 rounded-full overflow-hidden">
+                        <div className={`h-full rounded-full transition-all ${f.score>=60?"bg-green-500":f.score>=40?"bg-amber-400":"bg-red-400"}`} style={{width:`${f.score}%`}} />
+                      </div>
+                      <span className="text-xs font-bold text-gray-700 w-7 text-right">{f.score}</span>
+                      <span className="text-[10px] text-gray-400 w-44 text-right hidden md:block">{f.desc}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })()}
+
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <h3 className="text-sm font-semibold text-gray-700 mb-4">🎯 6-Stufen-Algorithmus (vollständig einsehbar)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {[["Stufe 1","Argument-Basisgewichtung",algorithm.argBasis||0,`${eigenArgs.length} eigene vs. ${gegnerArgs.length} gegnerische Argumente`],["Stufe 2","Beweisboost",`+${algorithm.beweisBoost||0}%`,"Kettenergebnis × 0.5 Boost-Faktor"],["Stufe 3","Kanteneffekte",algorithm.kantenEffekt||"100%","Widersprüche und Ausschluss-Kanten"],["Stufe 4","Zeugenmultiplikator",algorithm.zeugenMult||"100%","Mult = 0.70 + (Glaubwürdigkeit/100) × 0.30"],["Stufe 5","Richter-Kalibrierung",algorithm.richterAdj||"100%",`Klägerquote: ${caseData?.richter_klaeger_rate||50}%`],["Stufe 6","Fristenkorrektur",algorithm.fristenFaktor||"100%",`${deadlines.filter(d=>d.status==="versaeumt").length} versäumte Fristen`]].map(([step,title,val,desc]) => (
+              {[["Stufe 1","Argument-Basisgewichtung",algorithm.argBasis||0,`${args.filter(a=>a.side==="eigen").length} eigene vs. ${args.filter(a=>a.side==="gegner").length} gegnerische Argumente`],["Stufe 2","Beweisboost",`+${algorithm.beweisBoost||0}%`,"Kettenergebnis × 0.5 Boost-Faktor"],["Stufe 3","Kanteneffekte",algorithm.kantenEffekt||"100%","Widersprüche und Ausschluss-Kanten"],["Stufe 4","Zeugenmultiplikator",algorithm.zeugenMult||"100%","Mult = 0.70 + (Glaubwürdigkeit/100) × 0.30"],["Stufe 5","Richter-Kalibrierung",algorithm.richterAdj||"100%",`Klägerquote: ${caseData?.richter_klaeger_rate||50}%`],["Stufe 6","Fristenkorrektur",algorithm.fristenFaktor||"100%",`${deadlines.filter(d=>d.status==="versaeumt").length} versäumte Fristen`]].map(([step,title,val,desc]) => (
                 <div key={step} className="bg-gray-50 rounded-xl p-3">
                   <p className="text-[10px] text-gray-400 mb-0.5">{step}</p>
                   <div className="flex items-baseline justify-between"><p className="text-xs font-semibold text-gray-700">{title}</p><span className="text-base font-bold text-gray-900">{val}</span></div>
