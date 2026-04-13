@@ -1,9 +1,10 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Edit, Trash2, X, ArrowLeft, Link, ChevronRight } from "lucide-react";
+import { Plus, Edit, Trash2, X, ArrowLeft, Link, ChevronRight, Network } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import RichterDetail from "../components/richter/RichterDetail";
+import NetzwerkVisualisierung from "../components/richter/NetzwerkVisualisierung";
 
 const STILE = ["Neutral","Kooperativ","Streng","Prozessaktiv","Vergleichsorientiert"];
 const KATEGORIEN = ["Richter","Anwalt","Kanzlei","Zeuge","Sachverständiger","Partei","Sonstiges"];
@@ -35,6 +36,7 @@ export default function RichterProfile() {
   const [selectedCase, setSelectedCase] = useState("");
   const [detailProfile, setDetailProfile] = useState(null);
   const [katFilter, setKatFilter] = useState("Alle");
+  const [showNetzwerk, setShowNetzwerk] = useState(false);
 
   useEffect(() => { load(); }, []);
 
@@ -151,6 +153,12 @@ export default function RichterProfile() {
           </div>
           <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)}
             className="border border-slate-200 rounded-lg px-3 py-1.5 text-sm w-40 bg-slate-50 focus:outline-none focus:border-slate-400" />
+          <button onClick={() => setShowNetzwerk(!showNetzwerk)}
+            className={`flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg transition-colors border ${
+              showNetzwerk ? "bg-[#1a3560] text-white border-[#1a3560]" : "border-slate-200 text-slate-600 hover:border-slate-400"
+            }`}>
+            <Network className="w-3.5 h-3.5" /> Netzwerk
+          </button>
           <button onClick={() => { setShowForm(!showForm); setEditing(null); setForm(EMPTY); }}
             className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
             <Plus className="w-3.5 h-3.5" /> Profil
@@ -159,6 +167,12 @@ export default function RichterProfile() {
       </div>
       <div className="max-w-4xl mx-auto px-6 py-8">
         {showForm && !editing && <div className="mb-5"><ProfileForm /></div>}
+
+        {showNetzwerk && (
+          <div className="mb-6">
+            <NetzwerkVisualisierung profiles={profiles} cases={cases} />
+          </div>
+        )}
 
         {/* Kategorie-Filter */}
         <div className="flex gap-2 flex-wrap mb-5">
