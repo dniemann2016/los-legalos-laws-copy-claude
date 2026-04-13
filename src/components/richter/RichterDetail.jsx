@@ -2,6 +2,7 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, Plus, RefreshCw, Star } from "lucide-react";
 import ErfolgsMatrix from "./ErfolgsMatrix";
+import AkteureBeziehungen from "./AkteureBeziehungen";
 import { Button } from "@/components/ui/button";
 import { getTByLanguage } from "../../lib/jurisdictionConfig";
 import { useUserProfile } from "../../hooks/useUserProfile";
@@ -21,7 +22,7 @@ function StarRating({ value, onChange, max = 10 }) {
   );
 }
 
-export default function RichterDetail({ profile, cases, onBack, onUpdate }) {
+export default function RichterDetail({ profile, cases, allProfiles = [], onBack, onUpdate }) {
   const { language } = useUserProfile();
   const t = getTByLanguage(language);
   const [showExpForm, setShowExpForm] = useState(false);
@@ -185,6 +186,9 @@ AUFGABE 3 – Taktische Empfehlungen für Anwälte basierend auf allem Obigen.`,
 
       {/* Erfolgsmatrix */}
       <ErfolgsMatrix profile={profile} onUpdate={onUpdate} />
+
+      {/* Beziehungsnetz */}
+      <AkteureBeziehungen profile={profile} allProfiles={allProfiles} cases={cases} onUpdate={onUpdate} />
 
       {/* Erfahrungen */}
       <div className="bg-white rounded-2xl border border-gray-100 p-5">

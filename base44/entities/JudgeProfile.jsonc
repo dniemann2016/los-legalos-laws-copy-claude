@@ -111,6 +111,10 @@
     "erfolgs_matrix": {
       "type": "object",
       "title": "Erfolgswahrscheinlichkeits-Matrix"
+    },
+    "beziehungsanalyse": {
+      "type": "object",
+      "title": "Beziehungsnetz-Analyse"
     }
   },
   "required": [

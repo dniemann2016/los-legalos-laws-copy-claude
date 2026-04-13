@@ -130,6 +130,7 @@ export default function RichterProfile() {
           <RichterDetail
             profile={detailProfile}
             cases={cases}
+            allProfiles={profiles}
             onBack={() => setDetailProfile(null)}
             onUpdate={handleProfileUpdate}
           />
