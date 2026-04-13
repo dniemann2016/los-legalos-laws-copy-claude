@@ -35,11 +35,20 @@ function EvidenceCard({ ev, onDelete, onSave }) {
   const kiWeight = async () => {
     setKiWeighting(true);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein Rechtsanwalt. Bewerte die Beweiskraft dieses Beweismittels im deutschen Zivilprozess auf einer Skala von 0-10.\nTitel: "${ev.title}"\nTyp: "${ev.type || ""}"\nBeschreibung: "${ev.description || ""}"\nGib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
+      prompt: `Du bist ein Rechtsanwalt. Bewerte die Beweiskraft dieses Beweismittels im deutschen Zivilprozess.\nTitel: "${ev.title}"\nTyp: "${ev.type || ""}"\nBeschreibung: "${ev.description || ""}"\n\nGib ein Gewicht (0-10) UND eine juristische Begründung (2-3 Sätze) zurück, warum dieser Beweis diese Beweiskraft hat.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          gewicht: { type: "number", minimum: 0, maximum: 10 },
+          begruendung: { type: "string" }
+        }
+      }
     });
-    const parsed = parseFloat(String(result).replace(/[^0-9.]/g, ""));
-    if (!isNaN(parsed)) {
-      await base44.entities.Evidence.update(ev.id, { ki_weight: Math.min(10, Math.max(0, parsed)) });
+    if (result && result.gewicht !== undefined) {
+      await base44.entities.Evidence.update(ev.id, {
+        ki_weight: Math.min(10, Math.max(0, result.gewicht)),
+        ki_reasoning: result.begruendung || ""
+      });
       onSave();
     }
     setKiWeighting(false);
@@ -118,6 +127,12 @@ function EvidenceCard({ ev, onDelete, onSave }) {
                 {ev.description && <p className="text-xs text-gray-500">{ev.description}</p>}
                 {ev.type && <p className="text-[10px] text-gray-400 mt-0.5">{ev.type}</p>}
                 {ev.source && <p className="text-[10px] text-gray-400">Quelle: {ev.source}</p>}
+                {ev.ki_reasoning && (
+                  <div className="mt-2 bg-violet-50 border border-violet-100 rounded-lg p-2">
+                    <p className="text-[10px] font-semibold text-violet-700 mb-0.5">KI-Begründung (Gewicht {ev.ki_weight}/10):</p>
+                    <p className="text-[10px] text-violet-600 leading-relaxed">{ev.ki_reasoning}</p>
+                  </div>
+                )}
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <button onClick={kiWeight} disabled={kiWeighting}
                     className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-800 border border-violet-200 rounded px-1.5 py-0.5 disabled:opacity-40">

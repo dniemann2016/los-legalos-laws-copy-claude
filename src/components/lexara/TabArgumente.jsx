@@ -32,11 +32,20 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
   const kiWeight = async () => {
     setKiWeighting(true);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Anwalt. Bewerte die Stärke dieses Rechtsarguments auf einer Skala von 0-10.\nArgument: "${arg.title}"\nBeschreibung: "${arg.description || ""}"\nTyp: ${arg.type || "Rechtsargument"}, Seite: ${arg.side || "eigen"}\nGib NUR eine Zahl zwischen 0 und 10 zurück (z.B. 7.5). Keine Erklärung.`,
+      prompt: `Du bist ein erfahrener Rechtsanwalt. Bewerte die Stärke dieses Rechtsarguments im deutschen Zivilprozess.\nArgument: "${arg.title}"\nBeschreibung: "${arg.description || ""}"\nTyp: ${arg.type || "Rechtsargument"}, Seite: ${arg.side || "eigen"}\n\nGib eine Stärke (0-10) UND eine kurze juristische Begründung (2-3 Sätze) zurück.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          staerke: { type: "number", minimum: 0, maximum: 10 },
+          begruendung: { type: "string" }
+        }
+      }
     });
-    const parsed = parseFloat(String(result).replace(/[^0-9.]/g, ""));
-    if (!isNaN(parsed)) {
-      await base44.entities.Argument.update(arg.id, { ki_strength: Math.min(10, Math.max(0, parsed)) });
+    if (result && result.staerke !== undefined) {
+      await base44.entities.Argument.update(arg.id, {
+        ki_strength: Math.min(10, Math.max(0, result.staerke)),
+        ki_reasoning: result.begruendung || ""
+      });
       onSave();
     }
     setKiWeighting(false);

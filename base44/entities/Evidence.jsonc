@@ -26,6 +26,10 @@
       "type": "number",
       "title": "Gewicht KI (0-10)"
     },
+    "ki_reasoning": {
+      "type": "string",
+      "title": "KI-Begr\u00fcndung"
+    },
     "type": {
       "type": "string",
       "title": "Beweistyp"
