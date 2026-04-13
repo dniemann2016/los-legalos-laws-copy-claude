@@ -38,6 +38,9 @@ const AuthenticatedApp = () => {
   if (authError?.type === 'user_not_registered') {
     return <UserNotRegisteredError />;
   }
+  if (authError?.type === 'auth_required') {
+    // MVP: open access, skip login
+  }
 
   return (
     <>
