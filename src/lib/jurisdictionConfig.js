@@ -261,6 +261,7 @@ const DE_TEXT = {
     { category: "KI-Agent", title: "Plattform-Agent", description: "Autonomer Agent für Plattformoptimierung und Analyse" },
     { category: "Cockpit", title: "Kanzlei-Cockpit", description: "Risiko-Ampel, Portfolio und Fristen-Monitoring" },
     { category: "Analytics", title: "Kanzlei-Analytik", description: "Visualisierung aller Fallkennzahlen und Trends" },
+    { category: "Strategie & Psycho-Analyse", title: "Sun Tzu × Machiavelli", description: "48 Laws of Power · Strategischer Pfad & Risikobewertung für Ihren Fall" },
   ],
 };
 
@@ -493,6 +494,7 @@ const EN_TEXT = {
     { category: "AI Agent", title: "Platform Agent", description: "Autonomous agent for platform optimization" },
     { category: "Cockpit", title: "Firm Cockpit", description: "Risk indicators, portfolio and deadline monitoring" },
     { category: "Analytics", title: "Firm Analytics", description: "Visualization of all case metrics and trends" },
+    { category: "Strategy & Psycho-Analysis", title: "Sun Tzu × Machiavelli", description: "48 Laws of Power · Strategic path & risk assessment for your case" },
   ],
 };
 
@@ -725,6 +727,7 @@ const FR_TEXT = {
     { category: "Agent IA", title: "Agent de plateforme", description: "Agent autonome d'optimisation de la plateforme" },
     { category: "Cockpit", title: "Cockpit cabinet", description: "Indicateurs de risque, portefeuille et délais" },
     { category: "Analytique", title: "Analytique cabinet", description: "Visualisation de tous les indicateurs de dossiers" },
+    { category: "Stratégie & Psycho-Analyse", title: "Sun Tzu × Machiavel", description: "48 Lois du Pouvoir · Chemin stratégique & évaluation des risques" },
   ],
 };
 

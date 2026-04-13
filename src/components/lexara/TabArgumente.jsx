@@ -310,6 +310,19 @@ ${!fileUrl ? "TEXT: " + text : ""}`,
     loadAll(true);
   };
 
+  const take = async (a, side) => {
+    await base44.entities.Argument.create({
+      case_id: caseId,
+      title: a.titel,
+      description: a.beschreibung || "",
+      side,
+      strength: a.staerke || 5,
+      type: "Rechtsargument",
+      paragraphs: a.paragraphen || [],
+    });
+    loadAll(true);
+  };
+
   const rateBatch = async () => {
     if (args.length === 0) return;
     setBatchRating(true);

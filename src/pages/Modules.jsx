@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2 } from "lucide-react";
+import { ChevronRight, Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword } from "lucide-react";
 import { useJurisdiction } from "../hooks/useJurisdiction";
 import { getT } from "../lib/jurisdictionConfig";
 import JurisdictionToggle from "../components/JurisdictionToggle";
@@ -11,6 +11,7 @@ const PATHS = [
   "/plattform-agent",
   "/cockpit",
   "/analytik",
+  "/strategic-analysis",
 ];
 
 const ICON_COLORS = [
@@ -20,6 +21,7 @@ const ICON_COLORS = [
   "bg-emerald-50 text-emerald-700",
   "bg-blue-50 text-blue-700",
   "bg-amber-50 text-amber-700",
+  "bg-red-50 text-red-800",
 ];
 
 const ICONS = [
@@ -29,6 +31,7 @@ const ICONS = [
   <Bot className="w-5 h-5" />,
   <LayoutDashboard className="w-5 h-5" />,
   <BarChart2 className="w-5 h-5" />,
+  <Sword className="w-5 h-5" />,
 ];
 
 export default function Modules() {
