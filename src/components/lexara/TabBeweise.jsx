@@ -97,8 +97,6 @@ function EvidenceCard({ ev, onDelete, onSave }) {
                     </span>
                   )}
                 </div>
-
-                {/* Score comparison */}
                 <div className="space-y-1.5 mb-2">
                   <div className="flex items-center gap-3">
                     <span className="text-[10px] text-gray-400 w-20 flex-shrink-0">Manuell</span>
@@ -117,11 +115,9 @@ function EvidenceCard({ ev, onDelete, onSave }) {
                     </span>
                   </div>
                 </div>
-
                 {ev.description && <p className="text-xs text-gray-500">{ev.description}</p>}
                 {ev.type && <p className="text-[10px] text-gray-400 mt-0.5">{ev.type}</p>}
                 {ev.source && <p className="text-[10px] text-gray-400">Quelle: {ev.source}</p>}
-
                 <div className="flex items-center gap-2 mt-2 flex-wrap">
                   <button onClick={kiWeight} disabled={kiWeighting}
                     className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-800 border border-violet-200 rounded px-1.5 py-0.5 disabled:opacity-40">
@@ -136,7 +132,6 @@ function EvidenceCard({ ev, onDelete, onSave }) {
                     </button>
                   )}
                 </div>
-
                 {analysis && (
                   <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl p-3 space-y-2">
                     <p className="text-xs text-amber-800">{analysis.erklaerung}</p>
@@ -167,12 +162,16 @@ export default function TabBeweise({ caseId }) {
   const [selectedArg, setSelectedArg] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showRef, setShowRef] = useState(false);
+  const [showLink, setShowLink] = useState(false);
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
 
   useEffect(() => { load(); }, [caseId]);
 
   const load = async () => {
-    const [a, e] = await Promise.all([base44.entities.Argument.filter({ case_id: caseId }), base44.entities.Evidence.filter({ case_id: caseId })]);
+    const [a, e] = await Promise.all([
+      base44.entities.Argument.filter({ case_id: caseId }),
+      base44.entities.Evidence.filter({ case_id: caseId })
+    ]);
     setArgs(a);
     setEvidence(e);
     if (a.length > 0 && !selectedArg) setSelectedArg(a[0].id);
@@ -187,10 +186,20 @@ export default function TabBeweise({ caseId }) {
   };
 
   const del = async (id) => { await base44.entities.Evidence.delete(id); load(); };
+
+  const linkExisting = async (evId) => {
+    await base44.entities.Evidence.update(evId, { argument_id: selectedArg });
+    load();
+  };
+
   const selectedArgData = args.find(a => a.id === selectedArg);
   const argEvidence = evidence.filter(e =>
     e.argument_id === selectedArg ||
     (selectedArgData?.evidence_ids || []).includes(e.id)
+  );
+  const unlinkedEvidence = evidence.filter(e =>
+    !e.argument_id &&
+    !(selectedArgData?.evidence_ids || []).includes(e.id)
   );
 
   return (
@@ -202,7 +211,7 @@ export default function TabBeweise({ caseId }) {
             className={`w-full text-left rounded-xl p-3 text-xs transition-all ${selectedArg === arg.id ? "bg-gray-900 text-white" : "bg-white border border-gray-100 text-gray-700 hover:border-gray-200"}`}>
             <div className={`text-[9px] font-medium mb-0.5 ${selectedArg === arg.id ? "text-gray-300" : "text-gray-400"}`}>{arg.side === "eigen" ? "Eigen" : "Gegner"}</div>
             <div className="font-medium leading-snug">{arg.title}</div>
-            <div className={`mt-1 text-[10px] ${selectedArg === arg.id ? "text-gray-400" : "text-gray-400"}`}>{evidence.filter(e => e.argument_id === arg.id).length} Beweise</div>
+            <div className="mt-1 text-[10px] text-gray-400">{evidence.filter(e => e.argument_id === arg.id).length} Beweise</div>
           </button>
         ))}
         {args.length === 0 && <p className="text-xs text-gray-400 text-center py-4">Keine Argumente</p>}
@@ -213,11 +222,45 @@ export default function TabBeweise({ caseId }) {
           <>
             <div className="flex items-center justify-between">
               <div>
-                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${selectedArgData.side === "eigen" ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-700"}`}>{selectedArgData.side === "eigen" ? "Eigenes Argument" : "Gegner-Argument"}</span>
+                <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${selectedArgData.side === "eigen" ? "bg-blue-50 text-blue-700" : "bg-red-50 text-red-700"}`}>
+                  {selectedArgData.side === "eigen" ? "Eigenes Argument" : "Gegner-Argument"}
+                </span>
                 <h3 className="font-semibold text-gray-900 mt-1">{selectedArgData.title}</h3>
               </div>
-              <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1"><Plus className="w-3 h-3" /> Beweis</Button>
+              <div className="flex items-center gap-2">
+                {unlinkedEvidence.length > 0 && (
+                  <Button size="sm" variant="outline" onClick={() => setShowLink(!showLink)}
+                    className="rounded-xl text-xs gap-1 border-blue-200 text-blue-700 hover:bg-blue-50">
+                    🔗 Verknüpfen ({unlinkedEvidence.length})
+                  </Button>
+                )}
+                <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1">
+                  <Plus className="w-3 h-3" /> Beweis
+                </Button>
+              </div>
             </div>
+
+            {showLink && unlinkedEvidence.length > 0 && (
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
+                <p className="text-xs font-semibold text-blue-700 mb-2">🔗 Bestehende Beweise zuordnen</p>
+                <div className="space-y-1.5 max-h-48 overflow-y-auto">
+                  {unlinkedEvidence.map(ev => (
+                    <div key={ev.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-100">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-xs font-medium text-gray-800 truncate">{ev.title}</p>
+                        {ev.type && <p className="text-[10px] text-gray-400">{ev.type}</p>}
+                      </div>
+                      <button onClick={() => linkExisting(ev.id)}
+                        className="ml-2 flex-shrink-0 text-[10px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 transition-colors">
+                        Zuordnen
+                      </button>
+                    </div>
+                  ))}
+                </div>
+                <button onClick={() => setShowLink(false)} className="text-[10px] text-blue-500 hover:text-blue-700">Schließen</button>
+              </div>
+            )}
+
             {showAdd && (
               <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
                 <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Titel *" value={newEv.title} onChange={e => setNewEv({ ...newEv, title: e.target.value })} />
@@ -232,6 +275,7 @@ export default function TabBeweise({ caseId }) {
                 </div>
               </div>
             )}
+
             <div className="bg-white rounded-xl border border-gray-100 p-4">
               <h4 className="text-sm font-semibold text-gray-700 mb-1">📋 Beweisstrang</h4>
               <p className="text-xs text-gray-400 mb-4">Hover über einen Beweis, um Bearbeiten/Löschen zu sehen.</p>
@@ -250,7 +294,13 @@ export default function TabBeweise({ caseId }) {
               </button>
               {showRef && (
                 <table className="mt-3 w-full text-xs">
-                  <thead><tr className="text-gray-400 border-b border-gray-100"><th className="text-left py-1 font-medium">Typ</th><th className="text-center py-1 font-medium">Gewicht</th><th className="text-right py-1 font-medium">Kategorie</th></tr></thead>
+                  <thead>
+                    <tr className="text-gray-400 border-b border-gray-100">
+                      <th className="text-left py-1 font-medium">Typ</th>
+                      <th className="text-center py-1 font-medium">Gewicht</th>
+                      <th className="text-right py-1 font-medium">Kategorie</th>
+                    </tr>
+                  </thead>
                   <tbody>
                     {Object.entries(WEIGHTS).map(([type, w]) => (
                       <tr key={type} className="border-b border-gray-50 hover:bg-gray-50">
