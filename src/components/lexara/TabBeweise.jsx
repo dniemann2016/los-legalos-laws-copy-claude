@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, RefreshCw, Pencil, Check, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, RefreshCw, Pencil, Check, AlertTriangle, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const BEWEIS_TYPES = ["Gesetzliche Grundlage / Normtext","BGH/BVerfG Entscheidung (einschlägig)","Notarielle Beurkundung","Öffentliche Urkunde §415 ZPO","BGH-Entscheidung (übertragbar)","Gerichtliches SV-Gutachten","OLG-Entscheidung (gleiches BL)","Private Urkunde §416 ZPO","Augenscheinsbeweis","Privates SV-Gutachten","E-Mail / elektronisch","Zeuge (unabhängig)","LG-Entscheidung","Parteivernehmung §445 ZPO","Zeuge (parteinah)","Indizien (kumulativ)","Negative Tatsache"];
@@ -192,6 +192,64 @@ export default function TabBeweise({ caseId }) {
     load();
   };
 
+  const [kiSuggestions, setKiSuggestions] = useState(null); // { evId: { suggestedArgId, reason } }
+  const [kiSugLoading, setKiSugLoading] = useState(false);
+  const [pendingAssignments, setPendingAssignments] = useState({}); // evId -> argId
+
+  const runKiSuggestions = async () => {
+    if (!unlinkedEvidence.length || !args.length) return;
+    setKiSugLoading(true);
+    setKiSuggestions(null);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Rechtsanwalt. Weise die folgenden Beweismittel den passendsten Argumenten zu.
+
+ARGUMENTE:
+${args.map(a => `ID: ${a.id} | Seite: ${a.side} | Titel: ${a.title}`).join('\n')}
+
+BEWEISE (unverknüpft):
+${unlinkedEvidence.map(e => `ID: ${e.id} | Titel: ${e.title} | Typ: ${e.type || ''} | Beschreibung: ${e.description || ''}`).join('\n')}
+
+Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze Begründung (max. 1 Satz).`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          zuordnungen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                evidence_id: { type: "string" },
+                argument_id: { type: "string" },
+                reason: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    });
+    const suggestions = {};
+    const pending = {};
+    (result?.zuordnungen || []).forEach(z => {
+      suggestions[z.evidence_id] = { argId: z.argument_id, reason: z.reason };
+      pending[z.evidence_id] = z.argument_id;
+    });
+    setKiSuggestions(suggestions);
+    setPendingAssignments(pending);
+    setKiSugLoading(false);
+  };
+
+  const applyAllSuggestions = async () => {
+    await Promise.all(
+      Object.entries(pendingAssignments).map(([evId, argId]) =>
+        base44.entities.Evidence.update(evId, { argument_id: argId })
+      )
+    );
+    setKiSuggestions(null);
+    setPendingAssignments({});
+    setShowLink(false);
+    load();
+  };
+
   const selectedArgData = args.find(a => a.id === selectedArg);
   const argEvidence = evidence.filter(e =>
     e.argument_id === selectedArg ||
@@ -241,23 +299,68 @@ export default function TabBeweise({ caseId }) {
             </div>
 
             {showLink && unlinkedEvidence.length > 0 && (
-              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-2">
-                <p className="text-xs font-semibold text-blue-700 mb-2">🔗 Bestehende Beweise zuordnen</p>
-                <div className="space-y-1.5 max-h-48 overflow-y-auto">
-                  {unlinkedEvidence.map(ev => (
-                    <div key={ev.id} className="flex items-center justify-between bg-white rounded-lg px-3 py-2 border border-blue-100">
-                      <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-gray-800 truncate">{ev.title}</p>
-                        {ev.type && <p className="text-[10px] text-gray-400">{ev.type}</p>}
-                      </div>
-                      <button onClick={() => linkExisting(ev.id)}
-                        className="ml-2 flex-shrink-0 text-[10px] font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded px-2 py-1 transition-colors">
-                        Zuordnen
-                      </button>
-                    </div>
-                  ))}
+              <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-semibold text-blue-700">🔗 Beweise Argumenten zuordnen</p>
+                  <Button size="sm" onClick={runKiSuggestions} disabled={kiSugLoading}
+                    className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs gap-1">
+                    {kiSugLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {kiSugLoading ? "KI analysiert…" : "KI-Zuordnung"}
+                  </Button>
                 </div>
-                <button onClick={() => setShowLink(false)} className="text-[10px] text-blue-500 hover:text-blue-700">Schließen</button>
+
+                <div className="space-y-2 max-h-72 overflow-y-auto">
+                  {unlinkedEvidence.map(ev => {
+                    const sug = kiSuggestions?.[ev.id];
+                    return (
+                      <div key={ev.id} className="bg-white rounded-xl border border-blue-100 p-3">
+                        <div className="flex items-start justify-between gap-2 mb-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-800 truncate">{ev.title}</p>
+                            {ev.type && <p className="text-[10px] text-gray-400">{ev.type}</p>}
+                            {sug?.reason && <p className="text-[10px] text-violet-600 mt-1 italic">{sug.reason}</p>}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <select
+                            value={pendingAssignments[ev.id] || ev.argument_id || ""}
+                            onChange={e => setPendingAssignments(p => ({ ...p, [ev.id]: e.target.value }))}
+                            className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white focus:outline-none focus:border-blue-300">
+                            <option value="">-- Argument wählen --</option>
+                            {args.map(a => (
+                              <option key={a.id} value={a.id}>
+                                {a.side === "eigen" ? "✦" : "◆"} {a.title}
+                                {sug?.argId === a.id ? " ★ KI" : ""}
+                              </option>
+                            ))}
+                          </select>
+                          <button
+                            onClick={() => {
+                              const argId = pendingAssignments[ev.id];
+                              if (argId) linkExisting(ev.id).then(() => {
+                                setKiSuggestions(s => { const n = { ...s }; delete n[ev.id]; return n; });
+                                setPendingAssignments(p => { const n = { ...p }; delete n[ev.id]; return n; });
+                              });
+                            }}
+                            disabled={!pendingAssignments[ev.id]}
+                            className="flex-shrink-0 text-[10px] font-semibold text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-40 rounded px-2 py-1.5 transition-colors">
+                            <Check className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {kiSuggestions && Object.keys(pendingAssignments).length > 0 && (
+                  <Button onClick={applyAllSuggestions} size="sm"
+                    className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs gap-1">
+                    <Check className="w-3 h-3" /> Alle KI-Vorschläge übernehmen
+                  </Button>
+                )}
+
+                <button onClick={() => { setShowLink(false); setKiSuggestions(null); setPendingAssignments({}); }}
+                  className="text-[10px] text-blue-500 hover:text-blue-700">Schließen</button>
               </div>
             )}
 
