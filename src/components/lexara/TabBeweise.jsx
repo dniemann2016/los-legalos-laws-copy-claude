@@ -188,7 +188,10 @@ export default function TabBeweise({ caseId }) {
 
   const del = async (id) => { await base44.entities.Evidence.delete(id); load(); };
   const selectedArgData = args.find(a => a.id === selectedArg);
-  const argEvidence = evidence.filter(e => e.argument_id === selectedArg);
+  const argEvidence = evidence.filter(e =>
+    e.argument_id === selectedArg ||
+    (selectedArgData?.evidence_ids || []).includes(e.id)
+  );
 
   return (
     <div className="flex gap-4" style={{ minHeight: "400px" }}>
