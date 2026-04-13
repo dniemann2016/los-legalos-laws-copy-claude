@@ -1,10 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, Calendar, AlertTriangle, Clock, Check, Download } from "lucide-react";
+import { Calendar, AlertTriangle, Clock, Check, Download } from "lucide-react";
 import { getTByLanguage } from "../lib/jurisdictionConfig";
 import { useUserProfile } from "../hooks/useUserProfile";
 import { exportIcal } from "@/functions/exportIcal";
-import { Link } from "react-router-dom";
 
 function getStatusColor(deadline) {
   if (deadline.status === "erledigt") return "bg-green-100 text-green-700 border-green-200";
@@ -13,7 +12,7 @@ function getStatusColor(deadline) {
   if (days < 0) return "bg-red-100 text-red-700 border-red-200";
   if (days <= 7) return "bg-orange-100 text-orange-700 border-orange-200";
   if (days <= 30) return "bg-yellow-100 text-yellow-700 border-yellow-200";
-  return "bg-gray-100 text-gray-600 border-gray-200";
+  return "bg-[#fafafa] text-[#666] border-[#f0f0f0]";
 }
 
 function getDaysLabel(due_date, status, t) {
@@ -65,7 +64,6 @@ export default function Zeitleiste() {
     return true;
   });
 
-  // Group by month
   const grouped = {};
   filtered.forEach(d => {
     const date = new Date(d.due_date);
@@ -83,21 +81,16 @@ export default function Zeitleiste() {
   }).length;
 
   return (
-    <div className="min-h-screen bg-gray-50 font-sans">
-      <div className="bg-white border-b border-gray-100 px-4 py-4 sticky top-0 z-20">
-        <div className="max-w-3xl mx-auto">
-          <div className="flex items-center gap-3 mb-3">
-            <Link to="/lexara" className="text-gray-400 hover:text-gray-600 flex items-center gap-1 text-sm">
-              <ArrowLeft className="w-4 h-4" /> {t.backLabel}
-            </Link>
+    <div className="min-h-screen bg-[#fafafa] font-sans">
+      <div className="bg-white border-b border-[#f0f0f0] px-6 py-4 sticky top-0 z-20">
+        <div className="max-w-3xl mx-auto flex items-center justify-between flex-wrap gap-3">
+          <div>
+            <h1 className="text-sm font-bold text-[#1a1a1a] flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#1a3560]" /> {t.timelineTitle}
+            </h1>
+            <p className="text-[11px] text-[#666] mt-0.5">{openCount} {t.openStatusLabel} · {criticalCount} {t.criticalStatusLabel}</p>
           </div>
-          <div className="flex items-center justify-between flex-wrap gap-3">
-            <div>
-              <h1 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                <Calendar className="w-5 h-5" /> {t.timelineTitle}
-              </h1>
-              <p className="text-xs text-gray-400 mt-0.5">{openCount} {t.openStatusLabel} · {criticalCount} {t.criticalStatusLabel}</p>
-            </div>
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={async () => {
                 const res = await exportIcal({});
@@ -107,14 +100,15 @@ export default function Zeitleiste() {
                 a.href = url; a.download = "alle-fristen.ics"; a.click();
                 URL.revokeObjectURL(url);
               }}
-              className="flex items-center gap-1.5 text-xs bg-white border border-gray-200 text-gray-600 px-3 py-1.5 rounded-xl hover:border-gray-300 hover:shadow-sm transition-all">
+              className="flex items-center gap-1.5 text-xs bg-white border border-[#f0f0f0] text-[#666] px-3 py-1.5 rounded-xl hover:border-slate-300 transition-all">
               <Download className="w-3.5 h-3.5" /> {t.iCalExport}
             </button>
             <div className="flex gap-1">
               {[["alle", t.filterAll], ["offen", t.filterOpen], ["kritisch", t.filterCritical], ["erledigt", t.filterCompleted]].map(([f, label]) => (
                 <button key={f} onClick={() => setFilter(f)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all
-                    ${filter === f ? "bg-gray-900 text-white" : "bg-white border border-gray-200 text-gray-600 hover:border-gray-300"}`}>
+                  className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-all ${
+                    filter === f ? "bg-[#1a3560] text-white" : "bg-white border border-[#f0f0f0] text-[#666] hover:border-slate-300"
+                  }`}>
                   {label}
                 </button>
               ))}
@@ -123,11 +117,11 @@ export default function Zeitleiste() {
         </div>
       </div>
 
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="max-w-3xl mx-auto px-6 py-6">
         {loading ? (
-          <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" /></div>
+          <div className="flex justify-center py-20"><div className="w-6 h-6 border-2 border-slate-200 border-t-[#1a3560] rounded-full animate-spin" /></div>
         ) : filtered.length === 0 ? (
-          <div className="text-center py-20 text-gray-400">
+          <div className="text-center py-20 text-[#999]">
             <Calendar className="w-10 h-10 mx-auto mb-3 opacity-30" />
             <p>{t.noDeadlinesFound}</p>
           </div>
@@ -135,9 +129,9 @@ export default function Zeitleiste() {
           <div className="space-y-8">
             {Object.entries(grouped).sort(([a], [b]) => a.localeCompare(b)).map(([key, group]) => (
               <div key={key}>
-                <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">{group.label}</h3>
+                <h3 className="text-xs font-semibold text-[#999] uppercase tracking-widest mb-3">{group.label}</h3>
                 <div className="relative">
-                  <div className="absolute left-4 top-0 bottom-0 w-px bg-gray-200" />
+                  <div className="absolute left-4 top-0 bottom-0 w-px bg-[#f0f0f0]" />
                   <div className="space-y-3 pl-10">
                     {group.items.sort((a, b) => new Date(a.due_date) - new Date(b.due_date)).map(d => {
                       const colorClass = getStatusColor(d);
@@ -147,21 +141,21 @@ export default function Zeitleiste() {
                             d.status === "erledigt" ? "bg-green-500 ring-green-200" :
                             Math.ceil((new Date(d.due_date) - new Date()) / 86400000) <= 7 ? "bg-red-500 ring-red-200" :
                             Math.ceil((new Date(d.due_date) - new Date()) / 86400000) <= 30 ? "bg-orange-400 ring-orange-200" :
-                            "bg-gray-400 ring-gray-200"
+                            "bg-slate-400 ring-slate-200"
                           }`} />
-                          <div className="bg-white border border-gray-100 rounded-xl p-3 hover:shadow-sm transition-shadow">
+                          <div className="bg-white border border-[#f0f0f0] rounded-xl p-3 hover:shadow-sm transition-shadow">
                             <div className="flex items-start justify-between gap-2">
                               <div className="flex-1 min-w-0">
-                                <p className="font-medium text-sm text-gray-900 leading-tight">{d.title}</p>
-                                <p className="text-[10px] text-gray-400 mt-0.5">{d.caseName}</p>
-                                {d.frist_type && <p className="text-[10px] text-gray-400">{d.frist_type}{d.paragraph ? ` · ${d.paragraph}` : ""}</p>}
+                                <p className="font-medium text-sm text-[#1a1a1a] leading-tight">{d.title}</p>
+                                <p className="text-[10px] text-[#999] mt-0.5">{d.caseName}</p>
+                                {d.frist_type && <p className="text-[10px] text-[#999]">{d.frist_type}{d.paragraph ? ` · ${d.paragraph}` : ""}</p>}
                               </div>
                               <div className="flex flex-col items-end gap-1 flex-shrink-0">
                                 <span className={`text-[10px] font-medium px-2 py-0.5 rounded-full border flex items-center gap-1 ${colorClass}`}>
                                   {getStatusIcon(d)}
                                   {getDaysLabel(d.due_date, d.status, t)}
                                 </span>
-                                <span className="text-[10px] text-gray-400">
+                                <span className="text-[10px] text-[#999]">
                                   {new Date(d.due_date).toLocaleDateString(language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE")}
                                 </span>
                               </div>

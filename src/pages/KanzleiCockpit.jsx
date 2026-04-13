@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
 import { getTByLanguage } from "../lib/jurisdictionConfig";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { ArrowLeft, ChevronRight, AlertTriangle, TrendingUp, Scale, Clock, Search, CheckCircle2, Circle } from "lucide-react";
+import { ChevronRight, AlertTriangle, TrendingUp, Scale, Clock, Search, CheckCircle2, Circle } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 
 const RISK_COLORS = { niedrig: "#16a34a", mittel: "#d97706", hoch: "#dc2626" };
@@ -111,19 +111,12 @@ export default function KanzleiCockpit() {
   const PRIORITY_LABELS = { hoch: { DE: "Hoch", EN: "High", FR: "Élevée" }, mittel: { DE: "Mittel", EN: "Medium", FR: "Moyenne" }, niedrig: { DE: "Niedrig", EN: "Low", FR: "Faible" } };
 
   return (
-    <div className="min-h-screen bg-[#F5F6F8] font-sans">
-      {/* Sticky top bar */}
-      <div className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-30">
+    <div className="min-h-screen bg-[#fafafa] font-sans">
+      <div className="border-b border-[#f0f0f0] bg-white sticky top-0 z-30">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/modules" className="text-slate-400 hover:text-slate-700 transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div className="w-px h-4 bg-slate-200" />
-            <div>
-              <h1 className="text-sm font-bold text-slate-900">{t.cockpitTitle}</h1>
-              <p className="text-[11px] text-slate-400">{t.portfolioSub(cases.length)}</p>
-            </div>
+          <div>
+            <h1 className="text-sm font-bold text-[#1a1a1a]">{t.cockpitTitle}</h1>
+            <p className="text-[11px] text-[#666]">{t.portfolioSub(cases.length)}</p>
           </div>
           <Link to="/lexara"
             className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">

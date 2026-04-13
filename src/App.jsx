@@ -6,6 +6,7 @@ import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 import Home from './pages/Home';
+import AppShell from './components/AppShell';
 import Modules from './pages/Modules';
 import LexaraDashboard from './pages/LexaraDashboard';
 import CaseDetail from './pages/CaseDetail';
@@ -54,22 +55,24 @@ const AuthenticatedApp = () => {
   return (
     <>
       <Routes>
-        <Route path="/" element={<Modules />} />
-        <Route path="/modules" element={<Modules />} />
-        <Route path="/lexara" element={<LexaraDashboard />} />
-        <Route path="/lexara/case" element={<CaseDetail />} />
-        <Route path="/zeitleiste" element={<Zeitleiste />} />
-        <Route path="/mandant" element={<MandantenView />} />
-        <Route path="/richterprofile" element={<RichterProfile />} />
-        <Route path="/plattform-agent" element={<PlattformAgent />} />
-        <Route path="/cockpit" element={<KanzleiCockpit />} />
-        <Route path="/analytik" element={<KanzleiAnalytik />} />
-        <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
-        <Route path="/onboarding" element={<OnboardingSetup />} />
-        <Route path="/aufgaben" element={<Aufgaben />} />
-        <Route path="/strategic-analysis" element={<SunTzuMachiavel />} />
-        {/* Add your page Route elements here */}
-        <Route path="*" element={<PageNotFound />} />
+        <Route element={<AppShell />}>
+          <Route path="/" element={<Modules />} />
+          <Route path="/modules" element={<Modules />} />
+          <Route path="/lexara" element={<LexaraDashboard />} />
+          <Route path="/lexara/case" element={<CaseDetail />} />
+          <Route path="/zeitleiste" element={<Zeitleiste />} />
+          <Route path="/mandant" element={<MandantenView />} />
+          <Route path="/richterprofile" element={<RichterProfile />} />
+          <Route path="/plattform-agent" element={<PlattformAgent />} />
+          <Route path="/cockpit" element={<KanzleiCockpit />} />
+          <Route path="/analytik" element={<KanzleiAnalytik />} />
+          <Route path="/chat/fall-assistent" element={<FallAssistentChat />} />
+          <Route path="/onboarding" element={<OnboardingSetup />} />
+          <Route path="/aufgaben" element={<Aufgaben />} />
+          <Route path="/strategic-analysis" element={<SunTzuMachiavel />} />
+          {/* Add your page Route elements here */}
+          <Route path="*" element={<PageNotFound />} />
+        </Route>
       </Routes>
       <DsgvoBanner />
     </>

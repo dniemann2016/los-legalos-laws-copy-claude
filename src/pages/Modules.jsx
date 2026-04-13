@@ -1,8 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { ChevronRight, Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword } from "lucide-react";
+import { Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword, CheckSquare, Calendar } from "lucide-react";
 import { useJurisdiction } from "../hooks/useJurisdiction";
 import { getT } from "../lib/jurisdictionConfig";
-import JurisdictionToggle from "../components/JurisdictionToggle";
+import { useAuth } from "@/lib/AuthContext";
 
 const PATHS = [
   "/chat/fall-assistent",
@@ -14,81 +14,97 @@ const PATHS = [
   "/strategic-analysis",
 ];
 
-const ICON_COLORS = [
-  "bg-violet-50 text-violet-700",
-  "bg-slate-100 text-slate-700",
-  "bg-indigo-50 text-indigo-700",
-  "bg-emerald-50 text-emerald-700",
-  "bg-blue-50 text-blue-700",
-  "bg-amber-50 text-amber-700",
-  "bg-red-50 text-red-800",
-];
+const ICONS = [MessageSquare, Scale, Users, Bot, LayoutDashboard, BarChart2, Sword];
 
-const ICONS = [
-  <MessageSquare className="w-5 h-5" />,
-  <Scale className="w-5 h-5" />,
-  <Users className="w-5 h-5" />,
-  <Bot className="w-5 h-5" />,
-  <LayoutDashboard className="w-5 h-5" />,
-  <BarChart2 className="w-5 h-5" />,
-  <Sword className="w-5 h-5" />,
+const ACCENTS = [
+  { bg: "bg-violet-50", text: "text-violet-700", border: "border-violet-200" },
+  { bg: "bg-blue-50", text: "text-blue-700", border: "border-blue-200" },
+  { bg: "bg-indigo-50", text: "text-indigo-700", border: "border-indigo-200" },
+  { bg: "bg-emerald-50", text: "text-emerald-700", border: "border-emerald-200" },
+  { bg: "bg-slate-100", text: "text-slate-700", border: "border-slate-200" },
+  { bg: "bg-amber-50", text: "text-amber-700", border: "border-amber-200" },
+  { bg: "bg-red-50", text: "text-red-800", border: "border-red-200" },
 ];
 
 export default function Modules() {
   const navigate = useNavigate();
   const { jurisdiction } = useJurisdiction();
   const t = getT(jurisdiction);
+  const { currentUser } = useAuth();
+
+  const greeting = () => {
+    const h = new Date().getHours();
+    if (h < 12) return "Guten Morgen";
+    if (h < 18) return "Guten Tag";
+    return "Guten Abend";
+  };
 
   return (
-    <div className="min-h-screen bg-[#F5F6F8] font-sans">
-      {/* Top bar */}
-      <div className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-20">
-        <div className="max-w-2xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-7 h-7 rounded-lg bg-[#1a3560] flex items-center justify-center">
-              <Scale className="w-3.5 h-3.5 text-white" />
-            </div>
-            <span className="font-semibold text-[13px] text-slate-800 tracking-tight">MachiavelLEX</span>
-          </div>
-          <JurisdictionToggle />
-        </div>
+    <div className="min-h-screen bg-[#fafafa]">
+      {/* Page header */}
+      <div className="bg-white border-b border-[#f0f0f0] px-8 py-5">
+        <h1 className="text-xl font-bold text-[#1a1a1a]">
+          {greeting()}{currentUser?.full_name ? `, ${currentUser.full_name.split(" ")[0]}` : ""}
+        </h1>
+        <p className="text-sm text-[#666666] mt-0.5">{t.platformSub}</p>
       </div>
 
-      <div className="max-w-2xl mx-auto px-6 py-10">
-        {/* Hero */}
-        <div className="mb-8">
-          <p className="text-[11px] font-semibold text-amber-600 uppercase tracking-widest mb-2">Legal Intelligence Platform</p>
-          <h1 className="text-2xl font-bold text-slate-900 leading-tight mb-1">{t.platform}</h1>
-          <p className="text-sm text-slate-500">{t.platformSub}</p>
+      <div className="px-8 py-6 max-w-4xl">
+        {/* Quick Access */}
+        <div className="mb-6">
+          <p className="text-[11px] font-semibold text-[#999] uppercase tracking-widest mb-3">Module</p>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            {t.module.map((mod, i) => {
+              const Icon = ICONS[i];
+              const acc = ACCENTS[i];
+              return (
+                <button
+                  key={mod.title}
+                  onClick={() => navigate(PATHS[i])}
+                  className="flex items-center gap-4 p-4 bg-white border border-[#f0f0f0] rounded-xl hover:border-[#2d4a8a]/30 hover:shadow-sm transition-all duration-150 text-left group"
+                >
+                  <div className={`w-9 h-9 rounded-lg flex items-center justify-center flex-shrink-0 ${acc.bg} ${acc.border} border`}>
+                    <Icon className={`w-4 h-4 ${acc.text}`} />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[10px] font-semibold text-[#999] uppercase tracking-widest">{mod.category}</p>
+                    <h3 className="text-[13px] font-semibold text-[#1a1a1a] leading-snug">{mod.title}</h3>
+                    <p className="text-[11px] text-[#888] mt-0.5 line-clamp-1">{mod.description}</p>
+                  </div>
+                  <div className="w-1 h-8 rounded-full bg-[#f0f0f0] group-hover:bg-[#2d4a8a]/30 transition-colors flex-shrink-0" />
+                </button>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Module grid */}
-        <div className="space-y-2">
-          {t.module.map((mod, i) => (
-            <button
-              key={mod.title}
-              onClick={() => navigate(PATHS[i])}
-              className="w-full flex items-center gap-4 p-4 bg-white rounded-xl border border-slate-100 hover:border-slate-200 hover:shadow-sm transition-all duration-150 text-left group"
-            >
-              <div className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${ICON_COLORS[i]}`}>
-                {ICONS[i]}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-0.5">
-                  <p className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest">{mod.category}</p>
+        {/* Quick links */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+          {[
+            { label: "Fristen", sub: "Zeitleiste", path: "/zeitleiste", icon: Calendar, color: "text-orange-600 bg-orange-50 border-orange-200" },
+            { label: "Aufgaben", sub: "Alle offenen Aufgaben", path: "/aufgaben", icon: CheckSquare, color: "text-green-700 bg-green-50 border-green-200" },
+            { label: "KI-Chat", sub: "Fall-Assistent", path: "/chat/fall-assistent", icon: MessageSquare, color: "text-violet-700 bg-violet-50 border-violet-200" },
+            { label: "Cockpit", sub: "Risiko-Überblick", path: "/cockpit", icon: LayoutDashboard, color: "text-blue-700 bg-blue-50 border-blue-200" },
+          ].map(q => {
+            const Icon = q.icon;
+            return (
+              <button key={q.path} onClick={() => navigate(q.path)}
+                className="flex flex-col items-center gap-2 p-4 bg-white border border-[#f0f0f0] rounded-xl hover:border-[#2d4a8a]/30 hover:shadow-sm transition-all">
+                <div className={`w-9 h-9 rounded-lg flex items-center justify-center border ${q.color}`}>
+                  <Icon className="w-4 h-4" />
                 </div>
-                <h3 className="text-[14px] font-semibold text-slate-900 leading-snug">{mod.title}</h3>
-                <p className="text-[12px] text-slate-500 mt-0.5 leading-snug line-clamp-1">{mod.description}</p>
-              </div>
-              <ChevronRight className="w-4 h-4 text-slate-300 group-hover:text-slate-500 flex-shrink-0 transition-colors" />
-            </button>
-          ))}
+                <div className="text-center">
+                  <p className="text-[12px] font-semibold text-[#1a1a1a]">{q.label}</p>
+                  <p className="text-[10px] text-[#999]">{q.sub}</p>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Footer */}
-        <div className="mt-10 pt-6 border-t border-slate-200 flex items-center justify-between">
-          <p className="text-[11px] text-slate-400">{t.copyright}</p>
-          <p className="text-[11px] text-slate-400">{t.dsgvo}</p>
+        <div className="mt-8 pt-5 border-t border-[#f0f0f0] flex items-center justify-between">
+          <p className="text-[11px] text-[#bbb]">{t.copyright}</p>
+          <p className="text-[11px] text-[#bbb]">{t.dsgvo}</p>
         </div>
       </div>
     </div>

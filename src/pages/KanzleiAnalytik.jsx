@@ -1,10 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { ArrowLeft, TrendingUp, AlertTriangle, Users, FileText, RefreshCw } from "lucide-react";
-import { Link } from "react-router-dom";
+import { TrendingUp, AlertTriangle, Users, FileText, RefreshCw } from "lucide-react";
 import { useJurisdiction } from "../hooks/useJurisdiction";
 import { getT, getTByLanguage } from "../lib/jurisdictionConfig";
-import JurisdictionToggle from "../components/JurisdictionToggle";
 import { useUserProfile } from "../hooks/useUserProfile";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -17,15 +15,15 @@ const COLORS = ["#1a3560", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6"
 
 function StatCard({ icon: Icon, label, value, sub, color = "text-slate-900", accent }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-100 p-5">
+    <div className="bg-white rounded-xl border border-[#f0f0f0] p-5">
       <div className="flex items-center justify-between mb-3">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${accent || "bg-slate-50"}`}>
+        <p className="text-[11px] font-semibold text-[#999] uppercase tracking-widest">{label}</p>
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${accent || "bg-[#fafafa]"}`}>
           <Icon className={`w-4 h-4 ${color}`} />
         </div>
       </div>
-      <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
-      {sub && <p className="text-[11px] text-slate-400 mt-1">{sub}</p>}
+      <p className="text-3xl font-bold text-[#1a1a1a] tracking-tight">{value}</p>
+      {sub && <p className="text-[11px] text-[#999] mt-1">{sub}</p>}
     </div>
   );
 }
@@ -64,12 +62,11 @@ export default function KanzleiAnalytik() {
     return new Date(d.due_date) < new Date();
   }).length;
   const avgPrognose = cases.length
-    ? Math.round(cases.filter(c => c.prognose).reduce((a, c) => a + (c.prognose || 0), 0) / cases.filter(c => c.prognose).length || 0)
+    ? Math.round(cases.filter(c => c.prognose).reduce((a, c) => a + (c.prognose || 0), 0) / (cases.filter(c => c.prognose).length || 1))
     : 0;
 
   const statusData = ["Aktiv", "Vorbereitung", "Abgeschlossen", "Ruhend"].map(s => ({
-    name: s,
-    value: cases.filter(c => c.status === s).length,
+    name: s, value: cases.filter(c => c.status === s).length,
   })).filter(d => d.value > 0);
 
   const rechtsgebietMap = {};
@@ -78,8 +75,7 @@ export default function KanzleiAnalytik() {
   });
   const rechtsgebietData = Object.entries(rechtsgebietMap)
     .map(([name, count]) => ({ name, count }))
-    .sort((a, b) => b.count - a.count)
-    .slice(0, 7);
+    .sort((a, b) => b.count - a.count).slice(0, 7);
 
   const fristenData = [
     { name: "Offen", value: deadlines.filter(d => d.status === "offen" && new Date(d.due_date) >= new Date()).length },
@@ -103,38 +99,30 @@ export default function KanzleiAnalytik() {
     .filter(d => d.status === "offen")
     .map(d => ({ ...d, daysLeft: Math.ceil((new Date(d.due_date) - new Date()) / 86400000) }))
     .filter(d => d.daysLeft >= 0 && d.daysLeft <= 14)
-    .sort((a, b) => a.daysLeft - b.daysLeft)
-    .slice(0, 5);
+    .sort((a, b) => a.daysLeft - b.daysLeft).slice(0, 5);
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center">
-        <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center">
+        <div className="w-6 h-6 border-2 border-slate-200 border-t-[#1a3560] rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F6F8] font-sans pb-12">
-      <div className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-20">
+    <div className="min-h-screen bg-[#fafafa] font-sans pb-12">
+      <div className="border-b border-[#f0f0f0] bg-white sticky top-0 z-20">
         <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <Link to="/" className="text-slate-400 hover:text-slate-700 transition-colors">
-              <ArrowLeft className="w-4 h-4" />
-            </Link>
-            <div className="w-px h-4 bg-slate-200" />
-            <div>
-              <h1 className="text-sm font-bold text-slate-900">{t.module?.[5]?.title || "Kanzlei-Analytik"}</h1>
-              <p className="text-[11px] text-slate-400">{t.mandatesSub(cases.length, activeCases)}</p>
-            </div>
+          <div>
+            <h1 className="text-sm font-bold text-[#1a1a1a]">{t.module?.[5]?.title || "Kanzlei-Analytik"}</h1>
+            <p className="text-[11px] text-[#666]">{t.mandatesSub(cases.length, activeCases)}</p>
           </div>
           <div className="flex items-center gap-2">
-            <JurisdictionToggle />
             <button onClick={() => setShowModal(true)}
               className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
               <TrendingUp className="w-3.5 h-3.5" /> {t.kiFallanalyse}
             </button>
-            <button onClick={loadData} className="p-2 text-slate-400 hover:text-slate-700 transition-colors">
+            <button onClick={loadData} className="p-2 text-[#999] hover:text-[#1a1a1a] transition-colors">
               <RefreshCw className="w-4 h-4" />
             </button>
           </div>
@@ -142,7 +130,6 @@ export default function KanzleiAnalytik() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
-        {/* KPI Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <StatCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={t.ofTotalLabel(cases.length)} accent="bg-blue-50" color="text-blue-600" />
           <StatCard icon={AlertTriangle} label={t.offeeneFristenLabel} value={openDeadlines}
@@ -152,20 +139,19 @@ export default function KanzleiAnalytik() {
           <StatCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={t.totalRecordedLabel} accent="bg-violet-50" color="text-violet-600" />
         </div>
 
-        {/* Row 1: Rechtsgebiet + Status */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
-            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.faelleNachRechtsgebiet}</h2>
+          <div className="md:col-span-2 bg-white rounded-xl border border-[#f0f0f0] p-5">
+            <h2 className="text-[11px] font-semibold text-[#999] uppercase tracking-widest mb-4">{t.faelleNachRechtsgebiet}</h2>
             {filterLabel && (
               <div className="flex items-center justify-between mb-3 px-1">
-                <p className="text-xs font-medium text-slate-700">Filter: <span className="text-[#1a3560]">{filterLabel}</span> · {filteredCases.length} Fälle</p>
-                <button onClick={() => { setFilterLabel(null); setFilteredCases([]); }} className="text-[10px] text-slate-400 hover:text-slate-700 underline">{t.filterResetBtn}</button>
+                <p className="text-xs font-medium text-[#1a1a1a]">Filter: <span className="text-[#1a3560]">{filterLabel}</span> · {filteredCases.length} Fälle</p>
+                <button onClick={() => { setFilterLabel(null); setFilteredCases([]); }} className="text-[10px] text-[#999] hover:text-[#1a1a1a] underline">{t.filterResetBtn}</button>
               </div>
             )}
             {filterLabel && filteredCases.length > 0 && (
               <div className="mb-3 flex flex-wrap gap-1">
                 {filteredCases.map(c => (
-                  <span key={c.id} className="text-[10px] bg-slate-100 text-slate-700 rounded-md px-2 py-0.5">{c.fallname}</span>
+                  <span key={c.id} className="text-[10px] bg-[#fafafa] text-[#666] rounded-md px-2 py-0.5 border border-[#f0f0f0]">{c.fallname}</span>
                 ))}
               </div>
             )}
@@ -179,20 +165,20 @@ export default function KanzleiAnalytik() {
                     setFilterLabel(label);
                     setFilteredCases(cases.filter(c => c.rechtsgebiet === label));
                   }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                  <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} />
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} cursor={{ fill: "#f1f5f9" }} />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#999" }} />
+                  <YAxis tick={{ fontSize: 11, fill: "#999" }} allowDecimals={false} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #f0f0f0", fontSize: 12 }} cursor={{ fill: "#fafafa" }} />
                   <Bar dataKey="count" fill="#1a3560" radius={[4, 4, 0, 0]} name="Fälle" style={{ cursor: "pointer" }} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">{t.noDataShort}</div>
+              <div className="h-48 flex items-center justify-center text-[#999] text-sm">{t.noDataShort}</div>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 p-5">
-            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.statusVerteilung}</h2>
+          <div className="bg-white rounded-xl border border-[#f0f0f0] p-5">
+            <h2 className="text-[11px] font-semibold text-[#999] uppercase tracking-widest mb-4">{t.statusVerteilung}</h2>
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart onClick={(data) => {
@@ -206,26 +192,25 @@ export default function KanzleiAnalytik() {
                     dataKey="value" nameKey="name" paddingAngle={3} style={{ cursor: "pointer" }}>
                     {statusData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #f0f0f0", fontSize: 12 }} />
                   <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">{t.noDataShort}</div>
+              <div className="h-48 flex items-center justify-center text-[#999] text-sm">{t.noDataShort}</div>
             )}
           </div>
         </div>
 
-        {/* Row 2: Prognose-Verteilung + Fristen */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border border-slate-100 p-5">
-            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.prognoseVerteilung}</h2>
+          <div className="bg-white rounded-xl border border-[#f0f0f0] p-5">
+            <h2 className="text-[11px] font-semibold text-[#999] uppercase tracking-widest mb-4">{t.prognoseVerteilung}</h2>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={prognoseRanges} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} />
-                <YAxis tick={{ fontSize: 11, fill: "#94a3b8" }} allowDecimals={false} />
-                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="name" tick={{ fontSize: 11, fill: "#999" }} />
+                <YAxis tick={{ fontSize: 11, fill: "#999" }} allowDecimals={false} />
+                <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #f0f0f0", fontSize: 12 }} />
                 <Bar dataKey="count" name="Fälle" radius={[4, 4, 0, 0]}>
                   {prognoseRanges.map((_, i) => (
                     <Cell key={i} fill={["#dc2626", "#d97706", "#3b82f6", "#16a34a"][i]} />
@@ -235,8 +220,8 @@ export default function KanzleiAnalytik() {
             </ResponsiveContainer>
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 p-5">
-            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.fristenUebersicht}</h2>
+          <div className="bg-white rounded-xl border border-[#f0f0f0] p-5">
+            <h2 className="text-[11px] font-semibold text-[#999] uppercase tracking-widest mb-4">{t.fristenUebersicht}</h2>
             {fristenData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -249,32 +234,30 @@ export default function KanzleiAnalytik() {
                       } />
                     ))}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #f0f0f0", fontSize: 12 }} />
                   <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-48 flex items-center justify-center text-slate-400 text-sm">{t.noDeadlinesShort}</div>
+              <div className="h-48 flex items-center justify-center text-[#999] text-sm">{t.noDeadlinesShort}</div>
             )}
           </div>
         </div>
 
-        {/* Row 3: Upcoming deadlines + Instanz */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="md:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
-            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.naechste14Tage}</h2>
+          <div className="md:col-span-2 bg-white rounded-xl border border-[#f0f0f0] p-5">
+            <h2 className="text-[11px] font-semibold text-[#999] uppercase tracking-widest mb-4">{t.naechste14Tage}</h2>
             {upcoming.length > 0 ? (
-              <div className="divide-y divide-slate-50">
+              <div className="divide-y divide-[#fafafa]">
                 {upcoming.map(d => (
                   <div key={d.id} className="flex items-center justify-between py-2.5">
                     <div>
-                      <p className="text-xs font-semibold text-slate-800">{d.title}</p>
-                      <p className="text-[10px] text-slate-400">{d.frist_type || "Frist"}</p>
+                      <p className="text-xs font-semibold text-[#1a1a1a]">{d.title}</p>
+                      <p className="text-[10px] text-[#999]">{d.frist_type || "Frist"}</p>
                     </div>
                     <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${
                       d.daysLeft <= 2 ? "bg-red-100 text-red-700" :
-                      d.daysLeft <= 5 ? "bg-amber-100 text-amber-700" :
-                      "bg-blue-100 text-blue-700"
+                      d.daysLeft <= 5 ? "bg-amber-100 text-amber-700" : "bg-blue-100 text-blue-700"
                     }`}>
                       {d.daysLeft === 0 ? t.todayShort : `${d.daysLeft}d`}
                     </span>
@@ -282,29 +265,28 @@ export default function KanzleiAnalytik() {
                 ))}
               </div>
             ) : (
-              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">{t.noUpcomingShort}</div>
+              <div className="h-32 flex items-center justify-center text-[#999] text-sm">{t.noUpcomingShort}</div>
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-slate-100 p-5">
-            <h2 className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.instanzVerteilung}</h2>
+          <div className="bg-white rounded-xl border border-[#f0f0f0] p-5">
+            <h2 className="text-[11px] font-semibold text-[#999] uppercase tracking-widest mb-4">{t.instanzVerteilung}</h2>
             {instanzData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
                   <Pie data={instanzData} cx="50%" cy="50%" outerRadius={70} dataKey="value" nameKey="name" paddingAngle={3}>
                     {instanzData.map((_, i) => <Cell key={i} fill={COLORS[i % COLORS.length]} />)}
                   </Pie>
-                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                  <Tooltip contentStyle={{ borderRadius: 8, border: "1px solid #f0f0f0", fontSize: 12 }} />
                   <Legend iconSize={8} iconType="circle" wrapperStyle={{ fontSize: 11 }} />
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-32 flex items-center justify-center text-slate-400 text-sm">{t.noDataShort}</div>
+              <div className="h-32 flex items-center justify-center text-[#999] text-sm">{t.noDataShort}</div>
             )}
           </div>
         </div>
 
-        {/* Akteurs-Analytics */}
         <AkteureAnalytik />
       </div>
 

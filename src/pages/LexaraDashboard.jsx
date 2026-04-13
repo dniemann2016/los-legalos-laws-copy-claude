@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, X, ArrowLeft, Scale, TrendingUp, Clock, AlertCircle } from "lucide-react";
-import { useNavigate, Link } from "react-router-dom";
+import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const STATUS_CONFIG = {
   Aktiv:        { color: "bg-emerald-500", text: "text-emerald-700", bg: "bg-emerald-50", ring: "ring-1 ring-emerald-200" },
@@ -38,8 +38,6 @@ function CaseCard({ caseData, counts }) {
   return (
     <div onClick={() => navigate(`/lexara/case?id=${caseData.id}`)}
       className="bg-white rounded-2xl border border-slate-100 p-5 hover:border-slate-300 hover:shadow-lg cursor-pointer transition-all duration-200 group flex flex-col gap-4">
-
-      {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
           {caseData.aktenzeichen && (
@@ -51,8 +49,6 @@ function CaseCard({ caseData, counts }) {
         </div>
         <PrognoseArc value={caseData.prognose || 0} />
       </div>
-
-      {/* Tags */}
       <div className="flex flex-wrap gap-1.5">
         {caseData.status && (
           <span className={`text-[10px] rounded-full px-2.5 py-0.5 font-semibold ${sc.text} ${sc.bg} ${sc.ring}`}>
@@ -70,8 +66,6 @@ function CaseCard({ caseData, counts }) {
           </span>
         )}
       </div>
-
-      {/* Progress */}
       <div>
         <div className="flex justify-between text-[10px] text-slate-400 mb-1.5">
           <span>Vollständigkeit</span>
@@ -82,8 +76,6 @@ function CaseCard({ caseData, counts }) {
             style={{ width: `${pct}%` }} />
         </div>
       </div>
-
-      {/* Stats */}
       <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-50">
         {[["⚔️", counts.args, "Args"], ["📄", counts.evidence, "Beweise"], ["👤", counts.persons, "Pers."], ["⏰", counts.deadlines, "Fristen"]].map(([icon, v, l]) => (
           <div key={l} className="text-center">
@@ -148,29 +140,24 @@ export default function LexaraDashboard() {
     return matchSearch && matchStatus;
   });
 
-  // KPIs
   const aktiv = cases.filter(c => c.status === "Aktiv").length;
   const avgPrognose = cases.length ? Math.round(cases.reduce((s, c) => s + (c.prognose || 0), 0) / cases.length) : 0;
   const totalArgs = Object.values(caseCounts).reduce((s, c) => s + c.args, 0);
   const totalDeadlines = Object.values(caseCounts).reduce((s, c) => s + c.deadlines, 0);
 
   return (
-    <div className="min-h-screen bg-[#F5F6F8] font-sans">
-      {/* Top bar */}
-      <div className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-20">
+    <div className="min-h-screen bg-[#fafafa] font-sans">
+      <div className="border-b border-[#f0f0f0] bg-white sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-6 py-3.5 flex items-center gap-3">
-          <Link to="/modules" className="text-slate-400 hover:text-slate-700 transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
           <div className="flex items-center gap-2 mr-auto">
             <Scale className="w-4 h-4 text-[#1a3560]" />
-            <h1 className="text-sm font-bold text-slate-900">Fallübersicht</h1>
-            <span className="text-[11px] text-slate-400 ml-1">{cases.length} Mandate</span>
+            <h1 className="text-sm font-bold text-[#1a1a1a]">Fallübersicht</h1>
+            <span className="text-[11px] text-[#999] ml-1">{cases.length} Mandate</span>
           </div>
           <div className="relative hidden sm:block">
             <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
             <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-8 pr-3 w-44 h-8 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-slate-400" />
+              className="pl-8 pr-3 w-44 h-8 text-sm rounded-lg border border-[#f0f0f0] bg-[#fafafa] focus:outline-none focus:border-slate-300" />
           </div>
           <button onClick={() => setShowCreate(true)}
             className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
@@ -180,7 +167,6 @@ export default function LexaraDashboard() {
       </div>
 
       <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
-        {/* KPI strip */}
         {cases.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
@@ -189,40 +175,29 @@ export default function LexaraDashboard() {
               { icon: <AlertCircle className="w-4 h-4 text-violet-500" />, label: "Argumente gesamt", value: totalArgs, sub: "erfasst" },
               { icon: <Clock className="w-4 h-4 text-amber-500" />, label: "Offene Fristen", value: totalDeadlines, sub: "aktiv" },
             ].map((k, i) => (
-              <div key={i} className="bg-white rounded-xl border border-slate-100 px-4 py-3 flex items-center gap-3">
-                <div className="w-8 h-8 rounded-lg bg-slate-50 flex items-center justify-center flex-shrink-0">{k.icon}</div>
+              <div key={i} className="bg-white rounded-xl border border-[#f0f0f0] px-4 py-3 flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-[#fafafa] flex items-center justify-center flex-shrink-0">{k.icon}</div>
                 <div>
-                  <p className="text-lg font-bold text-slate-900 leading-none">{k.value}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5">{k.label}</p>
+                  <p className="text-lg font-bold text-[#1a1a1a] leading-none">{k.value}</p>
+                  <p className="text-[10px] text-[#999] mt-0.5">{k.label}</p>
                 </div>
               </div>
             ))}
           </div>
         )}
 
-        {/* Filters */}
         <div className="flex items-center gap-2 flex-wrap">
-          {["all", "Aktiv", "Vorbereitung", "Ruhend", "Abgeschlossen"].map(s => {
-            const sc = s !== "all" ? STATUS_CONFIG[s] : null;
-            return (
-              <button key={s} onClick={() => setStatusFilter(s)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${statusFilter === s
-                  ? "bg-[#1a3560] text-white border-[#1a3560]"
-                  : "border-slate-200 text-slate-500 hover:border-slate-400 bg-white"}`}>
-                {s === "all" ? "Alle" : s}
-                {s !== "all" && <span className="ml-1.5 text-[10px] opacity-60">{cases.filter(c => c.status === s).length}</span>}
-              </button>
-            );
-          })}
-          {/* Mobile search */}
-          <div className="relative sm:hidden ml-auto">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-            <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-8 pr-3 w-36 h-8 text-sm rounded-full border border-slate-200 bg-white focus:outline-none focus:border-slate-400" />
-          </div>
+          {["all", "Aktiv", "Vorbereitung", "Ruhend", "Abgeschlossen"].map(s => (
+            <button key={s} onClick={() => setStatusFilter(s)}
+              className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${statusFilter === s
+                ? "bg-[#1a3560] text-white border-[#1a3560]"
+                : "border-[#f0f0f0] text-[#666] hover:border-slate-300 bg-white"}`}>
+              {s === "all" ? "Alle" : s}
+              {s !== "all" && <span className="ml-1.5 text-[10px] opacity-60">{cases.filter(c => c.status === s).length}</span>}
+            </button>
+          ))}
         </div>
 
-        {/* Cases grid */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="w-6 h-6 border-2 border-slate-200 border-t-[#1a3560] rounded-full animate-spin" />
@@ -235,49 +210,48 @@ export default function LexaraDashboard() {
           </div>
         ) : (
           <div className="text-center py-24">
-            <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
+            <div className="w-14 h-14 bg-white border border-[#f0f0f0] rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-sm">
               <Scale className="w-6 h-6 text-slate-300" />
             </div>
-            <p className="text-sm font-semibold text-slate-700 mb-1">
-              {search || statusFilter !== "all" ? "Keine Treffer" : "Noch keine Faelle"}
+            <p className="text-sm font-semibold text-[#1a1a1a] mb-1">
+              {search || statusFilter !== "all" ? "Keine Treffer" : "Noch keine Fälle"}
             </p>
-            <p className="text-xs text-slate-400">
+            <p className="text-xs text-[#999]">
               {search || statusFilter !== "all" ? "Filter oder Suche anpassen" : "Neuer Fall Button anklicken um zu beginnen"}
             </p>
           </div>
         )}
       </div>
 
-      {/* Create modal */}
       {showCreate && (
         <div className="fixed inset-0 bg-black/40 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
           onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
           <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full sm:max-w-md shadow-2xl">
             <div className="flex items-center justify-between mb-5">
               <div>
-                <h2 className="font-bold text-slate-900">Neuen Fall anlegen</h2>
-                <p className="text-xs text-slate-400 mt-0.5">Grunddaten — alles weitere im Fall</p>
+                <h2 className="font-bold text-[#1a1a1a]">Neuen Fall anlegen</h2>
+                <p className="text-xs text-[#999] mt-0.5">Grunddaten — alles weitere im Fall</p>
               </div>
               <button onClick={() => setShowCreate(false)} className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-slate-100">
                 <X className="w-4 h-4" />
               </button>
             </div>
             <div className="space-y-3">
-              <input className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560] transition-colors"
+              <input className="w-full border border-[#f0f0f0] rounded-xl px-3 py-2.5 text-sm bg-[#fafafa] focus:outline-none focus:border-slate-300 transition-colors"
                 placeholder="Fallname *" value={newCase.fallname} onChange={e => setNewCase({ ...newCase, fallname: e.target.value })}
                 onKeyDown={e => e.key === "Enter" && handleCreate()} />
               <div className="grid grid-cols-2 gap-3">
-                <input className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560]"
+                <input className="border border-[#f0f0f0] rounded-xl px-3 py-2.5 text-sm bg-[#fafafa] focus:outline-none focus:border-slate-300"
                   placeholder="Aktenzeichen" value={newCase.aktenzeichen} onChange={e => setNewCase({ ...newCase, aktenzeichen: e.target.value })} />
-                <input className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560]"
+                <input className="border border-[#f0f0f0] rounded-xl px-3 py-2.5 text-sm bg-[#fafafa] focus:outline-none focus:border-slate-300"
                   placeholder="Rechtsgebiet" value={newCase.rechtsgebiet} onChange={e => setNewCase({ ...newCase, rechtsgebiet: e.target.value })} />
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <select className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none"
+                <select className="border border-[#f0f0f0] rounded-xl px-3 py-2.5 text-sm bg-[#fafafa] focus:outline-none"
                   value={newCase.status} onChange={e => setNewCase({ ...newCase, status: e.target.value })}>
                   {["Aktiv", "Vorbereitung", "Abgeschlossen", "Ruhend"].map(s => <option key={s}>{s}</option>)}
                 </select>
-                <select className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none"
+                <select className="border border-[#f0f0f0] rounded-xl px-3 py-2.5 text-sm bg-[#fafafa] focus:outline-none"
                   value={newCase.instanz} onChange={e => setNewCase({ ...newCase, instanz: e.target.value })}>
                   {["Erstinstanz", "Berufung", "Revision"].map(s => <option key={s}>{s}</option>)}
                 </select>
@@ -289,7 +263,7 @@ export default function LexaraDashboard() {
                 {creating ? "Erstelle…" : "Fall erstellen"}
               </button>
               <button onClick={() => setShowCreate(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-500 hover:bg-slate-50 transition-colors">
+                className="px-4 py-2.5 rounded-xl border border-[#f0f0f0] text-sm text-[#666] hover:bg-[#fafafa] transition-colors">
                 Abbrechen
               </button>
             </div>
