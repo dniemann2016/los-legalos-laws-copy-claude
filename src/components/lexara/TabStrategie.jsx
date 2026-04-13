@@ -37,6 +37,8 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
   const [chartView, setChartView] = useState("overlap");
   const [showTacticalInfo, setShowTacticalInfo] = useState(false);
   const [activeView, setActiveView] = useState("strategie");
+  const [kiPrognose, setKiPrognose] = useState(null);
+  const [kiPrognoseLoading, setKiPrognoseLoading] = useState(false);
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -65,6 +67,63 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
     const final = Math.min(99, Math.max(1, Math.round(raw)));
     setAlgorithm({argBasis:Math.round(argBasis),beweisBoost:Math.round((beweisBoost-1)*100),kantenEffekt:Math.round(kantenEffekt*100)+"%",zeugenMult:Math.round(zeugenMult*100)+"%",richterAdj:Math.round(richterAdj*100)+"%",fristenFaktor:Math.round(fristenFaktor*100)+"%"});
     if (kiMode) setPrognose(final);
+  };
+
+  const runKiPrognose = async () => {
+    setKiPrognoseLoading(true);
+    setKiPrognose(null);
+    const eigenA = args.filter(a=>a.side==="eigen");
+    const gegnerA = args.filter(a=>a.side==="gegner");
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Richter und Rechtsanwalt. Analysiere diesen Prozess objektiv und vollständig.
+
+Fall: ${caseData?.fallname || ""}
+Rechtsgebiet: ${caseData?.rechtsgebiet || ""} | Instanz: ${caseData?.instanz || ""}
+Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
+
+EIGENE ARGUMENTE:
+${eigenA.map(a=>`- ${a.title} (Stärke: ${a.strength||5}/10): ${a.description||""}`).join("\n") || "Keine"}
+
+GEGNERARGUMENTE:
+${gegnerA.map(a=>`- ${a.title} (Stärke: ${a.strength||5}/10): ${a.description||""}`).join("\n") || "Keine"}
+
+BEWEISE: ${evidence.slice(0,10).map(e=>`${e.title} (${e.type||""}, ${e.weight||5}/10)`).join(", ") || "Keine"}
+FRISTEN: ${deadlines.length} gesamt, ${deadlines.filter(d=>d.status==="versaeumt").length} versäumt
+Richter-Klägerquote: ${caseData?.richter_klaeger_rate || 50}%
+
+Beurteile realistische Erfolgswahrscheinlichkeit, die 3 stärksten Gegenargumente der Gegenseite (mit Schwere: hoch/mittel/niedrig), die 2 kritischsten Schwachstellen unserer Position, und eine kurze strategische Empfehlung.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          erfolgswahrscheinlichkeit: { type: "number", minimum: 0, maximum: 100 },
+          begruendung: { type: "string" },
+          staerkste_gegenargumente: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                gefahr: { type: "string" },
+                schwere: { type: "string" }
+              }
+            }
+          },
+          kritische_schwachstellen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                beschreibung: { type: "string" }
+              }
+            }
+          },
+          strategische_empfehlung: { type: "string" }
+        }
+      }
+    });
+    setKiPrognose(result);
+    setKiPrognoseLoading(false);
   };
 
   const savePrognose = async () => {
@@ -164,6 +223,98 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
                 </Button>
               </div>
             </div>
+          </div>
+
+          {/* KI-Urteilsprognose & Gegenargumente */}
+          <div className="bg-white rounded-2xl border border-gray-100 p-6">
+            <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-700">🤖 KI-Urteilsprognose & Gegenargumente</h3>
+                <p className="text-[10px] text-gray-400 mt-0.5">Ganzheitliche KI-Analyse des gesamten Falls · Erfolgswahrscheinlichkeit + kritische Gegenargumente</p>
+              </div>
+              <Button onClick={runKiPrognose} disabled={kiPrognoseLoading}
+                className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs">
+                {kiPrognoseLoading ? "Analysiere…" : "✨ KI-Analyse starten"}
+              </Button>
+            </div>
+            {!kiPrognose && !kiPrognoseLoading && (
+              <div className="text-center py-8 text-gray-400">
+                <p className="text-2xl mb-2">⚖️</p>
+                <p className="text-sm">Noch keine KI-Analyse durchgeführt.</p>
+                <p className="text-xs mt-1">Klicken Sie auf „KI-Analyse starten" für eine vollständige Fallbewertung.</p>
+              </div>
+            )}
+            {kiPrognoseLoading && (
+              <div className="text-center py-8 text-violet-500">
+                <div className="inline-block w-6 h-6 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-2" />
+                <p className="text-xs">KI analysiert den gesamten Fall…</p>
+              </div>
+            )}
+            {kiPrognose && (
+              <div className="space-y-4">
+                <div className="flex items-start gap-5">
+                  <div className="relative flex-shrink-0" style={{width:80,height:80}}>
+                    <svg width="80" height="80" style={{transform:"rotate(-90deg)"}}>
+                      <circle cx="40" cy="40" r="32" fill="none" stroke="#e5e7eb" strokeWidth="5"/>
+                      <circle cx="40" cy="40" r="32" fill="none"
+                        stroke={(kiPrognose.erfolgswahrscheinlichkeit||0)>=60?"#16a34a":(kiPrognose.erfolgswahrscheinlichkeit||0)>=40?"#d97706":"#dc2626"}
+                        strokeWidth="5"
+                        strokeDasharray={2*Math.PI*32}
+                        strokeDashoffset={2*Math.PI*32*(1-(kiPrognose.erfolgswahrscheinlichkeit||0)/100)}
+                        strokeLinecap="round"/>
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-base font-black text-gray-900">{Math.round(kiPrognose.erfolgswahrscheinlichkeit||0)}%</span>
+                      <span className="text-[9px] text-gray-400">KI</span>
+                    </div>
+                  </div>
+                  <div className="flex-1">
+                    <p className={`text-sm font-bold ${(kiPrognose.erfolgswahrscheinlichkeit||0)>=60?"text-green-700":(kiPrognose.erfolgswahrscheinlichkeit||0)>=40?"text-amber-700":"text-red-700"}`}>
+                      {(kiPrognose.erfolgswahrscheinlichkeit||0)>=60?"Günstige Prozesslage":(kiPrognose.erfolgswahrscheinlichkeit||0)>=40?"Ausgeglichene Lage":"Kritische Prozesslage"}
+                    </p>
+                    <p className="text-xs text-gray-600 mt-1 leading-relaxed">{kiPrognose.begruendung}</p>
+                  </div>
+                </div>
+
+                {(kiPrognose.staerkste_gegenargumente||[]).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-red-700 mb-2">⚔️ Stärkste Gegenargumente der Gegenseite</p>
+                    <div className="space-y-2">
+                      {kiPrognose.staerkste_gegenargumente.map((g,i) => (
+                        <div key={i} className={`rounded-xl border p-3 ${g.schwere==="hoch"?"bg-red-50 border-red-200":g.schwere==="mittel"?"bg-amber-50 border-amber-200":"bg-gray-50 border-gray-200"}`}>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase ${g.schwere==="hoch"?"bg-red-200 text-red-800":g.schwere==="mittel"?"bg-amber-200 text-amber-800":"bg-gray-200 text-gray-600"}`}>{g.schwere}</span>
+                            <span className="text-xs font-semibold text-gray-800">{g.titel}</span>
+                          </div>
+                          <p className="text-[11px] text-gray-600">{g.gefahr}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {(kiPrognose.kritische_schwachstellen||[]).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-amber-700 mb-2">⚠️ Kritische Schwachstellen unserer Position</p>
+                    <div className="space-y-2">
+                      {kiPrognose.kritische_schwachstellen.map((s,i) => (
+                        <div key={i} className="bg-amber-50 border border-amber-100 rounded-xl p-3">
+                          <p className="text-xs font-semibold text-amber-800">{s.titel}</p>
+                          <p className="text-[11px] text-amber-700 mt-0.5">{s.beschreibung}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {kiPrognose.strategische_empfehlung && (
+                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                    <p className="text-xs font-semibold text-blue-800 mb-1">💡 Strategische Empfehlung</p>
+                    <p className="text-xs text-blue-700">{kiPrognose.strategische_empfehlung}</p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Prozessstärke-Gesamtscore */}
