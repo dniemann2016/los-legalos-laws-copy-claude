@@ -11,7 +11,7 @@ function ScoreBar({ value, max = 10, color = "bg-green-500" }) {
   );
 }
 
-function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
+function ArgCard({ arg, onDelete, onSave, onKiWeight, linkedEvidence = [] }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: arg.title, description: arg.description || "", side: arg.side || "eigen", type: arg.type || "Rechtsargument", strength: arg.strength || 5, zeitpunkt: arg.zeitpunkt || "", anmerkungen: arg.anmerkungen || "" });
   const [analyzing, setAnalyzing] = useState(false);
@@ -159,6 +159,28 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
                       <span>{v}</span>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {linkedEvidence.length > 0 && (
+                <div className="mt-3 bg-blue-50 border border-blue-100 rounded-xl p-3">
+                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2">📋 Beweise</p>
+                  <div className="space-y-1.5">
+                    {linkedEvidence.map(ev => (
+                      <div key={ev.id} className="flex items-start gap-2">
+                        <span className="text-blue-500 flex-shrink-0 mt-0.5">✓</span>
+                        <div className="flex-1">
+                          <p className="text-xs font-medium text-blue-900">{ev.title}</p>
+                          {ev.description && <p className="text-[10px] text-blue-600 mt-0.5">{ev.description}</p>}
+                          <div className="flex gap-3 mt-0.5">
+                            {ev.type && <span className="text-[10px] text-blue-400">{ev.type}</span>}
+                            {ev.source && <span className="text-[10px] text-blue-400">Quelle: {ev.source}</span>}
+                            {ev.weight && <span className="text-[10px] text-blue-400">Gewicht: {ev.weight}/10</span>}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -541,28 +563,11 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
           const linkedEv = linkedEvidenceForArg(arg.id);
           return (
             <div key={arg.id}>
-              <ArgCard arg={arg} onDelete={del} onSave={() => loadAll()} onKiWeight={arg} />
+              <ArgCard arg={arg} onDelete={del} onSave={() => loadAll()} onKiWeight={arg} linkedEvidence={linkedEv} />
               {arg.ki_reasoning && (
                 <div className="ml-0 mt-2 bg-violet-50 border border-violet-100 rounded-lg p-3 text-xs">
                   <p className="font-semibold text-violet-900 mb-1">KI-Begründung (Stärke {arg.ki_strength}/10):</p>
                   <p className="text-violet-700">{arg.ki_reasoning}</p>
-                </div>
-              )}
-              {linkedEv.length > 0 && (
-                <div className="ml-0 mt-2 bg-blue-50 border border-blue-100 rounded-lg p-3 text-xs">
-                  <p className="font-semibold text-blue-900 mb-2">📋 Verknüpfte Beweise:</p>
-                  <div className="space-y-1">
-                    {linkedEv.map(ev => (
-                      <div key={ev.id} className="flex items-start gap-2">
-                        <span className="text-blue-600 flex-shrink-0">✓</span>
-                        <div className="flex-1">
-                          <p className="font-medium text-blue-900">{ev.title}</p>
-                          {ev.description && <p className="text-blue-700 text-[10px]">{ev.description}</p>}
-                          <p className="text-blue-600 text-[10px] mt-0.5">Gewicht: {ev.weight || 5}/10</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               )}
             </div>
