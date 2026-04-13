@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Users, ArrowRight } from "lucide-react";
 
-const KAT_ICONS = { "Richter": "⚖️", "Anwalt": "👔", "Kanzlei": "🏛️", "Zeuge": "👁️", "Sachverständiger": "🔬", "Partei": "🏢", "Sonstiges": "📋" };
+const KAT_ICONS = { Richter: "⚖️", Anwalt: "👔", Kanzlei: "🏛️", Zeuge: "👁️", Sachverstaendiger: "🔬", Partei: "🏢", Sonstiges: "📋" };
 const DYNAMIK_COLOR = {
   positiv: "bg-green-100 text-green-800 border-green-200",
   neutral: "bg-gray-100 text-gray-600 border-gray-200",
@@ -18,17 +18,13 @@ export default function AkteureBeziehungen({ profile, allProfiles, cases }) {
 
   const sharedCaseActors = allProfiles.filter(p => {
     if (p.id === profile.id) return false;
-    const profileCases = cases.filter(c =>
-      c.richter_name === profile.name || c.gegner_anwalt === profile.name
-    );
-    return profileCases.some(c =>
-      c.richter_name === p.name || c.gegner_anwalt === p.name
-    );
+    const profileCases = cases.filter(c => c.richter_name === profile.name);
+    return profileCases.some(c => c.richter_name === p.name);
   });
 
   const experienceActors = allProfiles.filter(p => {
     if (p.id === profile.id) return false;
-    const expTexts = (profile.erfahrungen || []).map(e => e.text + " " + e.fall_kontext).join(" ").toLowerCase();
+    const expTexts = (profile.erfahrungen || []).map(e => (e.text || "") + " " + (e.fall_kontext || "")).join(" ").toLowerCase();
     return expTexts.includes(p.name.toLowerCase());
   });
 
@@ -39,9 +35,8 @@ export default function AkteureBeziehungen({ profile, allProfiles, cases }) {
 
     const allActorsInfo = allProfiles
       .filter(p => p.id !== profile.id)
-      .map(p => `- ${p.name} (${p.kategorie || "Richter"}, ${p.gericht})${
-        (p.erfahrungen || []).length > 0 ? ` | ${p.erfahrungen.length} Erfahrungen` : ""
-      }`).join("\n");
+      .map(p => `- ${p.name} (${p.kategorie || "Richter"}, ${p.gericht})${(p.erfahrungen || []).length > 0 ? ` | ${p.erfahrungen.length} Erfahrungen` : ""}`)
+      .join("\n");
 
     const sharedCasesInfo = cases
       .filter(c => c.richter_name === profile.name)
@@ -49,7 +44,7 @@ export default function AkteureBeziehungen({ profile, allProfiles, cases }) {
       .join("\n") || "Keine direkt verknuepften Faelle.";
 
     const expText = (profile.erfahrungen || [])
-      .map(e => `[${e.datum}] ${e.autor || "Anonym"}: "${e.text}" (Vergleichsbereitschaft: ${e.vergleichsbereitschaft}/10, Geschwindigkeit: ${e.entscheidungsgeschwindigkeit}/10)`)
+      .map(e => `[${e.datum}] ${e.autor || "Anonym"}: ${e.text} (Vergleichsbereitschaft: ${e.vergleichsbereitschaft}/10)`)
       .join("\n") || "Keine Erfahrungen dokumentiert.";
 
     const res = await base44.integrations.Core.InvokeLLM({
@@ -64,20 +59,20 @@ Klaegerquote: ${profile.klaeger_rate || 0}%
 Vergleichsrate: ${profile.vergleich_rate || 0}%
 Bekannt fuer: ${profile.bekannt_fuer || "-"}
 
-KANZLEI-ERFAHRUNGEN MIT DIESEM AKTEUR:
+KANZLEI-ERFAHRUNGEN:
 ${expText}
 
 VERKNUEPFTE FAELLE:
 ${sharedCasesInfo}
 
-ANDERE BEKANNTE AKTEURE IM SYSTEM:
+ANDERE AKTEURE IM SYSTEM:
 ${allActorsInfo || "Noch keine anderen Akteure erfasst."}
 
 AUFGABEN:
-1. Identifiziere alle Akteure, mit denen ${profile.name} wahrscheinlich oder nachweislich interagiert hat (basierend auf gemeinsamen Faellen, Nennungen in Erfahrungen, Institution, Rechtsgebiet).
-2. Fuer jeden relevanten Akteur: Analysiere die Beziehungsdynamik. Wie verhalten sie sich zueinander? Gibt es Muster?
-3. Erkenne taktisch relevante Konstellationen: Welche Kombinationen sind vorteilhaft fuer unsere Partei? Welche sind riskant?
-4. Gib eine Gesamteinschaetzung des Akteursnetzwerks und strategische Empfehlungen.`,
+1. Identifiziere Akteure mit denen ${profile.name} interagiert hat (gemeinsame Faelle, Nennungen, Institution, Rechtsgebiet).
+2. Analysiere fuer jeden die Beziehungsdynamik und Verhaltensmuster.
+3. Erkenne taktisch relevante Konstellationen: vorteilhaft vs. riskant.
+4. Gesamteinschaetzung und strategische Empfehlungen.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -137,7 +132,7 @@ AUFGABEN:
             <div className="flex flex-wrap gap-2">
               {relevantActors.map(a => (
                 <span key={a.id} className="flex items-center gap-1.5 text-xs bg-indigo-50 text-indigo-800 border border-indigo-100 rounded-full px-2.5 py-1">
-                  {KAT_ICONS[a.kategorie || "Richter"]} {a.name}
+                  {KAT_ICONS[a.kategorie] || "📋"} {a.name}
                 </span>
               ))}
             </div>
@@ -148,7 +143,7 @@ AUFGABEN:
           <p className="text-sm text-gray-400 text-center py-8">
             {allProfiles.length <= 1
               ? "Legen Sie weitere Akteure an, damit die KI Beziehungen analysieren kann."
-              : "Klicken Sie auf Beziehungen analysieren um Dynamiken zwischen Akteuren zu erkennen."
+              : "Klicken Sie auf Beziehungen analysieren, um Dynamiken zu erkennen."
             }
           </p>
         )}
@@ -219,7 +214,7 @@ AUFGABEN:
 
           {result.netzwerk_einschaetzung && (
             <div className="bg-gray-900 text-white rounded-xl p-4">
-              <p className="text-xs font-semibold text-gray-300 mb-1">Netzwerk-Gesamteinschätzung</p>
+              <p className="text-xs font-semibold text-gray-300 mb-1">Netzwerk-Gesamteinschaetzung</p>
               <p className="text-sm">{result.netzwerk_einschaetzung}</p>
             </div>
           )}
