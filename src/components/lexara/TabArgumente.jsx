@@ -13,7 +13,7 @@ function ScoreBar({ value, max = 10, color = "bg-green-500" }) {
 
 function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ title: arg.title, description: arg.description || "", side: arg.side || "eigen", type: arg.type || "Rechtsargument", strength: arg.strength || 5 });
+  const [form, setForm] = useState({ title: arg.title, description: arg.description || "", side: arg.side || "eigen", type: arg.type || "Rechtsargument", strength: arg.strength || 5, zeitpunkt: arg.zeitpunkt || "", anmerkungen: arg.anmerkungen || "" });
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [kiWeighting, setKiWeighting] = useState(false);
@@ -24,7 +24,7 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
   const hasDiscrepancy = discrepancy >= 2;
 
   const save = async () => {
-    await base44.entities.Argument.update(arg.id, form);
+    await base44.entities.Argument.update(arg.id, { ...form, zeitpunkt: form.zeitpunkt || null, anmerkungen: form.anmerkungen || null });
     setEditing(false);
     onSave();
   };
@@ -64,6 +64,16 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
         <div className="space-y-2">
           <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Titel *" />
           <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm" rows={2} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Beschreibung" />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">Zeitpunkt der Argumentation</label>
+              <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs bg-white" value={form.zeitpunkt} onChange={e => setForm({ ...form, zeitpunkt: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">Anmerkungen (Risiken / Vorteile)</label>
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs bg-white" placeholder="z.B. Beweis fehlt noch, starkes Argument..." value={form.anmerkungen} onChange={e => setForm({ ...form, anmerkungen: e.target.value })} />
+            </div>
+          </div>
           <div className="flex gap-2 flex-wrap">
             <select className="border border-gray-200 rounded-lg px-2 py-1.5 text-xs bg-white" value={form.side} onChange={e => setForm({ ...form, side: e.target.value })}>
               <option value="eigen">Eigen</option><option value="gegner">Gegner</option>
@@ -96,6 +106,14 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
               </div>
               <h4 className="font-medium text-gray-900 text-sm">{arg.title}</h4>
               {arg.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{arg.description}</p>}
+              <div className="flex flex-wrap gap-3 mt-1">
+                {arg.zeitpunkt && (
+                  <span className="text-[10px] text-gray-400 flex items-center gap-1">🗓 {new Date(arg.zeitpunkt).toLocaleDateString("de-DE")}</span>
+                )}
+                {arg.anmerkungen && (
+                  <span className="text-[10px] text-amber-600 flex items-center gap-1">📝 {arg.anmerkungen}</span>
+                )}
+              </div>
 
               {/* Score comparison */}
               <div className="mt-3 space-y-1.5">
@@ -161,7 +179,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [evidence, setEvidence] = useState([]);
   const [filter, setFilter] = useState("all");
   const [showAdd, setShowAdd] = useState(false);
-  const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
+  const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument", zeitpunkt: "", anmerkungen: "" });
   const [extractError, setExtractError] = useState(null);
   const [batchRating, setBatchRating] = useState(false);
   const [showExtraction, setShowExtraction] = useState(false);
@@ -418,6 +436,16 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
           <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Titel *" value={newArg.title} onChange={e => setNewArg({ ...newArg, title: e.target.value })} />
           <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Beschreibung" rows={2} value={newArg.description} onChange={e => setNewArg({ ...newArg, description: e.target.value })} />
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">Zeitpunkt der Argumentation</label>
+              <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs bg-white" value={newArg.zeitpunkt} onChange={e => setNewArg({ ...newArg, zeitpunkt: e.target.value })} />
+            </div>
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">Anmerkungen (Risiken / Vorteile)</label>
+              <input className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs bg-white" placeholder="z.B. Beweis fehlt noch..." value={newArg.anmerkungen} onChange={e => setNewArg({ ...newArg, anmerkungen: e.target.value })} />
+            </div>
+          </div>
           <div className="flex gap-2 flex-wrap items-center">
             <select className="border border-gray-200 rounded-lg px-3 py-2 text-xs bg-white" value={newArg.side} onChange={e => setNewArg({ ...newArg, side: e.target.value })}>
               <option value="eigen">Eigen</option><option value="gegner">Gegner</option>

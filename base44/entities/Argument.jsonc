@@ -62,6 +62,14 @@
     "is_contradiction": {
       "type": "boolean",
       "title": "Widerspruch"
+    },
+    "zeitpunkt": {
+      "type": "string",
+      "title": "Zeitpunkt der Argumentation (Datum)"
+    },
+    "anmerkungen": {
+      "type": "string",
+      "title": "Anmerkungen (Risiken / Vorteile)"
     }
   },
   "required": [
