@@ -504,10 +504,10 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
                 <p className="text-amber-600">⚠️ KI-Vorschläge – müssen juristisch geprüft werden</p>
               </div>
             )}
-            <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.csv" className="hidden" onChange={e => setFile(e.target.files[0])} />
+            <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff" className="hidden" onChange={e => setFile(e.target.files[0])} />
             <div>
               <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
-                <Upload className="w-4 h-4" /> Dokument hochladen <span className="text-gray-400 text-xs">PDF, DOCX, TXT, CSV · max 20MB</span>
+                <Upload className="w-4 h-4" /> Dokument hochladen <span className="text-gray-400 text-xs">PDF, DOCX, TXT, CSV, JPG, PNG, WEBP · max 20MB</span>
               </button>
               {file && <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">📄 {file.name} ({Math.round(file.size / 1024)}KB) <button onClick={() => setFile(null)}><X className="w-3 h-3" /></button></div>}
             </div>
