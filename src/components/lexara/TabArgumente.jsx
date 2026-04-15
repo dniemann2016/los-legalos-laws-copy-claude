@@ -195,7 +195,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [showExtraction, setShowExtraction] = useState(false);
   const [extractMode, setExtractMode] = useState("ki");
   const [dsgvo, setDsgvo] = useState(false);
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [text, setText] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState(null);
@@ -217,17 +217,17 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
   const handleExtract = async () => {
     if (extractMode === "ki" && !dsgvo) { setExtractError("Bitte DSGVO-Hinweis akzeptieren"); return; }
-    if (!file && !text.trim()) { setExtractError("Dokument oder Text erforderlich"); return; }
+    if (!files.length && !text.trim()) { setExtractError("Dokument oder Text erforderlich"); return; }
     setExtracting(true);
     setExtractError(null);
     try {
-      let fileUrl = null;
-      if (file) {
-        const res = await base44.integrations.Core.UploadFile({ file });
-        fileUrl = res.file_url;
+      let fileUrls = [];
+      if (files.length > 0) {
+        const uploads = await Promise.all(files.map(f => base44.integrations.Core.UploadFile({ file: f })));
+        fileUrls = uploads.map(r => r.file_url);
       }
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein erfahrener Rechtsanwalt. Analysiere dieses Vertragsdokument gründlich und extrahiere:
+        prompt: `Du bist ein erfahrener Rechtsanwalt. Analysiere diese Dokumente gründlich und extrahiere:
 1. EIGENE ARGUMENTE (welche Vertragsklauseln unterstützen unsere Position?)
 2. GEGENSEITE-ARGUMENTE (was könnte der Gegner argumentieren?)
 3. BEWEISE (konkrete Klauseln, Unterschriften, Daten aus dem Vertrag - dies sind die Belege!)
@@ -235,8 +235,8 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
 Fallkontext: ${caseData?.fallname || ""} | ${caseData?.rechtsgebiet || ""}
 Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
-${!fileUrl ? "TEXT: " + text : ""}`,
-        file_urls: fileUrl ? [fileUrl] : undefined,
+${!fileUrls.length ? "TEXT: " + text : ""}`,
+        file_urls: fileUrls.length ? fileUrls : undefined,
         response_json_schema: {
           type: "object",
           properties: {
@@ -291,7 +291,7 @@ ${!fileUrl ? "TEXT: " + text : ""}`,
       });
       if (!result) { setExtractError("KI-Analyse fehlgeschlagen. Bitte erneut versuchen."); setExtracting(false); return; }
       setExtracted(result);
-      setFile(null);
+      setFiles([]);
       setText("");
     } catch (error) {
       setExtractError("Fehler bei der Analyse: " + (error?.message || "Unbekannter Fehler"));
@@ -504,12 +504,21 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
                 <p className="text-amber-600">⚠️ KI-Vorschläge – müssen juristisch geprüft werden</p>
               </div>
             )}
-            <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff" className="hidden" onChange={e => setFile(e.target.files[0])} />
+            <input ref={fileRef} type="file" accept=".pdf,.docx,.txt,.csv,.jpg,.jpeg,.png,.webp,.gif,.bmp,.tiff" multiple className="hidden" onChange={e => setFiles(prev => [...prev, ...Array.from(e.target.files)])} />
             <div>
               <button onClick={() => fileRef.current?.click()} className="flex items-center gap-2 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">
-                <Upload className="w-4 h-4" /> Dokument hochladen <span className="text-gray-400 text-xs">PDF, DOCX, TXT, CSV, JPG, PNG, WEBP · max 20MB</span>
+                <Upload className="w-4 h-4" /> Dokumente hochladen <span className="text-gray-400 text-xs">PDF, DOCX, TXT, CSV, JPG, PNG · mehrere möglich</span>
               </button>
-              {file && <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">📄 {file.name} ({Math.round(file.size / 1024)}KB) <button onClick={() => setFile(null)}><X className="w-3 h-3" /></button></div>}
+              {files.length > 0 && (
+                <div className="mt-2 space-y-1">
+                  {files.map((f, i) => (
+                    <div key={i} className="flex items-center gap-2 text-xs text-gray-600">
+                      📄 {f.name} ({Math.round(f.size / 1024)}KB)
+                      <button onClick={() => setFiles(prev => prev.filter((_, j) => j !== i))}><X className="w-3 h-3" /></button>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <textarea className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm min-h-[70px]" placeholder="Oder Text manuell einfügen..." value={text} onChange={e => setText(e.target.value)} />
             <Button onClick={handleExtract} disabled={extracting} className="w-full bg-blue-600 text-white hover:bg-blue-700 gap-2 text-sm">
