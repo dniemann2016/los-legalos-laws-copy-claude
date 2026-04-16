@@ -14,21 +14,21 @@ import Tab9Cockpit from "../components/lexara/Tab9Cockpit";
 import Tab10Abschluss from "../components/lexara/Tab10Abschluss";
 import TabHistory from "../components/lexara/TabHistory";
 import TabKIProtokoll from "../components/lexara/TabKIProtokoll";
-import TabZeitstrahl from "../components/lexara/TabZeitstrahl";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
   {id:1, label:"Fallerfassung",  subs:["Basisdaten","Dokumente & KI-Analyse"]},
-  {id:2, label:"Fallsubstanz",   subs:["Argumente & Beweise","Personen","Fristen"]},
+  {id:2, label:"Fallsubstanz",   subs:["Argumente & Beweise","Personen","Fristen","Dokumentenanalyse / Zeitstrahl"]},
   {id:3, label:"Gegneranalyse",  subs:["Profil & Simulation","KI-Berater","Verhaltenstracking","Risikomatrix"]},
   {id:4, label:"Rechtl. Analyse",subs:["Compliance-Prüfung","Kostenanalyse","Präzedenzfälle"]},
-  {id:5, label:"Strategie",      subs:["Strategie & Graph","Was-wäre-wenn","Zeitstrahl"]},
+  {id:5, label:"Strategie",      subs:["Strategie & Graph","Was-wäre-wenn"]},
   {id:6, label:"Risiko",         subs:["Risikoformeln & Monte Carlo","KI-Risikomatrix"]},
   {id:7, label:"Simulation",     subs:["Verhandlungssimulation","Gesamtbewertung & Prognose"]},
   {id:8, label:"Aktion",         subs:["Verhandlungsführung","Schriftsatz-Generator"]},
   {id:9, label:"Cockpit",        subs:["Fall-Cockpit","Fallanalyse-Netzwerk"]},
   {id:10,label:"Abschluss",      subs:[]},
   {id:11,label:"KI-Protokoll",   subs:[]},
+  {id:12,label:"Zeitstrahl",     subs:[]},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -295,7 +295,7 @@ export default function CaseDetail() {
       </div>
 
       <div className="max-w-5xl mx-auto px-5 py-5">
-        <p className="text-[10px] font-medium uppercase tracking-widest mb-4" style={{ color: "#bbb", letterSpacing: "0.08em" }}>Schritt {activeTab} von 12</p>
+        <p className="text-[10px] font-medium uppercase tracking-widest mb-4" style={{ color: "#bbb", letterSpacing: "0.08em" }}>Schritt {activeTab} von 11</p>
         {activeTab===1 && <Tab1Fallerfassung caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} onDataImport={loadCase} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===2 && <Tab2Fallsubstanz caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===3 && <Tab3Gegneranalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
@@ -306,8 +306,7 @@ export default function CaseDetail() {
         {activeTab===8 && <Tab8Aktion caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} />}
         <div className={activeTab===9 ? "" : "hidden"}><Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} /></div>
         <div className={activeTab===10 ? "" : "hidden"}><Tab10Abschluss caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
-        {activeTab===11 && <TabZeitstrahl caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===12 && <TabKIProtokoll caseId={caseId} caseData={caseData} />}
+        {activeTab===11 && <TabKIProtokoll caseId={caseId} caseData={caseData} />}
         <div className="flex items-center justify-between mt-8 pt-4" style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }}>
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1}
             className="flex items-center gap-1 text-[12px] font-medium disabled:opacity-30 transition-colors"
@@ -322,7 +321,7 @@ export default function CaseDetail() {
               }}/>
             ))}
           </div>
-          <button onClick={() => setActiveTab(t=>Math.min(12,t+1))} disabled={activeTab===12}
+          <button onClick={() => setActiveTab(t=>Math.min(11,t+1))} disabled={activeTab===11}
             className="flex items-center gap-1 text-[12px] font-semibold disabled:opacity-30 transition-colors"
             style={{ color: "#1a1a1a" }}>
             Weiter <ArrowRight className="w-3.5 h-3.5"/>
