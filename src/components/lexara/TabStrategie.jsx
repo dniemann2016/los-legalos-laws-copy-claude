@@ -25,7 +25,7 @@ function PrognoseCircle({ value }) {
   );
 }
 
-export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true }) {
+export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true, activeSub = 0 }) {
   const [args, setArgs] = useState([]);
   const [evidence, setEvidence] = useState([]);
   const [persons, setPersons] = useState([]);
@@ -37,9 +37,10 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
   const [saving, setSaving] = useState(false);
   const [chartView, setChartView] = useState("overlap");
   const [showTacticalInfo, setShowTacticalInfo] = useState(false);
-  const [activeView, setActiveView] = useState("strategie");
   const [kiPrognose, setKiPrognose] = useState(null);
   const [kiPrognoseLoading, setKiPrognoseLoading] = useState(false);
+  // activeSub: 0=strategie, 1=simulation, 2=timeline
+  const activeView = activeSub === 1 ? "simulation" : activeSub === 2 ? "timeline" : "strategie";
   const { logKI } = useKIProtokoll(caseId);
 
   useEffect(() => { load(); }, [caseId]);
@@ -195,16 +196,6 @@ Deine Analyse muss folgendes enthalten:
 
   return (
     <div className="space-y-6">
-      {/* View Switcher */}
-      <div className="flex gap-2">
-        {[["strategie","Strategie & Graph"],["simulation","Was-wäre-wenn"],["timeline","Zeitstrahl"]].map(([v,l]) => (
-          <button key={v} onClick={() => setActiveView(v)}
-            className={`text-sm px-4 py-2 rounded-xl border font-medium transition-all ${activeView===v?"bg-gray-900 text-white border-gray-900":"bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
-            {l}
-          </button>
-        ))}
-      </div>
-
       {activeView === "simulation" && (
         <WasWaereWennSimulation
           args={args}

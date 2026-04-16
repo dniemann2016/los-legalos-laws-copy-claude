@@ -17,17 +17,17 @@ import TabKIProtokoll from "../components/lexara/TabKIProtokoll";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
-  {id:1,label:"Fallerfassung"},
-  {id:2,label:"Fallsubstanz"},
-  {id:3,label:"Gegneranalyse"},
-  {id:4,label:"Rechtl. Analyse"},
-  {id:5,label:"Strategie"},
-  {id:6,label:"Risiko"},
-  {id:7,label:"Simulation"},
-  {id:8,label:"Aktion"},
-  {id:9,label:"Cockpit"},
-  {id:10,label:"Abschluss"},
-  {id:11,label:"KI-Protokoll"},
+  {id:1, label:"Fallerfassung",  subs:["Basisdaten","Dokumente & KI-Analyse"]},
+  {id:2, label:"Fallsubstanz",   subs:["Argumente & Beweise","Personen","Fristen"]},
+  {id:3, label:"Gegneranalyse",  subs:["Profil & Simulation","KI-Berater","Verhaltenstracking","Risikomatrix"]},
+  {id:4, label:"Rechtl. Analyse",subs:["Compliance-Prüfung","Kostenanalyse","Präzedenzfälle"]},
+  {id:5, label:"Strategie",      subs:["Strategie & Graph","Was-wäre-wenn","Zeitstrahl"]},
+  {id:6, label:"Risiko",         subs:["Risikoformeln & Monte Carlo","KI-Risikomatrix"]},
+  {id:7, label:"Simulation",     subs:["Verhandlungssimulation","Gesamtbewertung & Prognose"]},
+  {id:8, label:"Aktion",         subs:["Verhandlungsführung","Schriftsatz-Generator"]},
+  {id:9, label:"Cockpit",        subs:["Fall-Cockpit","Fallanalyse-Netzwerk"]},
+  {id:10,label:"Abschluss",      subs:[]},
+  {id:11,label:"KI-Protokoll",   subs:[]},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -49,6 +49,7 @@ export default function CaseDetail() {
   const caseId = urlParams.get("id");
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState(1);
+  const [activeSub, setActiveSub] = useState(0);
   const [caseData, setCaseData] = useState(null);
   const [counts, setCounts] = useState({args:0,evidence:0,persons:0,deadlines:0});
   const [loading, setLoading] = useState(true);
@@ -135,10 +136,13 @@ export default function CaseDetail() {
     loadCase();
   }, [caseId]);
 
+  // Reset sub-tab when main tab changes
+  const switchTab = (tabId) => { setActiveTab(tabId); setActiveSub(0); };
+
   // Listen for sidebar step navigation
   useEffect(() => {
     const handler = (e) => {
-      if (e.detail?.step) setActiveTab(e.detail.step);
+      if (e.detail?.step) { setActiveTab(e.detail.step); setActiveSub(0); }
     };
     window.addEventListener("lexara_goto_step", handler);
     return () => window.removeEventListener("lexara_goto_step", handler);
@@ -230,10 +234,10 @@ export default function CaseDetail() {
             </div>
           </div>
 
-          {/* Tab bar — Numbers sheet tabs style */}
-          <div className="flex gap-0 overflow-x-auto" style={{ marginBottom: "-1px" }}>
+          {/* Main tab bar — steps 1–11 */}
+          <div className="flex gap-0 overflow-x-auto" style={{ borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
             {TABS.map((tab,i) => (
-              <button key={tab.id} onClick={() => setActiveTab(tab.id)}
+              <button key={tab.id} onClick={() => switchTab(tab.id)}
                 className="flex items-center gap-1.5 whitespace-nowrap transition-all"
                 style={{
                   padding: "6px 12px 7px",
@@ -242,6 +246,7 @@ export default function CaseDetail() {
                   color: activeTab===tab.id ? "#1a1a1a" : "#888",
                   borderBottom: activeTab===tab.id ? "2px solid #34C759" : "2px solid transparent",
                   background: "transparent",
+                  marginBottom: "-1px",
                 }}>
                 {completedTabs[i] ? (
                   <Check className="w-3 h-3" style={{ color: "#34C759" }} />
@@ -259,20 +264,45 @@ export default function CaseDetail() {
               </button>
             ))}
           </div>
+
+          {/* Sub-tab bar — shown only when current tab has subs */}
+          {(() => {
+            const currentTab = TABS.find(t => t.id === activeTab);
+            if (!currentTab?.subs?.length) return null;
+            return (
+              <div className="flex gap-0 overflow-x-auto" style={{ background: "rgba(0,0,0,0.02)" }}>
+                {currentTab.subs.map((sub, i) => (
+                  <button key={i} onClick={() => setActiveSub(i)}
+                    className="whitespace-nowrap transition-all"
+                    style={{
+                      padding: "4px 12px 5px",
+                      fontSize: "10.5px",
+                      fontWeight: activeSub === i ? 600 : 400,
+                      color: activeSub === i ? "#1a7f37" : "#999",
+                      borderBottom: activeSub === i ? "2px solid #34C759" : "2px solid transparent",
+                      background: "transparent",
+                      marginBottom: "-1px",
+                    }}>
+                    {sub}
+                  </button>
+                ))}
+              </div>
+            );
+          })()}
         </div>
       </div>
 
       <div className="max-w-5xl mx-auto px-5 py-5">
         <p className="text-[10px] font-medium uppercase tracking-widest mb-4" style={{ color: "#bbb", letterSpacing: "0.08em" }}>Schritt {activeTab} von 10</p>
-        {activeTab===1 && <Tab1Fallerfassung caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} onDataImport={loadCase} kiMode={kiMode} />}
-        {activeTab===2 && <Tab2Fallsubstanz caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} />}
-        {activeTab===3 && <Tab3Gegneranalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
-        {activeTab===4 && <Tab4RechtlicheAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
-        {activeTab===5 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
-        {activeTab===6 && <Tab6Risiko caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} />}
-        {activeTab===7 && <Tab7Simulation caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        {activeTab===8 && <Tab8Aktion caseId={caseId} caseData={caseData} kiMode={kiMode} />}
-        <div className={activeTab===9 ? "" : "hidden"}><Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
+        {activeTab===1 && <Tab1Fallerfassung caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} onDataImport={loadCase} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===2 && <Tab2Fallsubstanz caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===3 && <Tab3Gegneranalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===4 && <Tab4RechtlicheAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===5 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===6 && <Tab6Risiko caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===7 && <Tab7Simulation caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===8 && <Tab8Aktion caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} />}
+        <div className={activeTab===9 ? "" : "hidden"}><Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} /></div>
         <div className={activeTab===10 ? "" : "hidden"}><Tab10Abschluss caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
         {activeTab===11 && <TabKIProtokoll caseId={caseId} caseData={caseData} />}
         <div className="flex items-center justify-between mt-8 pt-4" style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }}>
