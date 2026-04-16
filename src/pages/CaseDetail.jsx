@@ -135,6 +135,15 @@ export default function CaseDetail() {
     loadCase();
   }, [caseId]);
 
+  // Listen for sidebar step navigation
+  useEffect(() => {
+    const handler = (e) => {
+      if (e.detail?.step) setActiveTab(e.detail.step);
+    };
+    window.addEventListener("lexara_goto_step", handler);
+    return () => window.removeEventListener("lexara_goto_step", handler);
+  }, []);
+
   const loadCase = async () => {
     setLoading(true);
     const [cs, args, evs, pers, deadlines] = await Promise.all([

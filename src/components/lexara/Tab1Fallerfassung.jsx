@@ -2,7 +2,7 @@ import { useState } from "react";
 import TabBasisdaten from "./TabBasisdaten";
 import TabDokumenteAnalyse from "./TabDokumenteAnalyse";
 
-const SUB_TABS = ["📋 Basisdaten", "📄 Dokumente & KI-Analyse"];
+const SUB_TABS = ["Basisdaten", "Dokumente & KI-Analyse"];
 
 export default function Tab1Fallerfassung({ caseId, caseData, onUpdate, onDataImport, kiMode }) {
   const [sub, setSub] = useState(0);

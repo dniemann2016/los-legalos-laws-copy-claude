@@ -1,54 +1,246 @@
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, RefreshCw, Loader2, X, Check, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Upload, Loader2, X, Check, AlertCircle, FileText, Image, Film, File, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+
+const FILE_ACCEPT = "*/*"; // all types
+
+function fileIcon(type) {
+  if (!type) return <File className="w-4 h-4" style={{ color: "#aaa" }} />;
+  if (type.startsWith("image/")) return <Image className="w-4 h-4" style={{ color: "#007AFF" }} />;
+  if (type.startsWith("video/")) return <Film className="w-4 h-4" style={{ color: "#FF9500" }} />;
+  if (type.includes("pdf")) return <FileText className="w-4 h-4" style={{ color: "#FF3B30" }} />;
+  if (type.includes("word") || type.includes("document")) return <FileText className="w-4 h-4" style={{ color: "#007AFF" }} />;
+  return <File className="w-4 h-4" style={{ color: "#aaa" }} />;
+}
+
+const STEP_LABELS = [
+  "Fallerfassung (Basisdaten)",
+  "Fallsubstanz (Argumente & Beweise)",
+  "Gegneranalyse",
+  "Rechtliche Analyse",
+  "Strategie",
+  "Risiko",
+  "Simulation",
+  "Aktion / Schriftsätze",
+  "Cockpit",
+  "Abschluss",
+  "KI-Protokoll",
+];
+
+function GapBadge({ gaps }) {
+  if (!gaps || gaps.length === 0) return null;
+  return (
+    <div className="mt-3 rounded-lg p-3" style={{ background: "rgba(255,149,0,0.07)", border: "1px solid rgba(255,149,0,0.2)" }}>
+      <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#a05f00" }}>Informationslücken — KI-Hinweise</p>
+      <ul className="space-y-1">
+        {gaps.map((g, i) => (
+          <li key={i} className="text-xs flex items-start gap-1.5" style={{ color: "#7a4800" }}>
+            <AlertCircle className="w-3 h-3 flex-shrink-0 mt-0.5" style={{ color: "#FF9500" }} />
+            <span><strong>{g.schritt}:</strong> {g.hinweis}</span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function DocCard({ doc, analyzing, ocr_status, onAnalyze, onDelete, result }) {
+  const [open, setOpen] = useState(false);
+  const isAnalyzing = analyzing === doc.id;
+  const analyzed = !!result && !result.error;
+  const hasError = result?.error;
+
+  return (
+    <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
+      <div className="flex items-center gap-3 px-4 py-3">
+        <div className="flex-shrink-0">{fileIcon(doc.file_type)}</div>
+        <div className="flex-1 min-w-0">
+          <p className="text-xs font-semibold truncate" style={{ color: "#1a1a1a" }}>{doc.title}</p>
+          <p className="text-[10px] truncate" style={{ color: "#aaa" }}>{doc.file_type || "Unbekannter Typ"}</p>
+        </div>
+        <div className="flex items-center gap-1.5 flex-shrink-0">
+          {isAnalyzing ? (
+            <span className="flex items-center gap-1 text-[11px] px-2 py-1 rounded" style={{ background: "rgba(52,199,89,0.1)", color: "#1a7f37" }}>
+              <Loader2 className="w-3 h-3 animate-spin" />
+              {ocr_status === "extracting" ? "Extrahiere…" : "KI analysiert…"}
+            </span>
+          ) : analyzed ? (
+            <button onClick={() => setOpen(!open)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-all"
+              style={{ background: "rgba(52,199,89,0.08)", color: "#1a7f37", border: "1px solid rgba(52,199,89,0.2)" }}>
+              <Check className="w-3 h-3" /> Analysiert
+              {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+            </button>
+          ) : hasError ? (
+            <button onClick={() => onAnalyze(doc)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded" style={{ background: "rgba(255,59,48,0.08)", color: "#c0392b", border: "1px solid rgba(255,59,48,0.2)" }}>
+              <RefreshCw className="w-3 h-3" /> Retry
+            </button>
+          ) : (
+            <button onClick={() => onAnalyze(doc)} className="text-[11px] px-2 py-1 rounded transition-all"
+              style={{ background: "rgba(0,0,0,0.05)", color: "#555", border: "1px solid rgba(0,0,0,0.1)" }}
+              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.1)"}
+              onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.05)"}>
+              Analysieren
+            </button>
+          )}
+          {doc.file_url && (
+            <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
+              className="text-[11px] px-2 py-1 rounded transition-all"
+              style={{ background: "rgba(0,122,255,0.07)", color: "#007AFF", border: "1px solid rgba(0,122,255,0.15)" }}>
+              Öffnen
+            </a>
+          )}
+          <button onClick={() => onDelete(doc.id)} style={{ color: "#aaa", padding: 4 }}
+            onMouseEnter={e => e.currentTarget.style.color = "#FF3B30"}
+            onMouseLeave={e => e.currentTarget.style.color = "#aaa"}>
+            <X className="w-3.5 h-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {open && analyzed && (
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", background: "#fafafa", padding: "12px 16px" }}>
+          {doc.ai_summary && (
+            <p className="text-xs mb-3" style={{ color: "#555", lineHeight: 1.6 }}>{doc.ai_summary}</p>
+          )}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              ["Argumente", result.argumente, "#34C759"],
+              ["Beweise", result.beweise, "#007AFF"],
+              ["Fristen", result.fristen, "#FF9500"],
+              ["Personen", result.personen, "#5856D6"],
+            ].map(([label, items, color]) => items?.length > 0 && (
+              <div key={label}>
+                <p className="text-[10px] font-semibold uppercase tracking-widest mb-1.5" style={{ color: "#aaa" }}>{label} ({items.length})</p>
+                <div className="flex flex-wrap gap-1">
+                  {items.map((item, i) => (
+                    <span key={i} className="text-[11px] px-2 py-0.5 rounded" style={{ background: `${color}14`, color, border: `1px solid ${color}30` }}>
+                      {item.titel || item.name || item.beschreibung?.slice(0, 30)}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          <GapBadge gaps={result.informationsluecken} />
+          <p className="text-[10px] mt-3" style={{ color: "#aaa" }}>
+            Alle Daten wurden automatisch in die entsprechenden Tabs übernommen. Manuelle Korrekturen möglich.
+          </p>
+        </div>
+      )}
+
+      {hasError && (
+        <div style={{ borderTop: "1px solid rgba(0,0,0,0.06)", background: "rgba(255,59,48,0.04)", padding: "10px 16px" }}>
+          <p className="text-xs flex items-center gap-2" style={{ color: "#c0392b" }}>
+            <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" /> {result.error}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) {
   const [docs, setDocs] = useState([]);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [file, setFile] = useState(null);
-  const [docName, setDocName] = useState("");
-  const [analyzing_doc, setAnalyzing_doc] = useState(null);
-  const [results, setResults] = useState({});
   const [loading, setLoading] = useState(true);
-  const [ocr_status, setOcr_status] = useState({});
+  const [analyzing, setAnalyzing] = useState(null);
+  const [ocrStatus, setOcrStatus] = useState({});
+  const [results, setResults] = useState({});
+  const [pendingFiles, setPendingFiles] = useState([]); // { file, name, uploading }
+  const [dragOver, setDragOver] = useState(false);
+  const [analyzingAll, setAnalyzingAll] = useState(false);
   const fileRef = useRef(null);
 
-  const loadDocs = async () => {
+  const loadDocs = useCallback(async () => {
     setLoading(true);
     const data = await base44.entities.Document.filter({ case_id: caseId });
     setDocs(data);
     setLoading(false);
-  };
-
-  useEffect(() => {
-    loadDocs();
   }, [caseId]);
 
+  useEffect(() => { loadDocs(); }, [loadDocs]);
+
+  const addFiles = (files) => {
+    const newPending = Array.from(files).map(f => ({ file: f, name: f.name, id: Math.random().toString(36).slice(2) }));
+    setPendingFiles(prev => [...prev, ...newPending]);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    addFiles(e.dataTransfer.files);
+  };
+
+  const uploadAndAnalyze = async (pending) => {
+    // upload
+    setPendingFiles(prev => prev.map(p => p.id === pending.id ? { ...p, uploading: true } : p));
+    const uploadRes = await base44.integrations.Core.UploadFile({ file: pending.file });
+    const newDoc = await base44.entities.Document.create({
+      case_id: caseId,
+      title: pending.name,
+      file_url: uploadRes.file_url,
+      file_type: pending.file.type,
+      description: "",
+    });
+    setPendingFiles(prev => prev.filter(p => p.id !== pending.id));
+    await loadDocs();
+    await analyzeDocument(newDoc);
+  };
+
+  const uploadAllPending = async () => {
+    for (const p of pendingFiles) {
+      await uploadAndAnalyze(p);
+    }
+  };
+
   const analyzeDocument = async (doc) => {
-    setAnalyzing_doc(doc.id);
+    setAnalyzing(doc.id);
     try {
-      // OCR: Volltext aus PDF extrahieren (nur bei PDF)
+      // Extract text for docs/PDFs
       let ocrText = "";
-      const isPdf = doc.file_type?.includes("pdf") || doc.file_url?.toLowerCase().endsWith(".pdf");
-      if (isPdf && doc.file_url) {
-        setOcr_status(prev => ({ ...prev, [doc.id]: "extracting" }));
-        const ocrResult = await base44.integrations.Core.ExtractDataFromUploadedFile({
-          file_url: doc.file_url,
-          json_schema: {
-            type: "object",
-            properties: { volltext: { type: "string", description: "Kompletter Textinhalt des Dokuments" } }
+      const isExtractable = doc.file_type?.includes("pdf") || doc.file_type?.includes("word") ||
+        doc.file_type?.includes("document") || doc.file_type?.includes("text") ||
+        doc.file_url?.toLowerCase().match(/\.(pdf|docx|xlsx|csv|txt|pages|numbers)$/);
+
+      if (isExtractable && doc.file_url) {
+        setOcrStatus(prev => ({ ...prev, [doc.id]: "extracting" }));
+        try {
+          const ocrResult = await base44.integrations.Core.ExtractDataFromUploadedFile({
+            file_url: doc.file_url,
+            json_schema: { type: "object", properties: { volltext: { type: "string" } } }
+          });
+          if (ocrResult.status === "success" && ocrResult.output?.volltext) {
+            ocrText = ocrResult.output.volltext;
           }
-        });
-        if (ocrResult.status === "success" && ocrResult.output?.volltext) {
-          ocrText = ocrResult.output.volltext;
-          await base44.entities.Document.update(doc.id, { ai_raw: { ...(doc.ai_raw || {}), ocr_text: ocrText } });
-        }
-        setOcr_status(prev => ({ ...prev, [doc.id]: "done" }));
+        } catch {}
+        setOcrStatus(prev => ({ ...prev, [doc.id]: "done" }));
       }
 
+      const isImage = doc.file_type?.startsWith("image/");
+      const isVideo = doc.file_type?.startsWith("video/");
+
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein Rechtsanwalt. Analysiere dieses juristische Dokument gründlich und extrahiere ALLE relevanten Informationen:\n\nFall: ${caseData?.fallname || ""}\nRechtsgebiet: ${caseData?.rechtsgebiet || ""}\nZentrale Frage: ${caseData?.zentrale_rechtsfrage || ""}\n\nDokument: ${doc.title}\n${ocrText ? `\nVOLLTEXT (OCR-extrahiert):\n${ocrText.slice(0, 8000)}` : ""}\n\nExtrahiere und strukturiere:\n1. ARGUMENTE (welche unterstützen unsere Position, welche die Gegenseite)\n2. BEWEISE (konkrete Fakten, Klauseln, Unterschriften)\n3. FRISTEN (Deadlines, Fristen)\n4. BETEILIGTE (Personen, Organisationen)\n5. LITERATUR & RECHTSPRECHUNG (falls erwähnt)\n6. VERTRÄGE / SONSTIGE (andere wichtige Dokumente/Informationen)`,
+        prompt: `Du bist ein erfahrener Rechtsanwalt auf Senior-Partner-Niveau. Analysiere diese Datei für den Fall "${caseData?.fallname || ""}" (Rechtsgebiet: ${caseData?.rechtsgebiet || ""}, Zentrale Frage: ${caseData?.zentrale_rechtsfrage || ""}).
+
+${ocrText ? `DOKUMENTTEXT:\n${ocrText.slice(0, 12000)}` : ""}
+${isImage ? "Dies ist ein Bild/Foto. Analysiere den visuellen Inhalt auf juristische Relevanz." : ""}
+${isVideo ? "Dies ist ein Video. Analysiere den möglichen Inhalt auf juristische Relevanz." : ""}
+
+Extrahiere ALLE relevanten Informationen und befülle die folgenden Bereiche NUR WENN MÖGLICH auf Basis des Dokuments. Lass Felder leer wenn keine Information vorhanden.
+
+Analysiere außerdem ALLE 11 Schritte der Fallbearbeitung und weise auf FEHLENDE Informationen hin:
+1. Fallerfassung (Basisdaten: Gericht, Aktenzeichen, Prozessziel)
+2. Fallsubstanz (Argumente, Beweise, Personen, Fristen)
+3. Gegneranalyse (Gegnerinfos, Taktiken)
+4. Rechtliche Analyse (Streitwert, Rechtsgebiet, Compliance)
+5. Strategie (Prozessstrategie, Verhandlungsziel)
+6. Risiko (Risikoeinschätzung)
+7. Simulation (Verhandlungsszenarien)
+8. Aktion/Schriftsätze (Einzureichende Dokumente, Deadlines)
+9. Cockpit (Gesamtüberblick)
+10. Abschluss (Prozessziel, KI-Prognose)
+11. KI-Protokoll
+
+Gib NUR valides JSON zurück.`,
         file_urls: doc.file_url ? [doc.file_url] : undefined,
         response_json_schema: {
           type: "object",
@@ -62,9 +254,8 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
                   beschreibung: { type: "string" },
                   seite: { type: "string", enum: ["eigen", "gegner"] },
                   staerke: { type: "number" },
-                  verlinkte_beweise: { type: "array", items: { type: "string" } },
-                },
-              },
+                }
+              }
             },
             beweise: {
               type: "array",
@@ -75,8 +266,8 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
                   beschreibung: { type: "string" },
                   typ: { type: "string" },
                   gewicht: { type: "number" },
-                },
-              },
+                }
+              }
             },
             fristen: {
               type: "array",
@@ -86,8 +277,8 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
                   titel: { type: "string" },
                   datum: { type: "string" },
                   fristtyp: { type: "string" },
-                },
-              },
+                }
+              }
             },
             personen: {
               type: "array",
@@ -97,118 +288,98 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
                   name: { type: "string" },
                   rolle: { type: "string" },
                   organisation: { type: "string" },
-                },
-              },
+                }
+              }
             },
-            literatur_rspr: {
+            basisdaten: {
+              type: "object",
+              properties: {
+                gericht: { type: "string" },
+                aktenzeichen: { type: "string" },
+                rechtsgebiet: { type: "string" },
+                prozessziel: { type: "string" },
+                zentrale_rechtsfrage: { type: "string" },
+                instanz: { type: "string" },
+              }
+            },
+            streitwert: { type: "number" },
+            zusammenfassung: { type: "string" },
+            informationsluecken: {
               type: "array",
               items: {
                 type: "object",
                 properties: {
-                  titel: { type: "string" },
-                  typ: { type: "string", enum: ["Literatur", "Rechtsprechung"] },
-                  verweis: { type: "string" },
-                },
-              },
-            },
-            sonstiges: {
-              type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-              },
-            },
-          },
+                  schritt: { type: "string" },
+                  hinweis: { type: "string" },
+                }
+              }
+            }
+          }
         },
-        model: "gemini_3_flash",
+        model: "claude_sonnet_4_6"
       });
 
-      // Speichere Analyse in Dokument
+      // Save doc analysis
       await base44.entities.Document.update(doc.id, {
-        ai_summary: result.sonstiges?.zusammenfassung || "",
+        ai_summary: result.zusammenfassung || "",
         ai_raw: result,
       });
 
-      // Verteile Ergebnisse automatisch (markiert als KI-Vorschlag)
-      if (result.argumente?.length > 0) {
-        for (const arg of result.argumente) {
-          await base44.entities.Argument.create({
-            case_id: caseId,
-            title: arg.titel,
-            description: `${arg.beschreibung}\n\n[📄 KI-Vorschlag aus: ${doc.title}]`,
-            side: arg.seite || "eigen",
-            strength: arg.staerke || 5,
-            type: "Rechtsargument",
-            evidence_ids: [],
-          });
-        }
+      // Auto-fill Case basisdaten if available
+      const bd = result.basisdaten || {};
+      const caseUpdate = {};
+      if (bd.gericht && !caseData?.gericht) caseUpdate.gericht = bd.gericht;
+      if (bd.aktenzeichen && !caseData?.aktenzeichen) caseUpdate.aktenzeichen = bd.aktenzeichen;
+      if (bd.rechtsgebiet && !caseData?.rechtsgebiet) caseUpdate.rechtsgebiet = bd.rechtsgebiet;
+      if (bd.prozessziel && !caseData?.prozessziel) caseUpdate.prozessziel = bd.prozessziel;
+      if (bd.zentrale_rechtsfrage && !caseData?.zentrale_rechtsfrage) caseUpdate.zentrale_rechtsfrage = bd.zentrale_rechtsfrage;
+      if (bd.instanz && !caseData?.instanz) caseUpdate.instanz = bd.instanz;
+      if (result.streitwert && !caseData?.streitwert) caseUpdate.streitwert = result.streitwert;
+      if (Object.keys(caseUpdate).length > 0) {
+        await base44.entities.Case.update(caseId, caseUpdate);
       }
 
-      if (result.beweise?.length > 0) {
-        for (const bew of result.beweise) {
-          await base44.entities.Evidence.create({
-            case_id: caseId,
-            title: bew.titel,
-            description: `${bew.beschreibung}\n\n[📄 KI-Vorschlag aus: ${doc.title}]`,
-            type: bew.typ,
-            weight: bew.gewicht || 5,
-            source: doc.title,
-          });
-        }
+      // Distribute results
+      for (const arg of result.argumente || []) {
+        await base44.entities.Argument.create({
+          case_id: caseId, title: arg.titel,
+          description: `${arg.beschreibung}\n[KI aus: ${doc.title}]`,
+          side: arg.seite || "eigen", strength: arg.staerke || 5, type: "Rechtsargument",
+        });
+      }
+      for (const bew of result.beweise || []) {
+        await base44.entities.Evidence.create({
+          case_id: caseId, title: bew.titel,
+          description: `${bew.beschreibung}\n[KI aus: ${doc.title}]`,
+          type: bew.typ, weight: bew.gewicht || 5, source: doc.title,
+        });
+      }
+      for (const frist of result.fristen || []) {
+        await base44.entities.Deadline.create({
+          case_id: caseId, title: frist.titel, frist_type: frist.fristtyp,
+          due_date: frist.datum, side: "Eigene", status: "offen",
+        });
+      }
+      for (const person of result.personen || []) {
+        await base44.entities.Person.create({
+          case_id: caseId, name: person.name, role: person.rolle, organization: person.organisation,
+        });
       }
 
-      if (result.fristen?.length > 0) {
-        for (const frist of result.fristen) {
-          await base44.entities.Deadline.create({
-            case_id: caseId,
-            title: frist.titel,
-            frist_type: frist.fristtyp,
-            due_date: frist.datum,
-            side: "Eigene",
-            status: "offen",
-          });
-        }
-      }
-
-      if (result.personen?.length > 0) {
-        for (const person of result.personen) {
-          await base44.entities.Person.create({
-            case_id: caseId,
-            name: person.name,
-            role: person.rolle,
-            organisation: person.organisation,
-          });
-        }
-      }
-
-      setResults((prev) => ({ ...prev, [doc.id]: result }));
+      setResults(prev => ({ ...prev, [doc.id]: result }));
       onDataImport && onDataImport();
     } catch (error) {
-      console.error("Fehler bei Dokumentanalyse:", error);
-      setResults((prev) => ({ ...prev, [doc.id]: { error: error.message } }));
-    } finally {
-      setAnalyzing_doc(null);
+      setResults(prev => ({ ...prev, [doc.id]: { error: error.message } }));
     }
+    setAnalyzing(null);
   };
 
-  const uploadDocument = async () => {
-    if (!file || !docName.trim()) return;
-    try {
-      const uploadRes = await base44.integrations.Core.UploadFile({ file });
-      const newDoc = await base44.entities.Document.create({
-        case_id: caseId,
-        title: docName,
-        file_url: uploadRes.file_url,
-        file_type: file.type,
-        description: "",
-      });
-      setFile(null);
-      setDocName("");
-      loadDocs();
-      // Automatisch analysieren
-      setTimeout(() => analyzeDocument(newDoc), 500);
-    } catch (error) {
-      console.error("Upload-Fehler:", error);
+  const analyzeAll = async () => {
+    setAnalyzingAll(true);
+    for (const doc of docs) {
+      if (!results[doc.id]) await analyzeDocument(doc);
     }
+    setAnalyzingAll(false);
   };
 
   const deleteDoc = async (id) => {
@@ -216,181 +387,129 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
     loadDocs();
   };
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <div className="w-6 h-6 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" />
-      </div>
-    );
-  }
+  const sf = { fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" };
 
   return (
-    <div className="space-y-6">
-      {/* Upload */}
-      <div className="bg-white border border-gray-200 rounded-xl p-5 space-y-3">
-        <h3 className="text-sm font-semibold text-gray-900">📄 Dokument hochladen & analysieren</h3>
-        <div className="flex gap-3">
-          <div className="flex-1">
-            <input
-              type="text"
-              placeholder="Dokumentname (z.B. 'Vertrag vom 01.01.2024')"
-              value={docName}
-              onChange={(e) => setDocName(e.target.value)}
-              className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm"
-            />
-          </div>
-          <button
-            onClick={() => fileRef.current?.click()}
-            className="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 flex items-center gap-2"
-          >
-            <Upload className="w-4 h-4" /> Datei
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".pdf,.docx,.txt"
-            className="hidden"
-            onChange={(e) => setFile(e.target.files?.[0] || null)}
-          />
-          <Button onClick={uploadDocument} disabled={!file || !docName.trim()} className="bg-blue-600 text-white">
-            Hochladen & Analysieren
-          </Button>
-        </div>
-        {file && <p className="text-xs text-gray-500">📎 {file.name} ({Math.round(file.size / 1024)}KB)</p>}
-      </div>
-
-      {/* Documents */}
-      <div className="space-y-3">
-        {docs.length === 0 ? (
-          <div className="bg-gray-50 border border-gray-200 rounded-xl p-8 text-center text-gray-500 text-sm">
-            Noch keine Dokumente hochgeladen
-          </div>
+    <div className="space-y-4" style={sf}>
+      {/* Drop zone + queue */}
+      <div
+        onDragOver={e => { e.preventDefault(); setDragOver(true); }}
+        onDragLeave={() => setDragOver(false)}
+        onDrop={handleDrop}
+        onClick={() => !pendingFiles.length && fileRef.current?.click()}
+        className="cursor-pointer transition-all"
+        style={{
+          border: `2px dashed ${dragOver ? "#34C759" : "rgba(0,0,0,0.12)"}`,
+          borderRadius: 10,
+          background: dragOver ? "rgba(52,199,89,0.05)" : "rgba(0,0,0,0.02)",
+          padding: pendingFiles.length ? "12px 16px" : "28px 16px",
+          textAlign: pendingFiles.length ? "left" : "center",
+          transition: "all 0.15s",
+        }}
+      >
+        {pendingFiles.length === 0 ? (
+          <>
+            <Upload className="w-6 h-6 mx-auto mb-2" style={{ color: "#bbb" }} />
+            <p className="text-sm font-medium" style={{ color: "#555" }}>Dateien hier ablegen oder klicken</p>
+            <p className="text-xs mt-1" style={{ color: "#aaa" }}>PDF, Word, Pages, Numbers, JPEG, PNG, MP4, MOV — alle Formate</p>
+          </>
         ) : (
-          docs.map((doc) => {
-            const analysis = results[doc.id];
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold" style={{ color: "#555" }}>{pendingFiles.length} Datei(en) bereit</p>
+              <div className="flex gap-2">
+                <button onClick={e => { e.stopPropagation(); fileRef.current?.click(); }}
+                  className="text-[11px] px-2.5 py-1 rounded" style={{ background: "rgba(0,0,0,0.06)", color: "#555" }}>
+                  + Weitere
+                </button>
+                <button onClick={e => { e.stopPropagation(); uploadAllPending(); }}
+                  className="text-[11px] px-3 py-1 rounded font-semibold" style={{ background: "#34C759", color: "#fff" }}>
+                  Alle hochladen & analysieren
+                </button>
+                <button onClick={e => { e.stopPropagation(); setPendingFiles([]); }}
+                  style={{ color: "#aaa", padding: 2 }}>
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            </div>
+            {pendingFiles.map(p => (
+              <div key={p.id} className="flex items-center gap-2 py-1" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                {fileIcon(p.file.type)}
+                <span className="text-xs flex-1 truncate" style={{ color: "#333" }}>{p.name}</span>
+                <span className="text-[10px]" style={{ color: "#aaa" }}>{Math.round(p.file.size / 1024)} KB</span>
+                {p.uploading && <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#34C759" }} />}
+                <button onClick={e => { e.stopPropagation(); setPendingFiles(prev => prev.filter(x => x.id !== p.id)); }}
+                  style={{ color: "#ccc" }}>
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+      <input ref={fileRef} type="file" accept={FILE_ACCEPT} multiple className="hidden"
+        onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} />
+
+      {/* Docs list */}
+      {loading ? (
+        <div className="flex items-center justify-center py-10">
+          <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#34C759" }} />
+        </div>
+      ) : docs.length === 0 ? (
+        <div className="text-center py-8" style={{ color: "#bbb" }}>
+          <p className="text-sm">Noch keine Dokumente hochgeladen</p>
+        </div>
+      ) : (
+        <>
+          <div className="flex items-center justify-between">
+            <p className="text-[11px]" style={{ color: "#aaa" }}>{docs.length} Dokument(e)</p>
+            {docs.some(d => !results[d.id]) && (
+              <button onClick={analyzeAll} disabled={analyzingAll}
+                className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded transition-all"
+                style={{ background: "rgba(52,199,89,0.1)", color: "#1a7f37", border: "1px solid rgba(52,199,89,0.25)" }}>
+                {analyzingAll ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                Alle analysieren
+              </button>
+            )}
+          </div>
+          <div className="space-y-2">
+            {docs.map(doc => (
+              <DocCard
+                key={doc.id}
+                doc={doc}
+                analyzing={analyzing}
+                ocr_status={ocrStatus[doc.id]}
+                onAnalyze={analyzeDocument}
+                onDelete={deleteDoc}
+                result={results[doc.id] || (doc.ai_raw ? { ...doc.ai_raw, informationsluecken: doc.ai_raw.informationsluecken || [] } : null)}
+              />
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* Step coverage legend */}
+      <div className="rounded-lg p-3" style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.07)" }}>
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#aaa" }}>11 Analyse-Schritte</p>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+          {STEP_LABELS.map((label, i) => {
+            const covered = docs.some(d => {
+              const r = results[d.id] || d.ai_raw;
+              if (!r) return false;
+              if (i === 0) return !!(r.basisdaten?.gericht || r.basisdaten?.aktenzeichen);
+              if (i === 1) return !!(r.argumente?.length || r.beweise?.length);
+              if (i === 2) return !!(r.argumente?.some(a => a.seite === "gegner"));
+              if (i === 3) return !!(r.basisdaten?.rechtsgebiet || r.streitwert);
+              return !!(r.zusammenfassung);
+            });
             return (
-              <div key={doc.id} className="bg-white border border-gray-200 rounded-xl overflow-hidden">
-                <div className="p-4 flex items-start justify-between">
-                  <div className="flex-1">
-                    <h4 className="font-semibold text-sm text-gray-900">{doc.title}</h4>
-                    {doc.ai_summary && <p className="text-xs text-gray-600 mt-1">{doc.ai_summary.substring(0, 150)}...</p>}
-                    <p className="text-xs text-gray-400 mt-1">{doc.file_type}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    {analysis ? (
-                      <span className="flex items-center gap-1 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">
-                        <Check className="w-3 h-3" /> Analysiert
-                      </span>
-                    ) : analyzing_doc === doc.id ? (
-                      <span className="flex items-center gap-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
-                        <Loader2 className="w-3 h-3 animate-spin" />
-                        {ocr_status[doc.id] === "extracting" ? "OCR läuft..." : "Analysiere..."}
-                      </span>
-                    ) : (
-                      <button
-                        onClick={() => analyzeDocument(doc)}
-                        className="text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 px-2 py-1 rounded transition-colors"
-                      >
-                        Analysieren
-                      </button>
-                    )}
-                    <button
-                      onClick={() => deleteDoc(doc.id)}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-
-                {analysis && !analysis.error && (
-                  <div className="border-t border-gray-100 bg-gray-50 p-4 space-y-3">
-                    {analysis.argumente?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">📋 Argumente ({analysis.argumente.length})</p>
-                        <div className="flex gap-1 flex-wrap">
-                          {analysis.argumente.map((arg, i) => (
-                            <span key={i} className="text-xs bg-white border border-gray-200 rounded px-2 py-1">
-                              {arg.titel}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {analysis.beweise?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">🔍 Beweise ({analysis.beweise.length})</p>
-                        <div className="flex gap-1 flex-wrap">
-                          {analysis.beweise.map((bew, i) => (
-                            <span key={i} className="text-xs bg-white border border-blue-200 text-blue-700 rounded px-2 py-1">
-                              {bew.titel}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {analysis.fristen?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">⏰ Fristen ({analysis.fristen.length})</p>
-                        <div className="flex gap-1 flex-wrap">
-                          {analysis.fristen.map((frist, i) => (
-                            <span key={i} className="text-xs bg-white border border-amber-200 text-amber-700 rounded px-2 py-1">
-                              {frist.titel} ({frist.datum})
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {analysis.personen?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">👥 Personen ({analysis.personen.length})</p>
-                        <div className="flex gap-1 flex-wrap">
-                          {analysis.personen.map((person, i) => (
-                            <span key={i} className="text-xs bg-white border border-purple-200 text-purple-700 rounded px-2 py-1">
-                              {person.name}
-                            </span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {analysis.literatur_rspr?.length > 0 && (
-                      <div>
-                        <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">📚 Literatur & Rechtsprechung ({analysis.literatur_rspr.length})</p>
-                        <div className="space-y-1">
-                          {analysis.literatur_rspr.map((lit, i) => (
-                            <p key={i} className="text-xs text-gray-700">
-                              [{lit.typ}] {lit.titel}: {lit.verweis}
-                            </p>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    <div className="bg-blue-50 border border-blue-200 rounded-lg p-2">
-                      <p className="text-[10px] text-blue-700">
-                        <strong>💡 KI-Vorschläge:</strong> Alle Daten wurden automatisch in die relevanten Tabs verteilt. Sie können diese manuell
-                        korrigieren oder löschen.
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {analysis?.error && (
-                  <div className="border-t border-gray-100 bg-red-50 p-4">
-                    <p className="text-xs text-red-600 flex items-start gap-2">
-                      <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
-                      Fehler: {analysis.error}
-                    </p>
-                  </div>
-                )}
+              <div key={i} className="flex items-center gap-1.5 py-0.5">
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: covered ? "#34C759" : "#ddd", flexShrink: 0 }} />
+                <span className="text-[10px]" style={{ color: covered ? "#1a7f37" : "#bbb" }}>{label}</span>
               </div>
             );
-          })
-        )}
+          })}
+        </div>
       </div>
     </div>
   );
