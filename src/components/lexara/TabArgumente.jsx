@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Plus, Upload, X, RefreshCw, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useKIProtokoll } from "@/hooks/useKIProtokoll";
 
 function ScoreBar({ value, max = 10, color = "bg-green-500" }) {
   return (
@@ -192,6 +193,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument", zeitpunkt: "", anmerkungen: "" });
   const [extractError, setExtractError] = useState(null);
   const [batchRating, setBatchRating] = useState(false);
+  const { logKI } = useKIProtokoll(caseId);
   const [showExtraction, setShowExtraction] = useState(false);
   const [extractMode, setExtractMode] = useState("ki");
   const [dsgvo, setDsgvo] = useState(false);
@@ -291,6 +293,16 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       });
       if (!result) { setExtractError("KI-Analyse fehlgeschlagen. Bitte erneut versuchen."); setExtracting(false); return; }
       setExtracted(result);
+
+      // Protokollieren
+      await logKI({
+        kiName: "Argument-Extraktion",
+        eingabe: text || `Dokumente: ${files.map(f => f.name).join(", ")}`,
+        ausgabe: result,
+        dokumente: files.map(f => f.name),
+        modell: "standard"
+      });
+
       setFiles([]);
       setText("");
     } catch (error) {
@@ -400,6 +412,14 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
         }
       }
       await loadAll(true);
+
+      // Protokollieren
+      await logKI({
+        kiName: "Argument-Batch-Bewertung",
+        eingabe: `Bewertung von ${args.length} Argumenten für Fall: ${caseData?.fallname || caseId}`,
+        ausgabe: result,
+        modell: "gemini_3_flash"
+      });
     } catch (error) {
       console.error("Batch-Bewertung fehler:", error);
       setExtractError("Fehler bei Batch-Bewertung");

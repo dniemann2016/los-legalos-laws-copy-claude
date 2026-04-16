@@ -6,6 +6,7 @@ import TimelineVisualization from "./TimelineVisualization";
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, BarChart, Bar, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from "recharts";
 import { Button } from "@/components/ui/button";
 import { Info } from "lucide-react";
+import { useKIProtokoll } from "@/hooks/useKIProtokoll";
 
 function PrognoseCircle({ value }) {
   const r = 42, circ = 2 * Math.PI * r, offset = circ - (value/100)*circ;
@@ -39,6 +40,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
   const [activeView, setActiveView] = useState("strategie");
   const [kiPrognose, setKiPrognose] = useState(null);
   const [kiPrognoseLoading, setKiPrognoseLoading] = useState(false);
+  const { logKI } = useKIProtokoll(caseId);
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -74,8 +76,11 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
     setKiPrognose(null);
     const eigenA = args.filter(a=>a.side==="eigen");
     const gegnerA = args.filter(a=>a.side==="gegner");
+
+    const inputSummary = `Fall: ${caseData?.fallname||""} | Rechtsgebiet: ${caseData?.rechtsgebiet||""} | Instanz: ${caseData?.instanz||""} | Zentrale Frage: ${caseData?.zentrale_rechtsfrage||""} | Eigene Argumente: ${eigenA.length} | Gegnerargumente: ${gegnerA.length} | Beweise: ${evidence.length} | Fristen: ${deadlines.length}`;
+
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Richter und Rechtsanwalt. Analysiere diesen Prozess objektiv und vollständig.
+      prompt: `Du bist ein hochrangiger Prozessrechtsspezialist und strategischer Berater, der skrupellos und kompromisslos die eigene Partei vertritt. Analysiere diesen Prozess vollständig.
 
 Fall: ${caseData?.fallname || ""}
 Rechtsgebiet: ${caseData?.rechtsgebiet || ""} | Instanz: ${caseData?.instanz || ""}
@@ -91,7 +96,12 @@ BEWEISE: ${evidence.slice(0,10).map(e=>`${e.title} (${e.type||""}, ${e.weight||5
 FRISTEN: ${deadlines.length} gesamt, ${deadlines.filter(d=>d.status==="versaeumt").length} versäumt
 Richter-Klägerquote: ${caseData?.richter_klaeger_rate || 50}%
 
-Beurteile realistische Erfolgswahrscheinlichkeit, die 3 stärksten Gegenargumente der Gegenseite (mit Schwere: hoch/mittel/niedrig), die 2 kritischsten Schwachstellen unserer Position, und eine kurze strategische Empfehlung.`,
+Deine Analyse muss folgendes enthalten:
+1. Realistische Erfolgswahrscheinlichkeit mit ausführlicher Begründung
+2. Die 3 stärksten Gegenargumente der Gegenseite mit Gefahrengrad
+3. Die 2 kritischsten Schwachstellen unserer Position
+4. Eine strategische Gesamtempfehlung
+5. AGGRESSIVE GEGENMASSNAHMEN: Identifiziere ALLE juristischen Mittel um den Gegner zu schwächen, abzulenken, unter Druck zu setzen oder ihm zu schaden. Denke dabei an: Widerklage, Schadensersatz, Strafanzeigen (z.B. Falschaussage, Betrug, üble Nachrede), Prozesskostensicherheit, einstweilige Verfügungen, Beweisanträge die den Gegner belasten, Kostentragungspflicht, Anträge auf Vertagung um Fristen des Gegners zu gefährden, Aufdeckung von Interessenkonflikten/Befangenheiten etc. Sei so aggressiv und taktisch wie möglich.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -118,11 +128,34 @@ Beurteile realistische Erfolgswahrscheinlichkeit, die 3 stärksten Gegenargument
               }
             }
           },
-          strategische_empfehlung: { type: "string" }
+          strategische_empfehlung: { type: "string" },
+          gegenmassnahmen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                massnahme: { type: "string" },
+                ziel: { type: "string" },
+                rechtsgrundlage: { type: "string" },
+                aggressivitaet: { type: "string" }
+              }
+            }
+          }
         }
-      }
+      },
+      model: "claude_sonnet_4_6"
     });
+
     setKiPrognose(result);
+
+    // Protokollieren
+    await logKI({
+      kiName: "KI-Urteilsprognose & Strategie",
+      eingabe: inputSummary,
+      ausgabe: result,
+      modell: "claude_sonnet_4_6"
+    });
+
     setKiPrognoseLoading(false);
   };
 
@@ -311,6 +344,33 @@ Beurteile realistische Erfolgswahrscheinlichkeit, die 3 stärksten Gegenargument
                   <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
                     <p className="text-xs font-semibold text-blue-800 mb-1">💡 Strategische Empfehlung</p>
                     <p className="text-xs text-blue-700">{kiPrognose.strategische_empfehlung}</p>
+                  </div>
+                )}
+
+                {(kiPrognose.gegenmassnahmen||[]).length > 0 && (
+                  <div>
+                    <p className="text-xs font-semibold text-gray-900 mb-2">⚔️ Aggressive Gegenmaßnahmen — Juristische Angriffstaktiken</p>
+                    <p className="text-[10px] text-gray-400 mb-3">Alle juristischen Mittel zur Schwächung, Ablenkung und Druckausübung auf die Gegenseite</p>
+                    <div className="space-y-2">
+                      {kiPrognose.gegenmassnahmen.map((g, i) => {
+                        const agColor = g.aggressivitaet === "sehr hoch" ? "bg-red-50 border-red-200" : g.aggressivitaet === "hoch" ? "bg-orange-50 border-orange-200" : g.aggressivitaet === "mittel" ? "bg-amber-50 border-amber-200" : "bg-gray-50 border-gray-200";
+                        const tagColor = g.aggressivitaet === "sehr hoch" ? "bg-red-200 text-red-800" : g.aggressivitaet === "hoch" ? "bg-orange-200 text-orange-800" : g.aggressivitaet === "mittel" ? "bg-amber-200 text-amber-800" : "bg-gray-200 text-gray-600";
+                        return (
+                          <div key={i} className={`rounded-xl border p-3 ${agColor}`}>
+                            <div className="flex items-start justify-between gap-2 mb-1">
+                              <p className="text-xs font-bold text-gray-900 flex-1">{g.massnahme}</p>
+                              {g.aggressivitaet && (
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold uppercase flex-shrink-0 ${tagColor}`}>{g.aggressivitaet}</span>
+                              )}
+                            </div>
+                            <p className="text-[11px] text-gray-700 mb-1"><span className="font-semibold">Ziel:</span> {g.ziel}</p>
+                            {g.rechtsgrundlage && (
+                              <p className="text-[10px] text-gray-500"><span className="font-semibold">Rechtsgrundlage:</span> {g.rechtsgrundlage}</p>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>

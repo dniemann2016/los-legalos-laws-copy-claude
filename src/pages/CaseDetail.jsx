@@ -13,6 +13,7 @@ import Tab8Aktion from "../components/lexara/Tab8Aktion";
 import Tab9Cockpit from "../components/lexara/Tab9Cockpit";
 import Tab10Abschluss from "../components/lexara/Tab10Abschluss";
 import TabHistory from "../components/lexara/TabHistory";
+import TabKIProtokoll from "../components/lexara/TabKIProtokoll";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
 const TABS = [
@@ -26,6 +27,7 @@ const TABS = [
   {id:8,label:"Aktion"},
   {id:9,label:"Cockpit"},
   {id:10,label:"Abschluss & KI-Kalibrierung"},
+  {id:11,label:"📋 KI-Protokoll"},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -161,6 +163,7 @@ export default function CaseDetail() {
     !!caseData.notes,
     false,
     false,
+    false,
   ];
 
   return (
@@ -229,6 +232,7 @@ export default function CaseDetail() {
         {activeTab===8 && <Tab8Aktion caseId={caseId} caseData={caseData} kiMode={kiMode} />}
         <div className={activeTab===9 ? "" : "hidden"}><Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
         <div className={activeTab===10 ? "" : "hidden"}><Tab10Abschluss caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
+        {activeTab===11 && <TabKIProtokoll caseId={caseId} caseData={caseData} />}
         <div className="flex items-center justify-between mt-8 pt-4 border-t border-gray-100">
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-800 disabled:opacity-30">
             <ArrowLeft className="w-4 h-4"/> Zurück
@@ -236,7 +240,7 @@ export default function CaseDetail() {
           <div className="flex gap-1">
             {TABS.map((_,i) => <div key={i} className={`w-2 h-2 rounded-full transition-all ${activeTab===i+1?"bg-gray-800":completedTabs[i]?"bg-gray-400":"bg-gray-200"}`}/>)}
           </div>
-          <button onClick={() => setActiveTab(t=>Math.min(10,t+1))} disabled={activeTab===10} className="flex items-center gap-1 text-sm text-gray-800 font-medium hover:text-gray-600 disabled:opacity-30">
+          <button onClick={() => setActiveTab(t=>Math.min(11,t+1))} disabled={activeTab===11} className="flex items-center gap-1 text-sm text-gray-800 font-medium hover:text-gray-600 disabled:opacity-30">
             Weiter <ArrowRight className="w-4 h-4"/>
           </button>
         </div>
