@@ -6,45 +6,34 @@
 @layer base {
   :root {
 
-    --accent: 221 55% 36%;
-
+    /* Apple Numbers Color System */
+    --accent: 134 61% 49%;
     --accent-foreground: 0 0% 100%;
-
-    --background: 0 0% 100%;
-
-    --border: 0 0% 94%;
-
+    --background: 0 0% 97%;
+    --border: 0 0% 88%;
     --card: 0 0% 100%;
-
-    --card-foreground: 0 0% 10%;
-
+    --card-foreground: 0 0% 8%;
     --destructive: 0 72% 51%;
-
     --destructive-foreground: 0 0% 100%;
-
-    --foreground: 0 0% 10%;
-
-    --input: 0 0% 94%;
-
-    --muted: 0 0% 97%;
-
-    --muted-foreground: 0 0% 40%;
-
+    --foreground: 0 0% 8%;
+    --input: 0 0% 92%;
+    --muted: 0 0% 96%;
+    --muted-foreground: 0 0% 42%;
     --popover: 0 0% 100%;
-
-    --popover-foreground: 0 0% 10%;
-
-    --primary: 221 55% 36%;
-
+    --popover-foreground: 0 0% 8%;
+    --primary: 134 61% 41%;
     --primary-foreground: 0 0% 100%;
+    --radius: 0.5rem;
+    --ring: 134 61% 41%;
+    --secondary: 0 0% 95%;
+    --secondary-foreground: 0 0% 15%;
 
-    --radius: 0.625rem;
-
-    --ring: 221 55% 36%;
-
-    --secondary: 0 0% 97%;
-
-    --secondary-foreground: 0 0% 10%;
+    /* Numbers-specific tokens */
+    --numbers-green: #34C759;
+    --numbers-toolbar-bg: rgba(246,246,246,0.95);
+    --numbers-sidebar-bg: #f5f5f5;
+    --numbers-canvas-bg: #e8e8e8;
+    --numbers-tab-active: #34C759;
 
   }
 }
@@ -61,8 +50,35 @@
 }
 
 
-body { font-family: "Inter", system-ui, sans-serif !important; }
-h1, h2, h3, h4, h5, h6 { font-family: "Inter", system-ui, sans-serif !important; }
+/* Apple Numbers Design System */
+body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif !important; }
+h1, h2, h3, h4, h5, h6 { font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif !important; }
+
+/* Numbers-style scrollbars */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.30); background-clip: padding-box; }
+
+/* Numbers toolbar button hover */
+.numbers-toolbar-btn:hover { background: rgba(0,0,0,0.07) !important; }
+.numbers-toolbar-btn.active { background: rgba(52,199,89,0.15) !important; color: #1a7f37 !important; }
+
+/* Numbers tab pill */
+.numbers-tab { background: rgba(0,0,0,0.06); border-radius: 20px; transition: all 0.15s ease; }
+.numbers-tab.active { background: #34C759; color: white; }
+
+/* Numbers sidebar */
+.numbers-sidebar { border-left: 1px solid rgba(0,0,0,0.1); }
+
+/* Apple-style focus ring */
+*:focus-visible { outline: 3px solid rgba(52,199,89,0.5) !important; outline-offset: 1px; }
+
+/* Numbers panel separator */
+.numbers-separator { height: 1px; background: rgba(0,0,0,0.08); }
+
+/* Smooth transitions like macOS */
+*, *::before, *::after { transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 
 
 

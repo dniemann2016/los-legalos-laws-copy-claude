@@ -4,7 +4,7 @@ import { base44 } from "@/api/base44Client";
 import { useAuth } from "@/lib/AuthContext";
 import {
   Scale, MessageSquare, Users, Bot, LayoutDashboard,
-  BarChart2, Sword, CheckSquare, Calendar, ChevronLeft, ChevronRight, LogOut
+  BarChart2, Sword, CheckSquare, Calendar, LogOut, ChevronDown
 } from "lucide-react";
 import JurisdictionToggle from "./JurisdictionToggle";
 
@@ -25,114 +25,154 @@ export default function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const { currentUser } = useAuth();
-  const [collapsed, setCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const isActive = (item) => {
     if (item.exact) return location.pathname === item.path;
     return location.pathname.startsWith(item.path);
   };
 
+  const activeItem = NAV_ITEMS.find(item => isActive(item)) || NAV_ITEMS[0];
+
   const initials = currentUser?.full_name
     ? currentUser.full_name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
     : currentUser?.email?.[0]?.toUpperCase() || "?";
 
   return (
-    <div className="flex min-h-screen bg-white font-sans">
-      {/* Sidebar */}
-      <aside
-        className="flex flex-col flex-shrink-0 transition-all duration-200"
+    <div className="flex flex-col h-screen overflow-hidden" style={{ background: "var(--numbers-canvas-bg, #e8e8e8)", fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
+
+      {/* ── NUMBERS-STYLE TOOLBAR (top bar) ── */}
+      <header
+        className="flex-shrink-0 flex flex-col"
         style={{
-          width: collapsed ? 60 : 220,
-          background: "#0f1629",
-          borderRight: "1px solid rgba(255,255,255,0.06)",
+          background: "rgba(246,246,246,0.97)",
+          borderBottom: "1px solid rgba(0,0,0,0.12)",
+          backdropFilter: "blur(20px)",
+          WebkitBackdropFilter: "blur(20px)",
+          zIndex: 50,
         }}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-4 py-5 border-b border-white/10 min-h-[64px]">
-          <div className="w-8 h-8 rounded-lg bg-[#2d4a8a] flex items-center justify-center flex-shrink-0">
-            <Scale className="w-4 h-4 text-white" />
+        {/* Top row: logo + tabs + user */}
+        <div className="flex items-center px-3 h-[44px] gap-2">
+          {/* Left: App icon + name */}
+          <div className="flex items-center gap-2 min-w-[160px]">
+            <div
+              className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0"
+              style={{ background: "linear-gradient(145deg, #34C759 0%, #28a046 100%)" }}
+            >
+              <Scale className="w-3.5 h-3.5 text-white" />
+            </div>
+            <div className="leading-none">
+              <p className="text-[12px] font-semibold text-[#1a1a1a] leading-none">MachSun Law</p>
+              <p className="text-[10px] text-[#888] leading-none mt-0.5">Niehoff & Partner</p>
+            </div>
           </div>
-          {!collapsed && (
-            <div className="overflow-hidden">
-              <p className="text-white font-bold text-[13px] leading-tight whitespace-nowrap">MachSun Law</p>
-              <p className="text-white/40 text-[10px] leading-tight whitespace-nowrap">Niehoff & Partner</p>
-            </div>
-          )}
-          <button
-            onClick={() => setCollapsed(!collapsed)}
-            className="ml-auto text-white/30 hover:text-white/70 transition-colors"
-          >
-            {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
-          </button>
-        </div>
 
-        {/* Nav */}
-        <nav className="flex-1 py-3 space-y-0.5 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const active = isActive(item);
-            return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                title={collapsed ? item.label : undefined}
-                className="w-full flex items-center gap-3 px-3 py-2.5 relative transition-colors group"
-                style={{
-                  background: active ? "rgba(45,74,138,0.35)" : "transparent",
-                }}
-              >
-                {/* Active indicator bar */}
-                {active && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-0.5 h-5 rounded-r-full bg-[#4d7fd4]" />
-                )}
-                <item.icon
-                  className="flex-shrink-0 transition-colors"
-                  style={{
-                    width: 16, height: 16,
-                    color: active ? "#7eaaff" : "rgba(255,255,255,0.45)",
-                  }}
-                />
-                {!collapsed && (
-                  <span
-                    className="text-[12.5px] font-medium whitespace-nowrap transition-colors"
-                    style={{ color: active ? "#e8efff" : "rgba(255,255,255,0.55)" }}
-                  >
-                    {item.label}
-                  </span>
-                )}
-              </button>
-            );
-          })}
-        </nav>
-
-        {/* Bottom: user + jurisdiction */}
-        <div className="border-t border-white/10 p-3 space-y-2">
-          {!collapsed && <JurisdictionToggle dark />}
-          <div className="flex items-center gap-2.5 px-1">
-            <div className="w-7 h-7 rounded-full bg-[#2d4a8a] flex items-center justify-center flex-shrink-0">
-              <span className="text-[10px] font-bold text-white">{initials}</span>
-            </div>
-            {!collapsed && (
-              <>
-                <div className="flex-1 min-w-0">
-                  <p className="text-white/70 text-[11px] font-medium truncate">{currentUser?.full_name || currentUser?.email || "Nutzer"}</p>
-                  <p className="text-white/30 text-[10px] truncate">{currentUser?.role || "user"}</p>
-                </div>
+          {/* Center: Sheet tabs (navigation) */}
+          <div className="flex-1 flex items-center justify-center gap-1 overflow-x-auto no-scrollbar">
+            {NAV_ITEMS.map((item) => {
+              const active = isActive(item);
+              return (
                 <button
-                  onClick={() => base44.auth.logout()}
-                  className="text-white/30 hover:text-white/70 transition-colors"
-                  title="Abmelden"
+                  key={item.path}
+                  onClick={() => navigate(item.path)}
+                  className="flex-shrink-0 flex items-center gap-1.5 px-3 py-1 rounded-full text-[11.5px] font-medium transition-all duration-150"
+                  style={{
+                    background: active ? "#34C759" : "transparent",
+                    color: active ? "#fff" : "#444",
+                    fontWeight: active ? 600 : 400,
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.background = "rgba(0,0,0,0.07)"; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.background = "transparent"; }}
                 >
-                  <LogOut className="w-3.5 h-3.5" />
+                  <item.icon style={{ width: 12, height: 12, flexShrink: 0 }} />
+                  <span className="hidden md:inline">{item.label}</span>
                 </button>
-              </>
-            )}
+              );
+            })}
+          </div>
+
+          {/* Right: Jurisdiction + User */}
+          <div className="flex items-center gap-2 min-w-[160px] justify-end">
+            <JurisdictionToggle compact />
+
+            {/* User button */}
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-1.5 px-2 py-1 rounded-lg transition-all"
+                style={{ background: userMenuOpen ? "rgba(0,0,0,0.08)" : "transparent" }}
+                onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.07)"}
+                onMouseLeave={e => { if (!userMenuOpen) e.currentTarget.style.background = "transparent"; }}
+              >
+                <div
+                  className="w-6 h-6 rounded-full flex items-center justify-center"
+                  style={{ background: "#34C759" }}
+                >
+                  <span className="text-[9px] font-bold text-white">{initials}</span>
+                </div>
+                <span className="text-[11px] text-[#444] hidden sm:block max-w-[80px] truncate">
+                  {currentUser?.full_name?.split(" ")[0] || "Nutzer"}
+                </span>
+                <ChevronDown className="w-3 h-3 text-[#888]" />
+              </button>
+
+              {userMenuOpen && (
+                <div
+                  className="absolute right-0 top-full mt-1 w-52 rounded-xl overflow-hidden z-[100]"
+                  style={{
+                    background: "rgba(250,250,250,0.97)",
+                    border: "1px solid rgba(0,0,0,0.12)",
+                    boxShadow: "0 8px 32px rgba(0,0,0,0.14), 0 2px 8px rgba(0,0,0,0.08)",
+                    backdropFilter: "blur(20px)",
+                  }}
+                >
+                  <div className="px-3 py-2.5 border-b border-black/8">
+                    <p className="text-[12px] font-semibold text-[#1a1a1a]">{currentUser?.full_name || "Nutzer"}</p>
+                    <p className="text-[11px] text-[#888]">{currentUser?.email || ""}</p>
+                  </div>
+                  <button
+                    onClick={() => { base44.auth.logout(); setUserMenuOpen(false); }}
+                    className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left transition-colors"
+                    style={{ color: "#e53935" }}
+                    onMouseEnter={e => e.currentTarget.style.background = "rgba(229,57,53,0.06)"}
+                    onMouseLeave={e => e.currentTarget.style.background = "transparent"}
+                  >
+                    <LogOut className="w-3.5 h-3.5" />
+                    <span className="text-[12px] font-medium">Abmelden</span>
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </aside>
 
-      {/* Main content */}
-      <main className="flex-1 min-w-0 overflow-auto bg-[#fafafa]">
-        <Outlet />
+        {/* Divider bar */}
+        <div style={{ height: "1px", background: "rgba(0,0,0,0.09)" }} />
+
+        {/* Breadcrumb / current section bar */}
+        <div
+          className="flex items-center gap-2 px-4 h-[30px]"
+          style={{ background: "rgba(242,242,242,0.9)" }}
+        >
+          <activeItem.icon className="w-3 h-3 text-[#888]" />
+          <span className="text-[11px] text-[#666] font-medium">{activeItem.label}</span>
+        </div>
+      </header>
+
+      {/* ── MAIN CANVAS AREA ── */}
+      <main
+        className="flex-1 overflow-auto"
+        style={{ background: "#f0f0f0" }}
+        onClick={() => setUserMenuOpen(false)}
+      >
+        {/* Content wrapper: Numbers-like "paper on canvas" feeling */}
+        <div
+          className="min-h-full"
+          style={{ background: "#f0f0f0" }}
+        >
+          <Outlet />
+        </div>
       </main>
     </div>
   );

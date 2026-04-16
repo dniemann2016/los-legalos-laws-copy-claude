@@ -2,6 +2,7 @@
 module.exports = {
   darkMode: ['class'],
   content: [
+    './index.html',
     './src/**/*.{js,jsx,ts,tsx}',
     './components/**/*.{js,jsx,ts,tsx}',
     './pages/**/*.{js,jsx,ts,tsx}',
@@ -15,17 +16,11 @@ module.exports = {
       },
     },
     extend: {
-
       fontFamily: {
-
-        heading: ['"Inter"', 'sans-serif'],
-
-
-        body: ['"Inter"', 'sans-serif'],
-        sans: ['"Inter"', 'sans-serif'],
-
+        heading: ['-apple-system', '"SF Pro Display"', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        body: ['-apple-system', '"SF Pro Text"', '"Helvetica Neue"', 'Arial', 'sans-serif'],
+        sans: ['-apple-system', '"SF Pro Text"', '"Helvetica Neue"', 'Arial', 'sans-serif'],
       },
-
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
@@ -60,6 +55,12 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Apple Numbers accent colors
+        'numbers-green': '#34C759',
+        'numbers-blue': '#007AFF',
+        'numbers-purple': '#5856D6',
+        'numbers-orange': '#FF9500',
+        'numbers-red': '#FF3B30',
       },
       borderRadius: {
         lg: 'var(--radius)',
