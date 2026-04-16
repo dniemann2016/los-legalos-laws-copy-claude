@@ -381,13 +381,45 @@ Sei dabei KONKRET und PRAXISNAH — keine allgemeinen Aussagen, sondern spezifis
       response_json_schema: {
         type: "object",
         properties: {
-          option_a: { type: "object" },
-          option_b: { type: "object" },
-          option_c: { type: "object" },
+          option_a: {
+            type: "object",
+            properties: {
+              beschreibung: { type: "string" },
+              kernstrategie: { type: "string" },
+              erfolg_pct: { type: "number" },
+              risiko_pct: { type: "number" },
+              zeithorizont: { type: "string" },
+              vorteile: { type: "array", items: { type: "string" } },
+              nachteile: { type: "array", items: { type: "string" } }
+            }
+          },
+          option_b: {
+            type: "object",
+            properties: {
+              beschreibung: { type: "string" },
+              kernstrategie: { type: "string" },
+              erfolg_pct: { type: "number" },
+              risiko_pct: { type: "number" },
+              zeithorizont: { type: "string" },
+              vorteile: { type: "array", items: { type: "string" } },
+              nachteile: { type: "array", items: { type: "string" } }
+            }
+          },
+          option_c: {
+            type: "object",
+            properties: {
+              beschreibung: { type: "string" },
+              kernstrategie: { type: "string" },
+              erfolg_pct: { type: "number" },
+              risiko_pct: { type: "number" },
+              zeithorizont: { type: "string" },
+              vorteile: { type: "array", items: { type: "string" } },
+              nachteile: { type: "array", items: { type: "string" } }
+            }
+          },
           begruendung: { type: "string" }
         }
-      },
-      model: "claude_sonnet_4_6"
+      }
     });
 
     setKiOptionen(result);
@@ -586,8 +618,7 @@ Identifiziere 6-8 konkrete Risiken: rechtliche Haftung, Bußgelder, Strafverfolg
           },
           risiko_gesamt: { type: "string" }
         }
-      },
-      model: "claude_sonnet_4_6"
+      }
     });
 
     setKiRisiken(result);
@@ -725,8 +756,7 @@ Identifiziere 4-6 KONKRETE Gesetzeslücken oder Graubereiche — mit spezifische
             }
           }
         }
-      },
-      model: "claude_sonnet_4_6"
+      }
     });
 
     // Save KI loopholes to LegalLoophole entity
@@ -848,8 +878,7 @@ DEINE AUFGABE (vollständig und konkret):
           warnungen: { type: "array", items: { type: "string" } },
           zeitlicher_faktor: { type: "string" }
         }
-      },
-      model: "claude_sonnet_4_6"
+      }
     });
 
     await onSave({
