@@ -1,0 +1,121 @@
+{
+  "name": "TimelineEvent",
+  "type": "object",
+  "properties": {
+    "case_id": {
+      "type": "string",
+      "title": "Fall ID"
+    },
+    "date": {
+      "type": "string",
+      "title": "Datum"
+    },
+    "title": {
+      "type": "string",
+      "title": "Titel"
+    },
+    "description": {
+      "type": "string",
+      "title": "Beschreibung / Zusammenfassung"
+    },
+    "category": {
+      "type": "string",
+      "title": "Kategorie",
+      "enum": [
+        "vertrag",
+        "zahlung",
+        "klage",
+        "urteil",
+        "frist",
+        "verhandlung",
+        "gutachten",
+        "korrespondenz",
+        "sonstiges"
+      ]
+    },
+    "documents": {
+      "type": "array",
+      "title": "Angeh\u00e4ngte Dokumente",
+      "items": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string"
+          },
+          "file_url": {
+            "type": "string"
+          },
+          "file_type": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "persons_involved": {
+      "type": "array",
+      "title": "Beteiligte Personen",
+      "items": {
+        "type": "string"
+      }
+    },
+    "importance": {
+      "type": "string",
+      "title": "Wichtigkeit",
+      "enum": [
+        "kritisch",
+        "hoch",
+        "mittel",
+        "niedrig"
+      ],
+      "default": "mittel"
+    },
+    "ki_generated": {
+      "type": "boolean",
+      "title": "Von KI generiert"
+    }
+  },
+  "required": [
+    "case_id",
+    "date",
+    "title"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

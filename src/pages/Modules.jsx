@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword, CheckSquare, Calendar } from "lucide-react";
+import { Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword, CheckSquare, Calendar, Target } from "lucide-react";
 import { useJurisdiction } from "../hooks/useJurisdiction";
 import { getT } from "../lib/jurisdictionConfig";
 import { useAuth } from "@/lib/AuthContext";
@@ -12,9 +12,10 @@ const PATHS = [
   "/cockpit",
   "/analytik",
   "/strategic-analysis",
+  "/strategos",
 ];
 
-const ICONS = [MessageSquare, Scale, Users, Bot, LayoutDashboard, BarChart2, Sword];
+const ICONS = [MessageSquare, Scale, Users, Bot, LayoutDashboard, BarChart2, Sword, Target];
 
 const ICON_COLORS = [
   { bg: "#eef0ff", icon: "#5856D6" },
@@ -24,6 +25,7 @@ const ICON_COLORS = [
   { bg: "#fff8e1", icon: "#FF9500" },
   { bg: "#fce4ec", icon: "#FF3B30" },
   { bg: "#e8eaf6", icon: "#5856D6" },
+  { bg: "#fff3e0", icon: "#FF6D00" },
 ];
 
 export default function Modules() {

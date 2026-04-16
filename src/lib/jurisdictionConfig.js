@@ -262,6 +262,7 @@ const DE_TEXT = {
     { category: "Cockpit", title: "Kanzlei-Cockpit", description: "Risiko-Ampel, Portfolio und Fristen-Monitoring" },
     { category: "Analytics", title: "Kanzlei-Analytik", description: "Visualisierung aller Fallkennzahlen und Trends" },
     { category: "Strategie & Psycho-Analyse", title: "Sun Tzu × Machiavelli", description: "48 Laws of Power · Strategischer Pfad & Risikobewertung für Ihren Fall" },
+    { category: "Szenario-Prognose", title: "Strategos", description: "Kosten-Nutzen-Szenarien, Gesetzeslücken-DB & strategische Prognosen" },
   ],
 };
 
@@ -495,6 +496,7 @@ const EN_TEXT = {
     { category: "Cockpit", title: "Firm Cockpit", description: "Risk indicators, portfolio and deadline monitoring" },
     { category: "Analytics", title: "Firm Analytics", description: "Visualization of all case metrics and trends" },
     { category: "Strategy & Psycho-Analysis", title: "Sun Tzu × Machiavelli", description: "48 Laws of Power · Strategic path & risk assessment for your case" },
+    { category: "Scenario Forecasting", title: "Strategos", description: "Cost-benefit scenarios, legal loophole database & strategic forecasting" },
   ],
 };
 
@@ -728,6 +730,7 @@ const FR_TEXT = {
     { category: "Cockpit", title: "Cockpit cabinet", description: "Indicateurs de risque, portefeuille et délais" },
     { category: "Analytique", title: "Analytique cabinet", description: "Visualisation de tous les indicateurs de dossiers" },
     { category: "Stratégie & Psycho-Analyse", title: "Sun Tzu × Machiavel", description: "48 Lois du Pouvoir · Chemin stratégique & évaluation des risques" },
+    { category: "Prévision de scénarios", title: "Strategos", description: "Scénarios coûts-bénéfices, base de failles juridiques & prévisions stratégiques" },
   ],
 };
 

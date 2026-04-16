@@ -1,0 +1,150 @@
+{
+  "name": "StrategosScenario",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "title": "Szenario-Titel"
+    },
+    "rechtsgebiet": {
+      "type": "string",
+      "title": "Rechtsgebiet"
+    },
+    "szenario_typ": {
+      "type": "string",
+      "title": "Szenario-Typ",
+      "enum": [
+        "fusion_uebernahme",
+        "patentverletzung",
+        "steueroptimierung",
+        "compliance_risiko",
+        "kartellrecht",
+        "arbeitsrecht",
+        "strafrecht",
+        "vertragsbruch",
+        "insolvenz",
+        "markenrecht",
+        "datenschutz",
+        "sonstiges"
+      ]
+    },
+    "status": {
+      "type": "string",
+      "title": "Status",
+      "enum": [
+        "entwurf",
+        "analyse",
+        "ergebnis",
+        "archiviert"
+      ],
+      "default": "entwurf"
+    },
+    "ausgangslage": {
+      "type": "string",
+      "title": "Ausgangslage / Sachverhalt"
+    },
+    "fragestellung": {
+      "type": "string",
+      "title": "Zentrale Fragestellung"
+    },
+    "option_a": {
+      "type": "object",
+      "title": "Option A (legaler Weg)"
+    },
+    "option_b": {
+      "type": "object",
+      "title": "Option B (aggressiver Weg)"
+    },
+    "option_c": {
+      "type": "object",
+      "title": "Option C (Hybrid / Alternativ)"
+    },
+    "ki_analyse": {
+      "type": "object",
+      "title": "KI-Gesamtanalyse"
+    },
+    "gesetzesluecken": {
+      "type": "array",
+      "title": "Identifizierte Gesetzesl\u00fccken",
+      "items": {
+        "type": "object",
+        "properties": {
+          "gesetz": {
+            "type": "string"
+          },
+          "paragraph": {
+            "type": "string"
+          },
+          "luecke": {
+            "type": "string"
+          },
+          "ausnutzbar": {
+            "type": "boolean"
+          },
+          "risiko": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "finanzdaten": {
+      "type": "object",
+      "title": "Finanzdaten (Kosten/Nutzen)"
+    },
+    "empfehlung": {
+      "type": "string",
+      "title": "Abschluss-Empfehlung"
+    },
+    "notes": {
+      "type": "string",
+      "title": "Notizen"
+    },
+    "step_completed": {
+      "type": "number",
+      "title": "Aktueller Schritt (1-7)",
+      "default": 1
+    }
+  },
+  "required": [
+    "title"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}

@@ -21,6 +21,7 @@ import KanzleiAnalytik from './pages/KanzleiAnalytik';
 import OnboardingSetup from './pages/OnboardingSetup';
 import Aufgaben from './pages/Aufgaben';
 import SunTzuMachiavel from './pages/SunTzuMachiavel';
+import Strategos from './pages/Strategos';
 import { useUserProfile } from './hooks/useUserProfile';
 // Add page imports here
 
@@ -60,6 +61,7 @@ const AuthenticatedApp = () => {
           <Route path="/onboarding" element={<OnboardingSetup />} />
           <Route path="/aufgaben" element={<Aufgaben />} />
           <Route path="/strategic-analysis" element={<SunTzuMachiavel />} />
+          <Route path="/strategos" element={<Strategos />} />
           {/* Add your page Route elements here */}
           <Route path="*" element={<PageNotFound />} />
         </Route>

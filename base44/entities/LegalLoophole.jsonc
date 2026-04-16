@@ -1,0 +1,124 @@
+{
+  "name": "LegalLoophole",
+  "type": "object",
+  "properties": {
+    "gesetz": {
+      "type": "string",
+      "title": "Gesetz (z.B. BGB, HGB, UCC)"
+    },
+    "paragraph": {
+      "type": "string",
+      "title": "Paragraph / Section"
+    },
+    "rechtsgebiet": {
+      "type": "string",
+      "title": "Rechtsgebiet"
+    },
+    "jurisdiction": {
+      "type": "string",
+      "title": "Rechtsordnung",
+      "enum": [
+        "DACH",
+        "US",
+        "EU",
+        "International"
+      ]
+    },
+    "titel": {
+      "type": "string",
+      "title": "Kurzbezeichnung"
+    },
+    "beschreibung": {
+      "type": "string",
+      "title": "Beschreibung der L\u00fccke"
+    },
+    "nutzungspotential": {
+      "type": "string",
+      "title": "Nutzungspotential",
+      "enum": [
+        "hoch",
+        "mittel",
+        "niedrig",
+        "theoretisch"
+      ]
+    },
+    "risiko_bei_nutzung": {
+      "type": "string",
+      "title": "Risiko bei Ausnutzung",
+      "enum": [
+        "gering",
+        "mittel",
+        "hoch",
+        "existenzbedrohend"
+      ]
+    },
+    "bekannte_faelle": {
+      "type": "string",
+      "title": "Bekannte F\u00e4lle / Pr\u00e4zedenzf\u00e4lle"
+    },
+    "gegenstrategien": {
+      "type": "string",
+      "title": "M\u00f6gliche Gegenstrategien des Staats"
+    },
+    "tags": {
+      "type": "array",
+      "title": "Tags",
+      "items": {
+        "type": "string"
+      }
+    },
+    "aktiv": {
+      "type": "boolean",
+      "title": "Noch aktiv / ausnutzbar",
+      "default": true
+    },
+    "scenario_id": {
+      "type": "string",
+      "title": "Verkn\u00fcpftes Szenario (optional)"
+    }
+  },
+  "required": [
+    "gesetz",
+    "titel",
+    "beschreibung"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    }
+  }
+}
