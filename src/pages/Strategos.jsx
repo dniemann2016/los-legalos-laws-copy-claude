@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Search, Trash2, ArrowLeft, ArrowRight, Check, Target, TrendingUp, AlertTriangle, Scale, FileText, Sparkles, BookOpen, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ArrowRight, Check, Target, BookOpen, ChevronDown, ChevronUp, Sparkles, Wand2, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
 
 const SZENARIO_TYPEN = {
   fusion_uebernahme: { label: "Fusion / Übernahme", icon: "🏢", color: "#007AFF" },
@@ -21,24 +20,21 @@ const SZENARIO_TYPEN = {
 
 const STEPS = [
   { id: 1, title: "Sachverhalt", desc: "Ausgangslage und zentrale Fragestellung definieren" },
-  { id: 2, title: "Optionen", desc: "Handlungsalternativen identifizieren (legal, aggressiv, hybrid)" },
+  { id: 2, title: "Optionen", desc: "KI ermittelt Handlungsalternativen — manuell ergänzbar" },
   { id: 3, title: "Finanzen", desc: "Kosten-Nutzen-Analyse für jede Option" },
-  { id: 4, title: "Risiken", desc: "Rechtliche und wirtschaftliche Risiken bewerten" },
-  { id: 5, title: "Gesetzeslücken", desc: "Ausnutzbare Lücken und Graubereiche identifizieren" },
-  { id: 6, title: "KI-Analyse", desc: "Umfassende strategische Analyse durch KI" },
+  { id: 4, title: "Risiken", desc: "KI bewertet Risiken — manuell ergänzbar" },
+  { id: 5, title: "Gesetzeslücken", desc: "KI identifiziert Lücken — manuell ergänzbar" },
+  { id: 6, title: "KI-Analyse", desc: "Umfassende strategische Gesamtanalyse" },
   { id: 7, title: "Empfehlung", desc: "Abschlussempfehlung und Handlungsplan" },
 ];
 
 function ScenarioCard({ scenario, onClick }) {
   const typ = SZENARIO_TYPEN[scenario.szenario_typ] || SZENARIO_TYPEN.sonstiges;
   const progress = Math.round(((scenario.step_completed || 1) / 7) * 100);
-
   return (
     <div onClick={onClick} className="bg-white rounded-xl border border-gray-100 p-4 cursor-pointer hover:shadow-lg hover:border-green-200 transition-all">
       <div className="flex items-start gap-3">
-        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style={{ background: typ.color + "15" }}>
-          {typ.icon}
-        </div>
+        <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl" style={{ background: typ.color + "15" }}>{typ.icon}</div>
         <div className="flex-1 min-w-0">
           <p className="text-[10px] text-gray-400 font-medium uppercase">{typ.label}</p>
           <h3 className="text-sm font-semibold text-gray-900 truncate">{scenario.title}</h3>
@@ -56,16 +52,14 @@ function ScenarioCard({ scenario, onClick }) {
 
 function LoopholeCard({ loophole, onDelete }) {
   const [expanded, setExpanded] = useState(false);
-
   return (
     <div className="bg-white rounded-lg border border-gray-100 p-3">
       <div className="flex items-start justify-between cursor-pointer" onClick={() => setExpanded(!expanded)}>
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono px-1.5 py-0.5 bg-gray-100 rounded">{loophole.gesetz} {loophole.paragraph}</span>
-            <span className={`text-[9px] px-1.5 py-0.5 rounded ${loophole.aktiv ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
-              {loophole.aktiv ? "Aktiv" : "Geschlossen"}
-            </span>
+            <span className={`text-[9px] px-1.5 py-0.5 rounded ${loophole.aktiv ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>{loophole.aktiv ? "Aktiv" : "Geschlossen"}</span>
+            {loophole.ki_generated && <span className="text-[9px] px-1.5 py-0.5 bg-violet-100 text-violet-700 rounded">KI</span>}
           </div>
           <h4 className="text-sm font-semibold text-gray-800">{loophole.titel}</h4>
         </div>
@@ -80,7 +74,7 @@ function LoopholeCard({ loophole, onDelete }) {
           </div>
           {loophole.bekannte_faelle && <p className="text-xs text-gray-500"><strong>Präzedenzfälle:</strong> {loophole.bekannte_faelle}</p>}
           {onDelete && (
-            <button onClick={(e) => { e.stopPropagation(); onDelete(loophole.id); }} className="text-xs text-red-500 hover:text-red-700 mt-2">
+            <button onClick={e => { e.stopPropagation(); onDelete(loophole.id); }} className="text-xs text-red-500 hover:text-red-700 mt-2">
               <Trash2 className="w-3 h-3 inline mr-1" /> Löschen
             </button>
           )}
@@ -91,7 +85,6 @@ function LoopholeCard({ loophole, onDelete }) {
 }
 
 export default function Strategos() {
-  const navigate = useNavigate();
   const [scenarios, setScenarios] = useState([]);
   const [loopholes, setLoopholes] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,8 +92,7 @@ export default function Strategos() {
   const [activeStep, setActiveStep] = useState(1);
   const [showCreate, setShowCreate] = useState(false);
   const [newScenario, setNewScenario] = useState({ title: "", szenario_typ: "sonstiges", rechtsgebiet: "" });
-  const [view, setView] = useState("scenarios"); // scenarios | loopholes
-  const [analysing, setAnalysing] = useState(false);
+  const [view, setView] = useState("scenarios");
 
   useEffect(() => { loadData(); }, []);
 
@@ -125,10 +117,7 @@ export default function Strategos() {
     setActiveStep(1);
   };
 
-  const openScenario = (sc) => {
-    setActiveScenario(sc);
-    setActiveStep(sc.step_completed || 1);
-  };
+  const openScenario = (sc) => { setActiveScenario(sc); setActiveStep(sc.step_completed || 1); };
 
   const saveScenario = async (updates) => {
     const updated = await base44.entities.StrategosScenario.update(activeScenario.id, updates);
@@ -136,74 +125,16 @@ export default function Strategos() {
     loadData();
   };
 
-  const deleteLoophole = async (id) => {
-    await base44.entities.LegalLoophole.delete(id);
-    loadData();
-  };
+  const deleteLoophole = async (id) => { await base44.entities.LegalLoophole.delete(id); loadData(); };
 
-  const runKIAnalysis = async () => {
-    setAnalysing(true);
-    try {
-      const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein strategischer Rechtsberater auf Senior-Partner-Niveau. Analysiere dieses Szenario vollständig und liefere eine tiefgreifende strategische Analyse.
-
-SZENARIO:
-Titel: ${activeScenario.title}
-Typ: ${SZENARIO_TYPEN[activeScenario.szenario_typ]?.label || activeScenario.szenario_typ}
-Rechtsgebiet: ${activeScenario.rechtsgebiet || "nicht angegeben"}
-
-Ausgangslage: ${activeScenario.ausgangslage || "nicht angegeben"}
-Fragestellung: ${activeScenario.fragestellung || "nicht angegeben"}
-
-Option A (legal): ${JSON.stringify(activeScenario.option_a || {})}
-Option B (aggressiv): ${JSON.stringify(activeScenario.option_b || {})}
-Option C (hybrid): ${JSON.stringify(activeScenario.option_c || {})}
-
-Finanzdaten: ${JSON.stringify(activeScenario.finanzdaten || {})}
-Gesetzeslücken: ${JSON.stringify(activeScenario.gesetzesluecken || [])}
-
-DEINE AUFGABE:
-1. Bewerte jede Option systematisch (Erfolgswahrscheinlichkeit, Risiko, ROI)
-2. Identifiziere weitere Gesetzeslücken und Graubereiche
-3. Berechne Erwartungswerte (EV) für jede Option
-4. Erstelle Best/Worst/Expected Case Szenarien
-5. Gib eine klare Empfehlung mit Begründung
-
-JSON-Format:
-{
-  "option_bewertungen": [
-    {"option": "A", "name": "...", "erfolg_pct": 75, "risiko_pct": 20, "roi_pct": 150, "ev_eur": 500000, "einschätzung": "..."}
-  ],
-  "erwartungswert_gesamt": {"best_case_eur": 0, "expected_eur": 0, "worst_case_eur": 0},
-  "weitere_gesetzesluecken": [{"gesetz": "...", "paragraph": "...", "luecke": "...", "ausnutzbar": true, "risiko": "mittel"}],
-  "risiko_matrix": [{"risiko": "...", "wahrscheinlichkeit": "hoch", "auswirkung": "mittel", "gegenmassnahme": "..."}],
-  "zeitlicher_faktor": "...",
-  "empfehlung": {"option": "A/B/C", "begründung": "...", "nächste_schritte": ["..."]},
-  "warnungen": ["..."]
-}`,
-        model: "claude_sonnet_4_6"
-      });
-
-      let parsed;
-      try {
-        const match = (typeof res === "string" ? res : JSON.stringify(res)).match(/\{[\s\S]*\}/);
-        parsed = JSON.parse(match ? match[0] : res);
-      } catch {
-        parsed = { error: "Analyse konnte nicht geparst werden" };
-      }
-
-      await saveScenario({ ki_analyse: parsed, step_completed: Math.max(activeScenario.step_completed || 1, 6) });
-      setActiveStep(6);
-    } catch (err) {
-      console.error(err);
-    }
-    setAnalysing(false);
+  const goNext = async () => {
+    await saveScenario({ step_completed: Math.max(activeScenario.step_completed || 1, activeStep) });
+    setActiveStep(s => Math.min(7, s + 1));
   };
 
   if (activeScenario) {
     return (
       <div className="min-h-screen" style={{ background: "#f0f0f0", fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
-        {/* Toolbar */}
         <div className="sticky top-0 z-20" style={{ background: "rgba(246,246,246,0.97)", borderBottom: "1px solid rgba(0,0,0,0.1)", backdropFilter: "blur(20px)" }}>
           <div className="max-w-5xl mx-auto px-5">
             <div className="flex items-center gap-2 py-2.5" style={{ borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
@@ -213,22 +144,20 @@ JSON-Format:
               <span className="text-gray-300">›</span>
               <span className="text-[11px] text-gray-600">{activeScenario.title}</span>
             </div>
-            <div className="flex items-center justify-between py-2 gap-3">
+            <div className="flex items-center justify-between py-2">
               <h1 className="text-[14px] font-semibold text-gray-900">{activeScenario.title}</h1>
               <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: (SZENARIO_TYPEN[activeScenario.szenario_typ]?.color || "#999") + "15", color: SZENARIO_TYPEN[activeScenario.szenario_typ]?.color || "#999" }}>
-                {SZENARIO_TYPEN[activeScenario.szenario_typ]?.label || activeScenario.szenario_typ}
+                {SZENARIO_TYPEN[activeScenario.szenario_typ]?.label}
               </span>
             </div>
-            <div className="flex gap-0 overflow-x-auto pb-0" style={{ marginBottom: "-1px" }}>
+            <div className="flex gap-0 overflow-x-auto" style={{ marginBottom: "-1px" }}>
               {STEPS.map(s => (
                 <button key={s.id} onClick={() => setActiveStep(s.id)}
                   className="flex items-center gap-1.5 whitespace-nowrap px-3 py-1.5 text-[11px] transition-all"
-                  style={{
-                    fontWeight: activeStep === s.id ? 600 : 400,
-                    color: activeStep === s.id ? "#1a1a1a" : "#888",
-                    borderBottom: activeStep === s.id ? "2px solid #34C759" : "2px solid transparent",
-                  }}>
-                  {(activeScenario.step_completed || 1) >= s.id ? <Check className="w-3 h-3 text-green-500" /> : <span className="w-3.5 h-3.5 rounded-full border text-[9px] flex items-center justify-center" style={{ borderColor: activeStep === s.id ? "#1a1a1a" : "#ccc", color: activeStep === s.id ? "#1a1a1a" : "#aaa" }}>{s.id}</span>}
+                  style={{ fontWeight: activeStep === s.id ? 600 : 400, color: activeStep === s.id ? "#1a1a1a" : "#888", borderBottom: activeStep === s.id ? "2px solid #34C759" : "2px solid transparent" }}>
+                  {(activeScenario.step_completed || 1) >= s.id
+                    ? <Check className="w-3 h-3 text-green-500" />
+                    : <span className="w-3.5 h-3.5 rounded-full border text-[9px] flex items-center justify-center" style={{ borderColor: activeStep === s.id ? "#1a1a1a" : "#ccc", color: activeStep === s.id ? "#1a1a1a" : "#aaa" }}>{s.id}</span>}
                   {s.title}
                 </button>
               ))}
@@ -241,12 +170,9 @@ JSON-Format:
             step={activeStep}
             scenario={activeScenario}
             onSave={saveScenario}
-            onAnalyse={runKIAnalysis}
-            analysing={analysing}
             loopholes={loopholes}
             onLoadData={loadData}
           />
-
           <div className="flex items-center justify-between mt-8 pt-4" style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }}>
             <button onClick={() => setActiveStep(s => Math.max(1, s - 1))} disabled={activeStep === 1}
               className="flex items-center gap-1 text-[12px] font-medium text-gray-500 disabled:opacity-30">
@@ -257,7 +183,7 @@ JSON-Format:
                 <div key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: activeStep === i + 1 ? "#1a1a1a" : (activeScenario.step_completed || 1) >= i + 1 ? "#34C759" : "#ddd" }} />
               ))}
             </div>
-            <button onClick={() => { saveScenario({ step_completed: Math.max(activeScenario.step_completed || 1, activeStep) }); setActiveStep(s => Math.min(7, s + 1)); }} disabled={activeStep === 7}
+            <button onClick={goNext} disabled={activeStep === 7}
               className="flex items-center gap-1 text-[12px] font-semibold text-gray-900 disabled:opacity-30">
               Weiter <ArrowRight className="w-3.5 h-3.5" />
             </button>
@@ -269,7 +195,6 @@ JSON-Format:
 
   return (
     <div className="min-h-screen" style={{ background: "#f0f0f0", fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
-      {/* Toolbar */}
       <div className="sticky top-0 z-20" style={{ background: "rgba(246,246,246,0.97)", borderBottom: "1px solid rgba(0,0,0,0.1)", backdropFilter: "blur(20px)" }}>
         <div className="max-w-5xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="mr-auto">
@@ -277,12 +202,8 @@ JSON-Format:
             <p className="text-[10px] text-gray-500">Szenario-Prognose & Gesetzeslücken-Analyse</p>
           </div>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
-            <button onClick={() => setView("scenarios")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "scenarios" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>
-              Szenarien
-            </button>
-            <button onClick={() => setView("loopholes")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "loopholes" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>
-              Gesetzeslücken-DB
-            </button>
+            <button onClick={() => setView("scenarios")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "scenarios" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>Szenarien</button>
+            <button onClick={() => setView("loopholes")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "loopholes" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>Gesetzeslücken-DB</button>
           </div>
           <Button size="sm" onClick={() => setShowCreate(true)} className="bg-gray-900 text-white rounded-lg text-xs gap-1">
             <Plus className="w-3 h-3" /> Neu
@@ -293,17 +214,13 @@ JSON-Format:
       <div className="max-w-5xl mx-auto px-5 py-5">
         {view === "scenarios" ? (
           loading ? (
-            <div className="flex items-center justify-center py-20">
-              <div className="w-5 h-5 border-2 border-gray-200 border-t-green-500 rounded-full animate-spin" />
-            </div>
+            <div className="flex items-center justify-center py-20"><div className="w-5 h-5 border-2 border-gray-200 border-t-green-500 rounded-full animate-spin" /></div>
           ) : scenarios.length === 0 ? (
             <div className="text-center py-20 bg-white rounded-xl border border-gray-100">
               <Target className="w-10 h-10 mx-auto mb-3 text-gray-300" />
               <p className="text-sm font-semibold text-gray-600">Noch keine Szenarien</p>
               <p className="text-xs text-gray-400 mt-1">Erstellen Sie Ihr erstes Szenario zur Analyse</p>
-              <Button size="sm" onClick={() => setShowCreate(true)} className="mt-4 bg-gray-900 text-white rounded-lg text-xs">
-                <Plus className="w-3 h-3 mr-1" /> Szenario erstellen
-              </Button>
+              <Button size="sm" onClick={() => setShowCreate(true)} className="mt-4 bg-gray-900 text-white rounded-lg text-xs"><Plus className="w-3 h-3 mr-1" /> Szenario erstellen</Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -318,14 +235,11 @@ JSON-Format:
                 <p className="text-sm font-semibold text-gray-600">Keine Gesetzeslücken erfasst</p>
                 <p className="text-xs text-gray-400 mt-1">Lücken werden beim Analysieren von Szenarien automatisch hinzugefügt</p>
               </div>
-            ) : (
-              loopholes.map(lh => <LoopholeCard key={lh.id} loophole={lh} onDelete={deleteLoophole} />)
-            )}
+            ) : loopholes.map(lh => <LoopholeCard key={lh.id} loophole={lh} onDelete={deleteLoophole} />)}
           </div>
         )}
       </div>
 
-      {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center" style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(8px)" }} onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
           <div className="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
@@ -362,7 +276,8 @@ JSON-Format:
   );
 }
 
-function StepContent({ step, scenario, onSave, onAnalyse, analysing, loopholes, onLoadData }) {
+// ── STEP CONTENT ────────────────────────────────────────────────────────────
+function StepContent({ step, scenario, onSave, loopholes, onLoadData }) {
   const [form, setForm] = useState({});
 
   useEffect(() => {
@@ -373,245 +288,664 @@ function StepContent({ step, scenario, onSave, onAnalyse, analysing, loopholes, 
       option_b: scenario.option_b || {},
       option_c: scenario.option_c || {},
       finanzdaten: scenario.finanzdaten || {},
+      gesetzesluecken: scenario.gesetzesluecken || [],
       empfehlung: scenario.empfehlung || "",
       notes: scenario.notes || "",
     });
-  }, [scenario]);
+  }, [scenario.id]);
 
-  const save = (updates) => {
-    setForm({ ...form, ...updates });
-    onSave(updates);
-  };
+  const save = (updates) => { setForm(f => ({ ...f, ...updates })); onSave(updates); };
 
-  if (step === 1) {
-    return (
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">Sachverhalt & Fragestellung</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] text-gray-500 uppercase block mb-1">Ausgangslage / Sachverhalt</label>
-              <textarea value={form.ausgangslage} onChange={e => setForm({ ...form, ausgangslage: e.target.value })} onBlur={() => save({ ausgangslage: form.ausgangslage })}
-                placeholder="Beschreiben Sie die aktuelle Situation des Unternehmens / Mandanten..." rows={5} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
-            </div>
-            <div>
-              <label className="text-[10px] text-gray-500 uppercase block mb-1">Zentrale Fragestellung</label>
-              <textarea value={form.fragestellung} onChange={e => setForm({ ...form, fragestellung: e.target.value })} onBlur={() => save({ fragestellung: form.fragestellung })}
-                placeholder="Was genau soll analysiert werden? z.B.: Lohnt es sich, das Patent zu verletzen statt zu lizenzieren?" rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 2) {
-    return (
-      <div className="space-y-4">
-        {[["option_a", "Option A: Legaler Weg", "Der konservative, rechtlich einwandfreie Ansatz", "#34C759"],
-          ["option_b", "Option B: Aggressiver Weg", "Risikoreicherer Ansatz mit höherem Potenzial", "#FF9500"],
-          ["option_c", "Option C: Hybrid / Alternativ", "Kompromiss oder kreativer Mittelweg", "#007AFF"]].map(([key, title, desc, color]) => (
-          <div key={key} className="bg-white rounded-xl border border-gray-100 p-5">
-            <div className="flex items-center gap-2 mb-3">
-              <div className="w-3 h-3 rounded-full" style={{ background: color }} />
-              <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
-            </div>
-            <p className="text-xs text-gray-500 mb-3">{desc}</p>
-            <div className="space-y-3">
-              <div>
-                <label className="text-[10px] text-gray-500 uppercase block mb-1">Beschreibung</label>
-                <textarea value={form[key]?.beschreibung || ""} onChange={e => setForm({ ...form, [key]: { ...form[key], beschreibung: e.target.value } })}
-                  onBlur={() => save({ [key]: form[key] })} placeholder="Was beinhaltet diese Option?" rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
-              </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-[10px] text-gray-500 uppercase block mb-1">Erfolgswahrsch. %</label>
-                  <input type="number" value={form[key]?.erfolg_pct || ""} onChange={e => setForm({ ...form, [key]: { ...form[key], erfolg_pct: e.target.value } })}
-                    onBlur={() => save({ [key]: form[key] })} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-gray-500 uppercase block mb-1">Risiko %</label>
-                  <input type="number" value={form[key]?.risiko_pct || ""} onChange={e => setForm({ ...form, [key]: { ...form[key], risiko_pct: e.target.value } })}
-                    onBlur={() => save({ [key]: form[key] })} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                </div>
-                <div>
-                  <label className="text-[10px] text-gray-500 uppercase block mb-1">Zeithorizont</label>
-                  <input value={form[key]?.zeithorizont || ""} onChange={e => setForm({ ...form, [key]: { ...form[key], zeithorizont: e.target.value } })}
-                    onBlur={() => save({ [key]: form[key] })} placeholder="z.B. 2 Jahre" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  if (step === 3) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-800">Kosten-Nutzen-Analyse</h3>
-        <div className="grid grid-cols-2 gap-4">
-          {[["kosten_legal", "Kosten Option A (legal) €"],
-            ["kosten_aggressiv", "Kosten Option B (aggressiv) €"],
-            ["erwarteter_gewinn", "Erwarteter Gewinn (Best Case) €"],
-            ["potentielle_strafe", "Potentielle Strafe / Sanktion €"],
-            ["reputationsschaden", "Geschätzter Reputationsschaden €"],
-            ["zeitkosten", "Zeitkosten / Opportunitätskosten €"]].map(([key, label]) => (
-            <div key={key}>
-              <label className="text-[10px] text-gray-500 uppercase block mb-1">{label}</label>
-              <input type="number" value={form.finanzdaten?.[key] || ""} onChange={e => setForm({ ...form, finanzdaten: { ...form.finanzdaten, [key]: Number(e.target.value) } })}
-                onBlur={() => save({ finanzdaten: form.finanzdaten })} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-            </div>
-          ))}
-        </div>
-        {form.finanzdaten?.erwarteter_gewinn && form.finanzdaten?.potentielle_strafe && (
-          <div className="mt-4 p-4 bg-gray-50 rounded-lg">
-            <p className="text-xs text-gray-500 mb-2">Schnellberechnung:</p>
-            <p className="text-sm text-gray-800">
-              ROI (aggressiv): <strong>{(((form.finanzdaten.erwarteter_gewinn - form.finanzdaten.potentielle_strafe) / (form.finanzdaten.kosten_aggressiv || 1)) * 100).toFixed(0)}%</strong>
-            </p>
-            <p className="text-xs text-gray-500 mt-1">
-              = (Gewinn {form.finanzdaten.erwarteter_gewinn?.toLocaleString()}€ - Strafe {form.finanzdaten.potentielle_strafe?.toLocaleString()}€) / Kosten {form.finanzdaten.kosten_aggressiv?.toLocaleString()}€
-            </p>
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (step === 4) {
-    return (
-      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
-        <h3 className="text-sm font-semibold text-gray-800">Risikobewertung</h3>
-        <p className="text-xs text-gray-500">Identifizieren Sie die wichtigsten rechtlichen und wirtschaftlichen Risiken.</p>
-        <div className="space-y-3">
-          {[["risiko_strafrecht", "Strafrechtliches Risiko", "Gefängnisstrafe, Bußgelder, Vorstrafen"],
-            ["risiko_zivilrecht", "Zivilrechtliches Risiko", "Schadensersatz, Unterlassung, Vertragsstrafe"],
-            ["risiko_reputation", "Reputationsrisiko", "Öffentliche Wahrnehmung, Medienberichte"],
-            ["risiko_regulatorisch", "Regulatorisches Risiko", "Behördliche Maßnahmen, Lizenzentzug"]].map(([key, title, desc]) => (
-            <div key={key} className="border border-gray-100 rounded-lg p-3">
-              <div className="flex items-center justify-between mb-2">
-                <div>
-                  <p className="text-sm font-medium text-gray-800">{title}</p>
-                  <p className="text-[10px] text-gray-400">{desc}</p>
-                </div>
-                <select value={form.finanzdaten?.[key] || "mittel"} onChange={e => { const fd = { ...form.finanzdaten, [key]: e.target.value }; setForm({ ...form, finanzdaten: fd }); save({ finanzdaten: fd }); }}
-                  className="text-xs px-2 py-1 border border-gray-200 rounded bg-white">
-                  <option value="gering">Gering</option>
-                  <option value="mittel">Mittel</option>
-                  <option value="hoch">Hoch</option>
-                  <option value="kritisch">Kritisch</option>
-                </select>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 5) {
-    const scenarioLoopholes = loopholes.filter(l => l.scenario_id === scenario.id);
-    return (
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-800 mb-2">Gesetzeslücken & Graubereiche</h3>
-          <p className="text-xs text-gray-500 mb-4">Identifizieren Sie ausnutzbare Lücken im relevanten Recht.</p>
-          <LoopholeForm scenarioId={scenario.id} onSave={onLoadData} />
-        </div>
-        {scenarioLoopholes.length > 0 && (
-          <div className="space-y-2">
-            <p className="text-xs font-semibold text-gray-600">{scenarioLoopholes.length} Lücken für dieses Szenario:</p>
-            {scenarioLoopholes.map(lh => <LoopholeCard key={lh.id} loophole={lh} />)}
-          </div>
-        )}
-      </div>
-    );
-  }
-
-  if (step === 6) {
-    return (
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-sm font-semibold text-gray-800">KI-Analyse</h3>
-            <Button size="sm" onClick={onAnalyse} disabled={analysing} className="bg-violet-600 text-white rounded-lg text-xs gap-1">
-              <Sparkles className="w-3 h-3" /> {analysing ? "Analysiere..." : "Analyse starten"}
-            </Button>
-          </div>
-          {scenario.ki_analyse ? (
-            <div className="space-y-4">
-              {scenario.ki_analyse.option_bewertungen && (
-                <div>
-                  <p className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Optionsbewertung</p>
-                  <div className="space-y-2">
-                    {scenario.ki_analyse.option_bewertungen.map((o, i) => (
-                      <div key={i} className="bg-gray-50 rounded-lg p-3">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-sm font-semibold text-gray-800">Option {o.option}: {o.name}</span>
-                          <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">{o.erfolg_pct}% Erfolg</span>
-                        </div>
-                        <p className="text-xs text-gray-600">{o.einschätzung}</p>
-                        <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
-                          <span>Risiko: {o.risiko_pct}%</span>
-                          <span>ROI: {o.roi_pct}%</span>
-                          <span>EV: {o.ev_eur?.toLocaleString()}€</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-              {scenario.ki_analyse.empfehlung && (
-                <div className="bg-green-50 border border-green-100 rounded-lg p-4">
-                  <p className="text-xs font-semibold text-green-800 mb-1">Empfehlung: Option {scenario.ki_analyse.empfehlung.option}</p>
-                  <p className="text-sm text-green-700">{scenario.ki_analyse.empfehlung.begründung}</p>
-                </div>
-              )}
-              {scenario.ki_analyse.warnungen?.length > 0 && (
-                <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
-                  <p className="text-[10px] font-semibold text-amber-800 uppercase mb-1">Warnungen</p>
-                  {scenario.ki_analyse.warnungen.map((w, i) => <p key={i} className="text-xs text-amber-700">• {w}</p>)}
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-sm text-gray-500 text-center py-8">Starten Sie die KI-Analyse für eine umfassende Bewertung.</p>
-          )}
-        </div>
-      </div>
-    );
-  }
-
-  if (step === 7) {
-    return (
-      <div className="space-y-4">
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-800 mb-4">Abschlussempfehlung</h3>
-          <div className="space-y-4">
-            <div>
-              <label className="text-[10px] text-gray-500 uppercase block mb-1">Ihre Empfehlung</label>
-              <textarea value={form.empfehlung} onChange={e => setForm({ ...form, empfehlung: e.target.value })} onBlur={() => save({ empfehlung: form.empfehlung })}
-                placeholder="Fassen Sie Ihre finale Empfehlung zusammen..." rows={4} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
-            </div>
-            <div>
-              <label className="text-[10px] text-gray-500 uppercase block mb-1">Notizen</label>
-              <textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} onBlur={() => save({ notes: form.notes })}
-                placeholder="Zusätzliche Notizen..." rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
-            </div>
-          </div>
-        </div>
-        <Button onClick={() => save({ status: "ergebnis", step_completed: 7 })} className="w-full bg-green-600 text-white rounded-lg">
-          <Check className="w-4 h-4 mr-2" /> Analyse abschließen
-        </Button>
-      </div>
-    );
-  }
-
+  if (step === 1) return <Step1 form={form} setForm={setForm} save={save} />;
+  if (step === 2) return <Step2 form={form} setForm={setForm} save={save} scenario={scenario} />;
+  if (step === 3) return <Step3 form={form} setForm={setForm} save={save} />;
+  if (step === 4) return <Step4 form={form} setForm={setForm} save={save} scenario={scenario} />;
+  if (step === 5) return <Step5 form={form} setForm={setForm} save={save} scenario={scenario} loopholes={loopholes} onLoadData={onLoadData} />;
+  if (step === 6) return <Step6 scenario={scenario} onSave={onSave} />;
+  if (step === 7) return <Step7 form={form} setForm={setForm} save={save} />;
   return null;
 }
 
+// ── STEP 1: Sachverhalt ──────────────────────────────────────────────────────
+function Step1({ form, setForm, save }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+      <h3 className="text-sm font-semibold text-gray-800">Sachverhalt & Fragestellung</h3>
+      <p className="text-xs text-gray-500">Beschreiben Sie den Sachverhalt ausführlich — die KI nutzt diese Angaben um Optionen, Risiken und Gesetzeslücken zu ermitteln.</p>
+      <div>
+        <label className="text-[10px] text-gray-500 uppercase block mb-1">Ausgangslage / Sachverhalt</label>
+        <textarea value={form.ausgangslage} onChange={e => setForm(f => ({ ...f, ausgangslage: e.target.value }))}
+          onBlur={() => save({ ausgangslage: form.ausgangslage })}
+          placeholder="Beschreiben Sie die aktuelle Situation des Unternehmens / Mandanten ausführlich..." rows={6} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
+      </div>
+      <div>
+        <label className="text-[10px] text-gray-500 uppercase block mb-1">Zentrale Fragestellung</label>
+        <textarea value={form.fragestellung} onChange={e => setForm(f => ({ ...f, fragestellung: e.target.value }))}
+          onBlur={() => save({ fragestellung: form.fragestellung })}
+          placeholder="Was soll analysiert werden? z.B.: Lohnt es sich, das Patent zu verletzen statt zu lizenzieren?" rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
+      </div>
+      <div className="bg-green-50 border border-green-100 rounded-lg p-3">
+        <p className="text-xs text-green-700"><strong>Hinweis:</strong> Nach dem Klick auf „Weiter" analysiert die KI automatisch Sachverhalt und Fragestellung und schlägt passende Handlungsoptionen, Risiken und Gesetzeslücken vor.</p>
+      </div>
+    </div>
+  );
+}
+
+// ── STEP 2: Optionen (KI + manuell) ─────────────────────────────────────────
+function Step2({ form, setForm, save, scenario }) {
+  const [generating, setGenerating] = useState(false);
+  const [kiOptionen, setKiOptionen] = useState(scenario.ki_analyse?.ki_optionen || null);
+  const [extraOptions, setExtraOptions] = useState(scenario.ki_analyse?.extra_options || []);
+  const [newOptionText, setNewOptionText] = useState("");
+  const [addingExtra, setAddingExtra] = useState(false);
+
+  const generateOptions = async () => {
+    setGenerating(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Stratege und Rechtsanwalt. Analysiere den folgenden Sachverhalt und die Fragestellung und erarbeite konkrete, praxistaugliche Handlungsoptionen.
+
+Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || scenario.szenario_typ}
+Rechtsgebiet: ${scenario.rechtsgebiet || "nicht angegeben"}
+Ausgangslage: ${scenario.ausgangslage || ""}
+Fragestellung: ${scenario.fragestellung || ""}
+
+Erstelle 3 differenzierte Handlungsoptionen:
+- Option A: Der sichere, rechtlich einwandfreie Weg (konservativ)
+- Option B: Der aggressive, risikoreiche Weg mit höherem Potential
+- Option C: Ein Hybrid / kreativer Mittelweg
+
+Antworte im JSON-Format:
+{
+  "option_a": {
+    "beschreibung": "...",
+    "kernstrategie": "...",
+    "erfolg_pct": 75,
+    "risiko_pct": 15,
+    "zeithorizont": "...",
+    "vorteile": ["...", "..."],
+    "nachteile": ["...", "..."]
+  },
+  "option_b": { ... },
+  "option_c": { ... },
+  "begruendung": "Warum diese drei Optionen für diesen spezifischen Sachverhalt relevant sind"
+}`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          option_a: { type: "object" },
+          option_b: { type: "object" },
+          option_c: { type: "object" },
+          begruendung: { type: "string" }
+        }
+      },
+      model: "claude_sonnet_4_6"
+    });
+
+    setKiOptionen(result);
+    // Merge KI suggestions into form
+    const mergedA = { ...form.option_a, ...result.option_a };
+    const mergedB = { ...form.option_b, ...result.option_b };
+    const mergedC = { ...form.option_c, ...result.option_c };
+    setForm(f => ({ ...f, option_a: mergedA, option_b: mergedB, option_c: mergedC }));
+
+    // Save KI options in ki_analyse for training context
+    await save({
+      option_a: mergedA, option_b: mergedB, option_c: mergedC,
+      ki_analyse: { ...(scenario.ki_analyse || {}), ki_optionen: result, extra_options: extraOptions }
+    });
+    setGenerating(false);
+  };
+
+  const addExtraOption = async () => {
+    if (!newOptionText.trim()) return;
+    const updated = [...extraOptions, { text: newOptionText, timestamp: new Date().toISOString() }];
+    setExtraOptions(updated);
+    setNewOptionText("");
+    setAddingExtra(false);
+    // Save extra options as training data
+    await save({ ki_analyse: { ...(scenario.ki_analyse || {}), extra_options: updated, ki_optionen: kiOptionen } });
+  };
+
+  return (
+    <div className="space-y-4">
+      {/* KI Generate Button */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">KI-Optionsanalyse</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Die KI analysiert Sachverhalt und Fragestellung und ermittelt optimale Handlungsoptionen.</p>
+          {kiOptionen?.begruendung && <p className="text-xs text-green-700 mt-2 bg-green-50 rounded-lg p-2">{kiOptionen.begruendung}</p>}
+        </div>
+        <Button size="sm" onClick={generateOptions} disabled={generating || !scenario.ausgangslage}
+          className="flex-shrink-0 bg-violet-600 text-white rounded-lg text-xs gap-1">
+          <Wand2 className="w-3 h-3" /> {generating ? "Analysiere..." : kiOptionen ? "Neu generieren" : "KI-Optionen ermitteln"}
+        </Button>
+      </div>
+
+      {/* Eigene zusätzliche Optionshinweise */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="flex items-center justify-between mb-2">
+          <div>
+            <h4 className="text-xs font-semibold text-gray-700">Eigene Optionshinweise für die KI</h4>
+            <p className="text-[10px] text-gray-400 mt-0.5">Geben Sie der KI zusätzliche Ideen oder Einschränkungen mit — diese fließen in die Analyse ein.</p>
+          </div>
+          <button onClick={() => setAddingExtra(!addingExtra)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">+ Hinweis</button>
+        </div>
+        {extraOptions.length > 0 && (
+          <div className="space-y-1 mb-3">
+            {extraOptions.map((o, i) => (
+              <div key={i} className="flex items-start gap-2 text-xs text-gray-600 bg-gray-50 rounded-lg px-3 py-2">
+                <span className="text-violet-500 font-bold flex-shrink-0">→</span>
+                <span>{o.text}</span>
+                <button onClick={() => { const u = extraOptions.filter((_, j) => j !== i); setExtraOptions(u); save({ ki_analyse: { ...(scenario.ki_analyse || {}), extra_options: u } }); }} className="ml-auto text-gray-300 hover:text-red-500"><Trash2 className="w-3 h-3" /></button>
+              </div>
+            ))}
+          </div>
+        )}
+        {addingExtra && (
+          <div className="flex gap-2">
+            <input value={newOptionText} onChange={e => setNewOptionText(e.target.value)} onKeyDown={e => e.key === "Enter" && addExtraOption()}
+              placeholder="z.B. Außergerichtliche Einigung bevorzugt, max. 500k€ Budget..." className="flex-1 px-3 py-2 text-sm border border-gray-200 rounded-lg" autoFocus />
+            <Button size="sm" onClick={addExtraOption} className="bg-gray-900 text-white rounded-lg text-xs">Hinzufügen</Button>
+          </div>
+        )}
+      </div>
+
+      {/* Option Cards */}
+      {[["option_a", "Option A: Legaler Weg", "#34C759"],
+        ["option_b", "Option B: Aggressiver Weg", "#FF9500"],
+        ["option_c", "Option C: Hybrid / Alternativ", "#007AFF"]].map(([key, title, color]) => (
+        <div key={key} className="bg-white rounded-xl border border-gray-100 p-5">
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-3 h-3 rounded-full" style={{ background: color }} />
+            <h3 className="text-sm font-semibold text-gray-800">{title}</h3>
+            {form[key]?.beschreibung && <span className="text-[9px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded ml-auto">KI-Vorschlag vorhanden</span>}
+          </div>
+          {form[key]?.kernstrategie && (
+            <div className="bg-gray-50 rounded-lg p-3 mb-3">
+              <p className="text-[10px] text-gray-500 uppercase font-semibold mb-1">KI-Kernstrategie</p>
+              <p className="text-xs text-gray-700">{form[key].kernstrategie}</p>
+              {form[key].vorteile?.length > 0 && <p className="text-[10px] text-green-600 mt-1">+ {form[key].vorteile.join(" · ")}</p>}
+              {form[key].nachteile?.length > 0 && <p className="text-[10px] text-red-500 mt-0.5">– {form[key].nachteile.join(" · ")}</p>}
+            </div>
+          )}
+          <div className="space-y-3">
+            <div>
+              <label className="text-[10px] text-gray-500 uppercase block mb-1">Beschreibung (manuell anpassen)</label>
+              <textarea value={form[key]?.beschreibung || ""} onChange={e => setForm(f => ({ ...f, [key]: { ...f[key], beschreibung: e.target.value } }))}
+                onBlur={() => save({ [key]: form[key] })} placeholder="Was beinhaltet diese Option?" rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase block mb-1">Erfolg %</label>
+                <input type="number" value={form[key]?.erfolg_pct || ""}
+                  onChange={e => setForm(f => ({ ...f, [key]: { ...f[key], erfolg_pct: e.target.value } }))}
+                  onBlur={() => save({ [key]: form[key] })} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase block mb-1">Risiko %</label>
+                <input type="number" value={form[key]?.risiko_pct || ""}
+                  onChange={e => setForm(f => ({ ...f, [key]: { ...f[key], risiko_pct: e.target.value } }))}
+                  onBlur={() => save({ [key]: form[key] })} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+              </div>
+              <div>
+                <label className="text-[10px] text-gray-500 uppercase block mb-1">Zeithorizont</label>
+                <input value={form[key]?.zeithorizont || ""}
+                  onChange={e => setForm(f => ({ ...f, [key]: { ...f[key], zeithorizont: e.target.value } }))}
+                  onBlur={() => save({ [key]: form[key] })} placeholder="z.B. 2 Jahre" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+              </div>
+            </div>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ── STEP 3: Finanzen ─────────────────────────────────────────────────────────
+function Step3({ form, setForm, save }) {
+  return (
+    <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+      <h3 className="text-sm font-semibold text-gray-800">Kosten-Nutzen-Analyse</h3>
+      <div className="grid grid-cols-2 gap-4">
+        {[["kosten_legal", "Kosten Option A (legal) €"],
+          ["kosten_aggressiv", "Kosten Option B (aggressiv) €"],
+          ["erwarteter_gewinn", "Erwarteter Gewinn (Best Case) €"],
+          ["potentielle_strafe", "Potentielle Strafe / Sanktion €"],
+          ["reputationsschaden", "Geschätzter Reputationsschaden €"],
+          ["zeitkosten", "Zeitkosten / Opportunitätskosten €"]].map(([key, label]) => (
+          <div key={key}>
+            <label className="text-[10px] text-gray-500 uppercase block mb-1">{label}</label>
+            <input type="number" value={form.finanzdaten?.[key] || ""}
+              onChange={e => setForm(f => ({ ...f, finanzdaten: { ...f.finanzdaten, [key]: Number(e.target.value) } }))}
+              onBlur={() => save({ finanzdaten: form.finanzdaten })} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+          </div>
+        ))}
+      </div>
+      {form.finanzdaten?.erwarteter_gewinn && form.finanzdaten?.potentielle_strafe && (
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <p className="text-xs text-gray-500 mb-2">Schnellberechnung:</p>
+          <p className="text-sm text-gray-800">
+            ROI (aggressiv): <strong>{(((form.finanzdaten.erwarteter_gewinn - form.finanzdaten.potentielle_strafe) / Math.max(1, form.finanzdaten.kosten_aggressiv || 1)) * 100).toFixed(0)}%</strong>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── STEP 4: Risiken (KI + manuell) ──────────────────────────────────────────
+function Step4({ form, setForm, save, scenario }) {
+  const [generating, setGenerating] = useState(false);
+  const [kiRisiken, setKiRisiken] = useState(scenario.ki_analyse?.ki_risiken || null);
+  const [manualRisk, setManualRisk] = useState({ titel: "", beschreibung: "", wahrscheinlichkeit: "mittel", auswirkung: "mittel", gegenmassnahme: "" });
+  const [addingManual, setAddingManual] = useState(false);
+  const manualRisiken = scenario.ki_analyse?.manual_risiken || [];
+
+  const generateRisiken = async () => {
+    setGenerating(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein Risiko-Experte und Senior-Anwalt. Analysiere die folgenden Handlungsoptionen auf rechtliche und wirtschaftliche Risiken.
+
+Sachverhalt: ${scenario.ausgangslage || ""}
+Fragestellung: ${scenario.fragestellung || ""}
+Option A: ${JSON.stringify(scenario.option_a || {})}
+Option B: ${JSON.stringify(scenario.option_b || {})}
+Option C: ${JSON.stringify(scenario.option_c || {})}
+
+${manualRisiken.length > 0 ? `Bereits manuell erfasste Risiken (berücksichtigen): ${manualRisiken.map(r => r.titel).join(", ")}` : ""}
+
+Identifiziere die 5-8 wichtigsten Risiken über alle Optionen hinweg.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          risiken: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                beschreibung: { type: "string" },
+                betrifft_option: { type: "string" },
+                wahrscheinlichkeit: { type: "string" },
+                auswirkung: { type: "string" },
+                gegenmassnahme: { type: "string" }
+              }
+            }
+          },
+          risiko_gesamt: { type: "string" }
+        }
+      },
+      model: "claude_sonnet_4_6"
+    });
+
+    setKiRisiken(result);
+    await save({ ki_analyse: { ...(scenario.ki_analyse || {}), ki_risiken: result, manual_risiken: manualRisiken } });
+    setGenerating(false);
+  };
+
+  const addManualRisk = async () => {
+    if (!manualRisk.titel.trim()) return;
+    const updated = [...manualRisiken, { ...manualRisk, manuell: true, timestamp: new Date().toISOString() }];
+    await save({ ki_analyse: { ...(scenario.ki_analyse || {}), manual_risiken: updated, ki_risiken: kiRisiken } });
+    setManualRisk({ titel: "", beschreibung: "", wahrscheinlichkeit: "mittel", auswirkung: "mittel", gegenmassnahme: "" });
+    setAddingManual(false);
+  };
+
+  const riskColor = (level) => level === "hoch" || level === "kritisch" ? "text-red-600 bg-red-50 border-red-100" : level === "mittel" ? "text-amber-600 bg-amber-50 border-amber-100" : "text-green-600 bg-green-50 border-green-100";
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">KI-Risikoanalyse</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Die KI bewertet alle Optionen auf rechtliche, wirtschaftliche und reputationsbezogene Risiken.</p>
+          {kiRisiken?.risiko_gesamt && <p className="text-xs text-amber-700 mt-2 bg-amber-50 rounded-lg p-2">Gesamtrisiko: {kiRisiken.risiko_gesamt}</p>}
+        </div>
+        <Button size="sm" onClick={generateRisiken} disabled={generating}
+          className="flex-shrink-0 bg-violet-600 text-white rounded-lg text-xs gap-1">
+          <Wand2 className="w-3 h-3" /> {generating ? "Analysiere..." : kiRisiken ? "Neu analysieren" : "Risiken ermitteln"}
+        </Button>
+      </div>
+
+      {kiRisiken?.risiken?.map((r, i) => (
+        <div key={i} className={`rounded-xl border p-4 ${riskColor(r.wahrscheinlichkeit)}`}>
+          <div className="flex items-start justify-between mb-1">
+            <p className="text-sm font-semibold">{r.titel}</p>
+            <div className="flex gap-1">
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/70 font-medium">W: {r.wahrscheinlichkeit}</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/70 font-medium">A: {r.auswirkung}</span>
+              {r.betrifft_option && <span className="text-[9px] px-1.5 py-0.5 rounded bg-white/70 font-medium">Option {r.betrifft_option}</span>}
+            </div>
+          </div>
+          <p className="text-xs opacity-80">{r.beschreibung}</p>
+          {r.gegenmassnahme && <p className="text-[10px] mt-1 font-medium">Gegenmassnahme: {r.gegenmassnahme}</p>}
+        </div>
+      ))}
+
+      {/* Manuelle Risiken */}
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h4 className="text-xs font-semibold text-gray-700">Manuelle Risiken ergänzen</h4>
+            <p className="text-[10px] text-gray-400">Eigene Einschätzungen fließen in die KI-Analyse ein.</p>
+          </div>
+          <button onClick={() => setAddingManual(!addingManual)} className="text-xs text-violet-600 hover:text-violet-800 font-medium">+ Risiko</button>
+        </div>
+        {manualRisiken.map((r, i) => (
+          <div key={i} className="border border-amber-100 bg-amber-50 rounded-lg p-3 mb-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-semibold text-amber-800">{r.titel}</p>
+              <span className="text-[9px] bg-amber-200 text-amber-800 px-1.5 py-0.5 rounded">Manuell</span>
+            </div>
+            {r.beschreibung && <p className="text-[11px] text-amber-700 mt-0.5">{r.beschreibung}</p>}
+          </div>
+        ))}
+        {addingManual && (
+          <div className="space-y-2 border-t border-gray-100 pt-3">
+            <input value={manualRisk.titel} onChange={e => setManualRisk(r => ({ ...r, titel: e.target.value }))}
+              placeholder="Risikotitel *" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+            <textarea value={manualRisk.beschreibung} onChange={e => setManualRisk(r => ({ ...r, beschreibung: e.target.value }))}
+              placeholder="Beschreibung..." rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
+            <input value={manualRisk.gegenmassnahme} onChange={e => setManualRisk(r => ({ ...r, gegenmassnahme: e.target.value }))}
+              placeholder="Gegenmassnahme..." className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+            <div className="grid grid-cols-2 gap-2">
+              <select value={manualRisk.wahrscheinlichkeit} onChange={e => setManualRisk(r => ({ ...r, wahrscheinlichkeit: e.target.value }))}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+                <option value="gering">Wahrscheinlichkeit: Gering</option>
+                <option value="mittel">Wahrscheinlichkeit: Mittel</option>
+                <option value="hoch">Wahrscheinlichkeit: Hoch</option>
+              </select>
+              <select value={manualRisk.auswirkung} onChange={e => setManualRisk(r => ({ ...r, auswirkung: e.target.value }))}
+                className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+                <option value="gering">Auswirkung: Gering</option>
+                <option value="mittel">Auswirkung: Mittel</option>
+                <option value="hoch">Auswirkung: Hoch</option>
+                <option value="kritisch">Auswirkung: Kritisch</option>
+              </select>
+            </div>
+            <Button size="sm" onClick={addManualRisk} disabled={!manualRisk.titel.trim()} className="w-full bg-gray-900 text-white rounded-lg text-xs">
+              Risiko speichern (trainiert die KI)
+            </Button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── STEP 5: Gesetzeslücken (KI + manuell) ───────────────────────────────────
+function Step5({ form, setForm, save, scenario, loopholes, onLoadData }) {
+  const [generating, setGenerating] = useState(false);
+  const scenarioLoopholes = loopholes.filter(l => l.scenario_id === scenario.id);
+  const kiLuecken = scenario.gesetzesluecken || [];
+
+  const generateLoopholes = async () => {
+    setGenerating(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein Experte für Gesetzeslücken und rechtliche Graubereiche. Analysiere den Sachverhalt und die Handlungsoptionen auf ausnutzbare Lücken im Recht.
+
+Sachverhalt: ${scenario.ausgangslage || ""}
+Fragestellung: ${scenario.fragestellung || ""}
+Rechtsgebiet: ${scenario.rechtsgebiet || ""}
+Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || ""}
+Optionen: ${JSON.stringify({ a: scenario.option_a, b: scenario.option_b, c: scenario.option_c })}
+
+${scenarioLoopholes.length > 0 ? `Bereits manuell erfasste Lücken (ergänzen, nicht duplizieren): ${scenarioLoopholes.map(l => l.titel).join(", ")}` : ""}
+
+Identifiziere 3-6 konkrete Gesetzeslücken oder Graubereiche die für dieses Szenario relevant sind.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          luecken: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                gesetz: { type: "string" },
+                paragraph: { type: "string" },
+                titel: { type: "string" },
+                beschreibung: { type: "string" },
+                nutzungspotential: { type: "string" },
+                risiko_bei_nutzung: { type: "string" },
+                bekannte_faelle: { type: "string" }
+              }
+            }
+          }
+        }
+      },
+      model: "claude_sonnet_4_6"
+    });
+
+    // Save KI loopholes to LegalLoophole entity
+    if (result.luecken?.length > 0) {
+      await Promise.all(result.luecken.map(l => base44.entities.LegalLoophole.create({
+        ...l,
+        scenario_id: scenario.id,
+        jurisdiction: "DACH",
+        aktiv: true,
+        ki_generated: true,
+        rechtsgebiet: scenario.rechtsgebiet || "",
+      })));
+      onLoadData();
+    }
+    // Also store simplified version in scenario
+    await save({ gesetzesluecken: result.luecken || [] });
+    setGenerating(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border border-gray-100 p-4 flex items-start justify-between gap-4">
+        <div>
+          <h3 className="text-sm font-semibold text-gray-800">KI-Gesetzeslückenanalyse</h3>
+          <p className="text-xs text-gray-500 mt-0.5">Die KI durchsucht das relevante Recht auf ausnutzbare Lücken und Graubereiche.</p>
+        </div>
+        <Button size="sm" onClick={generateLoopholes} disabled={generating}
+          className="flex-shrink-0 bg-violet-600 text-white rounded-lg text-xs gap-1">
+          <Wand2 className="w-3 h-3" /> {generating ? "Analysiere..." : scenarioLoopholes.length > 0 ? "Weitere finden" : "Lücken ermitteln"}
+        </Button>
+      </div>
+
+      {scenarioLoopholes.length > 0 && (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold text-gray-600">{scenarioLoopholes.length} Lücken für dieses Szenario:</p>
+          {scenarioLoopholes.map(lh => <LoopholeCard key={lh.id} loophole={lh} />)}
+        </div>
+      )}
+
+      <div className="bg-white rounded-xl border border-gray-100 p-4">
+        <h4 className="text-xs font-semibold text-gray-700 mb-1">Lücke manuell hinzufügen</h4>
+        <p className="text-[10px] text-gray-400 mb-3">Manuell erfasste Lücken trainieren die KI und fließen in zukünftige Analysen ein.</p>
+        <LoopholeForm scenarioId={scenario.id} onSave={onLoadData} />
+      </div>
+    </div>
+  );
+}
+
+// ── STEP 6: KI-Gesamtanalyse ─────────────────────────────────────────────────
+function Step6({ scenario, onSave }) {
+  const [analysing, setAnalysing] = useState(false);
+  const ki = scenario.ki_analyse;
+
+  const runAnalysis = async () => {
+    setAnalysing(true);
+    const manualRisiken = ki?.manual_risiken || [];
+    const extraOptions = ki?.extra_options || [];
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein strategischer Senior-Partner und Rechtsberater auf höchstem Niveau. Führe eine vollständige, schonungslose Analyse durch.
+
+SZENARIO: ${scenario.title}
+Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label}
+Rechtsgebiet: ${scenario.rechtsgebiet || "–"}
+Ausgangslage: ${scenario.ausgangslage || "–"}
+Fragestellung: ${scenario.fragestellung || "–"}
+
+Option A: ${JSON.stringify(scenario.option_a || {})}
+Option B: ${JSON.stringify(scenario.option_b || {})}
+Option C: ${JSON.stringify(scenario.option_c || {})}
+
+${extraOptions.length > 0 ? `Weitere vom Nutzer gewünschte Optionsaspekte: ${extraOptions.map(o => o.text).join("; ")}` : ""}
+
+Finanzdaten: ${JSON.stringify(scenario.finanzdaten || {})}
+Gesetzeslücken: ${JSON.stringify(scenario.gesetzesluecken || [])}
+${manualRisiken.length > 0 ? `Manuell erfasste Risiken (besonders beachten): ${JSON.stringify(manualRisiken)}` : ""}
+
+DEINE AUFGABE:
+1. Bewerte jede Option mit Erfolgswahrscheinlichkeit, Risiko, ROI und EV
+2. Berechne Best/Worst/Expected Case in €
+3. Berücksichtige ALLE manuellen Ergänzungen als Trainingsdaten
+4. Gib eine klare, unmissverständliche Empfehlung`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          option_bewertungen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                option: { type: "string" },
+                name: { type: "string" },
+                erfolg_pct: { type: "number" },
+                risiko_pct: { type: "number" },
+                roi_pct: { type: "number" },
+                ev_eur: { type: "number" },
+                einschaetzung: { type: "string" }
+              }
+            }
+          },
+          erwartungswert_gesamt: {
+            type: "object",
+            properties: {
+              best_case_eur: { type: "number" },
+              expected_eur: { type: "number" },
+              worst_case_eur: { type: "number" }
+            }
+          },
+          empfehlung: {
+            type: "object",
+            properties: {
+              option: { type: "string" },
+              begruendung: { type: "string" },
+              naechste_schritte: { type: "array", items: { type: "string" } }
+            }
+          },
+          warnungen: { type: "array", items: { type: "string" } },
+          zeitlicher_faktor: { type: "string" }
+        }
+      },
+      model: "claude_sonnet_4_6"
+    });
+
+    await onSave({
+      ki_analyse: { ...(ki || {}), ...result, ki_optionen: ki?.ki_optionen, ki_risiken: ki?.ki_risiken, manual_risiken: manualRisiken, extra_options: extraOptions },
+      step_completed: Math.max(scenario.step_completed || 1, 6)
+    });
+    setAnalysing(false);
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border border-gray-100 p-5">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-800">KI-Gesamtanalyse</h3>
+            <p className="text-xs text-gray-500 mt-0.5">Alle manuellen Ergänzungen aus den vorherigen Schritten fließen als Trainingsdaten ein.</p>
+          </div>
+          <Button size="sm" onClick={runAnalysis} disabled={analysing}
+            className="bg-violet-600 text-white rounded-lg text-xs gap-1">
+            <Sparkles className="w-3 h-3" /> {analysing ? "Analysiere…" : ki?.option_bewertungen ? "Neu analysieren" : "Analyse starten"}
+          </Button>
+        </div>
+
+        {ki?.option_bewertungen ? (
+          <div className="space-y-4">
+            <div>
+              <p className="text-[10px] font-semibold text-gray-500 uppercase mb-2">Optionsbewertung</p>
+              <div className="space-y-2">
+                {ki.option_bewertungen.map((o, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-semibold text-gray-800">Option {o.option}: {o.name}</span>
+                      <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">{o.erfolg_pct}% Erfolg</span>
+                    </div>
+                    <p className="text-xs text-gray-600">{o.einschaetzung || o.einschätzung}</p>
+                    <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
+                      <span>Risiko: {o.risiko_pct}%</span>
+                      <span>ROI: {o.roi_pct}%</span>
+                      {o.ev_eur && <span>EV: {o.ev_eur.toLocaleString()}€</span>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            {ki.erwartungswert_gesamt && (
+              <div className="grid grid-cols-3 gap-3">
+                {[["Best Case", ki.erwartungswert_gesamt.best_case_eur, "text-green-700 bg-green-50"],
+                  ["Expected", ki.erwartungswert_gesamt.expected_eur, "text-blue-700 bg-blue-50"],
+                  ["Worst Case", ki.erwartungswert_gesamt.worst_case_eur, "text-red-700 bg-red-50"]].map(([l, v, cls]) => (
+                  <div key={l} className={`rounded-lg p-3 ${cls}`}>
+                    <p className="text-[10px] font-semibold uppercase">{l}</p>
+                    <p className="text-sm font-bold mt-1">{v?.toLocaleString()}€</p>
+                  </div>
+                ))}
+              </div>
+            )}
+            {ki.empfehlung && (
+              <div className="bg-green-50 border border-green-100 rounded-lg p-4">
+                <p className="text-xs font-semibold text-green-800 mb-1">Empfehlung: Option {ki.empfehlung.option}</p>
+                <p className="text-sm text-green-700 mb-2">{ki.empfehlung.begruendung}</p>
+                {ki.empfehlung.naechste_schritte?.map((s, i) => <p key={i} className="text-xs text-green-600">→ {s}</p>)}
+              </div>
+            )}
+            {ki.warnungen?.length > 0 && (
+              <div className="bg-amber-50 border border-amber-100 rounded-lg p-3">
+                <p className="text-[10px] font-semibold text-amber-800 uppercase mb-1">Warnungen</p>
+                {ki.warnungen.map((w, i) => <p key={i} className="text-xs text-amber-700">• {w}</p>)}
+              </div>
+            )}
+            {ki.zeitlicher_faktor && (
+              <div className="bg-gray-50 rounded-lg p-3">
+                <p className="text-[10px] font-semibold text-gray-500 uppercase mb-1">Zeitlicher Faktor</p>
+                <p className="text-xs text-gray-700">{ki.zeitlicher_faktor}</p>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-400 text-center py-8">Starten Sie die KI-Analyse für eine umfassende Bewertung aller Optionen, Risiken und Gesetzeslücken.</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── STEP 7: Empfehlung ───────────────────────────────────────────────────────
+function Step7({ form, setForm, save }) {
+  return (
+    <div className="space-y-4">
+      <div className="bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+        <h3 className="text-sm font-semibold text-gray-800">Abschlussempfehlung</h3>
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase block mb-1">Ihre finale Empfehlung</label>
+          <textarea value={form.empfehlung} onChange={e => setForm(f => ({ ...f, empfehlung: e.target.value }))}
+            onBlur={() => save({ empfehlung: form.empfehlung })}
+            placeholder="Fassen Sie Ihre finale Empfehlung zusammen..." rows={4} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
+        </div>
+        <div>
+          <label className="text-[10px] text-gray-500 uppercase block mb-1">Notizen</label>
+          <textarea value={form.notes} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+            onBlur={() => save({ notes: form.notes })}
+            placeholder="Zusätzliche Notizen..." rows={3} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
+        </div>
+      </div>
+      <Button onClick={() => save({ status: "ergebnis", step_completed: 7 })} className="w-full bg-green-600 text-white rounded-lg">
+        <Check className="w-4 h-4 mr-2" /> Analyse abschließen
+      </Button>
+    </div>
+  );
+}
+
+// ── LOOPHOLE FORM ────────────────────────────────────────────────────────────
 function LoopholeForm({ scenarioId, onSave }) {
   const [form, setForm] = useState({ gesetz: "", paragraph: "", titel: "", beschreibung: "", nutzungspotential: "mittel", risiko_bei_nutzung: "mittel", jurisdiction: "DACH", aktiv: true });
   const [saving, setSaving] = useState(false);
@@ -619,34 +953,34 @@ function LoopholeForm({ scenarioId, onSave }) {
   const submit = async () => {
     if (!form.gesetz.trim() || !form.titel.trim()) return;
     setSaving(true);
-    await base44.entities.LegalLoophole.create({ ...form, scenario_id: scenarioId });
+    await base44.entities.LegalLoophole.create({ ...form, scenario_id: scenarioId, ki_generated: false });
     setForm({ gesetz: "", paragraph: "", titel: "", beschreibung: "", nutzungspotential: "mittel", risiko_bei_nutzung: "mittel", jurisdiction: "DACH", aktiv: true });
     setSaving(false);
     onSave();
   };
 
   return (
-    <div className="space-y-3 border-t border-gray-100 pt-4 mt-4">
+    <div className="space-y-3">
       <div className="grid grid-cols-3 gap-3">
-        <input value={form.gesetz} onChange={e => setForm({ ...form, gesetz: e.target.value })} placeholder="Gesetz (z.B. BGB, HGB)" className="px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-        <input value={form.paragraph} onChange={e => setForm({ ...form, paragraph: e.target.value })} placeholder="§ / Section" className="px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-        <select value={form.jurisdiction} onChange={e => setForm({ ...form, jurisdiction: e.target.value })} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <input value={form.gesetz} onChange={e => setForm(f => ({ ...f, gesetz: e.target.value }))} placeholder="Gesetz (z.B. BGB)" className="px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+        <input value={form.paragraph} onChange={e => setForm(f => ({ ...f, paragraph: e.target.value }))} placeholder="§ / Section" className="px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+        <select value={form.jurisdiction} onChange={e => setForm(f => ({ ...f, jurisdiction: e.target.value }))} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           <option value="DACH">DACH</option>
           <option value="US">US</option>
           <option value="EU">EU</option>
           <option value="International">International</option>
         </select>
       </div>
-      <input value={form.titel} onChange={e => setForm({ ...form, titel: e.target.value })} placeholder="Kurzbezeichnung der Lücke" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
-      <textarea value={form.beschreibung} onChange={e => setForm({ ...form, beschreibung: e.target.value })} placeholder="Beschreibung der Lücke und wie sie ausgenutzt werden kann..." rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
+      <input value={form.titel} onChange={e => setForm(f => ({ ...f, titel: e.target.value }))} placeholder="Kurzbezeichnung der Lücke" className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg" />
+      <textarea value={form.beschreibung} onChange={e => setForm(f => ({ ...f, beschreibung: e.target.value }))} placeholder="Beschreibung und Nutzungsmöglichkeit..." rows={2} className="w-full px-3 py-2 text-sm border border-gray-200 rounded-lg resize-none" />
       <div className="grid grid-cols-2 gap-3">
-        <select value={form.nutzungspotential} onChange={e => setForm({ ...form, nutzungspotential: e.target.value })} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
-          <option value="hoch">Nutzungspotential: Hoch</option>
-          <option value="mittel">Nutzungspotential: Mittel</option>
-          <option value="niedrig">Nutzungspotential: Niedrig</option>
-          <option value="theoretisch">Nutzungspotential: Theoretisch</option>
+        <select value={form.nutzungspotential} onChange={e => setForm(f => ({ ...f, nutzungspotential: e.target.value }))} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+          <option value="hoch">Potential: Hoch</option>
+          <option value="mittel">Potential: Mittel</option>
+          <option value="niedrig">Potential: Niedrig</option>
+          <option value="theoretisch">Potential: Theoretisch</option>
         </select>
-        <select value={form.risiko_bei_nutzung} onChange={e => setForm({ ...form, risiko_bei_nutzung: e.target.value })} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
+        <select value={form.risiko_bei_nutzung} onChange={e => setForm(f => ({ ...f, risiko_bei_nutzung: e.target.value }))} className="px-3 py-2 text-sm border border-gray-200 rounded-lg bg-white">
           <option value="gering">Risiko: Gering</option>
           <option value="mittel">Risiko: Mittel</option>
           <option value="hoch">Risiko: Hoch</option>
@@ -654,7 +988,7 @@ function LoopholeForm({ scenarioId, onSave }) {
         </select>
       </div>
       <Button onClick={submit} disabled={!form.gesetz.trim() || !form.titel.trim() || saving} className="w-full bg-gray-900 text-white rounded-lg text-xs">
-        {saving ? "Speichere..." : "Gesetzeslücke hinzufügen"}
+        {saving ? "Speichere..." : "Gesetzeslücke hinzufügen (trainiert die KI)"}
       </Button>
     </div>
   );
