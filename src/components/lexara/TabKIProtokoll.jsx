@@ -36,14 +36,14 @@ function LogCard({ log }) {
       {open && (
         <div className="border-t border-gray-100 p-4 space-y-4 bg-gray-50">
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">📥 Eingabe / Fragestellung</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">Eingabe / Fragestellung</p>
             <div className="bg-white border border-gray-200 rounded-lg p-3 text-xs text-gray-700 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto">
               {log.input_summary}
             </div>
           </div>
 
           <div>
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">📤 KI-Antwort & Begründung</p>
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">KI-Antwort & Begründung</p>
             {outputParsed && typeof outputParsed === "object" ? (
               <div className="space-y-2">
                 {Object.entries(outputParsed).map(([key, val]) => (
@@ -175,8 +175,9 @@ export default function TabKIProtokoll({ caseId, caseData }) {
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h2 className="text-sm font-semibold text-gray-800">📋 KI-Protokoll</h2>
+          <h2 className="text-sm font-semibold text-gray-800">KI-Protokoll</h2>
           <p className="text-xs text-gray-400 mt-0.5">Vollständige Historie aller KI-Anfragen und -Antworten für diesen Fall</p>
+
         </div>
         <div className="flex items-center gap-2">
           <Button size="sm" variant="outline" onClick={load} className="rounded-xl text-xs gap-1">

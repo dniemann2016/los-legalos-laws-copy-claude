@@ -28,59 +28,84 @@ function PrognoseArc({ value = 0 }) {
 
 function CaseCard({ caseData, counts }) {
   const navigate = useNavigate();
-  const sc = STATUS_CONFIG[caseData.status] || STATUS_CONFIG.Aktiv;
   const total = 9;
   const done = [caseData.fallname, caseData.gericht, caseData.zentrale_rechtsfrage,
     counts.args > 0, counts.evidence > 0, counts.persons > 0,
     counts.deadlines > 0, caseData.prognose, caseData.streitwert].filter(Boolean).length;
   const pct = Math.round((done / total) * 100);
+  const progColor = (caseData.prognose||0) >= 65 ? "#34C759" : (caseData.prognose||0) >= 40 ? "#FF9500" : "#FF3B30";
 
   return (
-    <div onClick={() => navigate(`/lexara/case?id=${caseData.id}`)}
-      className="bg-white rounded-2xl border border-slate-100 p-5 hover:border-[#1a3560]/30 hover:shadow-xl cursor-pointer transition-all duration-200 group flex flex-col gap-4 shadow-sm">
-      <div className="flex items-start justify-between gap-3">
+    <div
+      onClick={() => navigate(`/lexara/case?id=${caseData.id}`)}
+      className="cursor-pointer flex flex-col gap-0 transition-all duration-150"
+      style={{
+        background: "#fff",
+        border: "1px solid rgba(0,0,0,0.08)",
+        borderRadius: "10px",
+        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
+        fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif",
+      }}
+      onMouseEnter={e => {
+        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)";
+        e.currentTarget.style.borderColor = "rgba(52,199,89,0.3)";
+        e.currentTarget.style.transform = "translateY(-1px)";
+      }}
+      onMouseLeave={e => {
+        e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
+        e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
+        e.currentTarget.style.transform = "none";
+      }}
+    >
+      {/* Card header */}
+      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
         <div className="flex-1 min-w-0">
           {caseData.aktenzeichen && (
-            <p className="text-[10px] text-slate-400 font-mono mb-1 tracking-wider">{caseData.aktenzeichen}</p>
+            <p className="font-mono mb-1" style={{ fontSize: 10, color: "#aaa", letterSpacing: "0.05em" }}>{caseData.aktenzeichen}</p>
           )}
-          <h3 className="font-semibold text-slate-900 text-sm leading-snug group-hover:text-[#1a3560] transition-colors">
-            {caseData.fallname}
-          </h3>
+          <h3 className="font-semibold leading-snug" style={{ fontSize: 13, color: "#1a1a1a" }}>{caseData.fallname}</h3>
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {caseData.status && (
+              <span style={{ fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 4, background: "rgba(0,0,0,0.05)", color: "#555" }}>
+                {caseData.status}
+              </span>
+            )}
+            {caseData.rechtsgebiet && (
+              <span style={{ fontSize: 10, fontWeight: 400, padding: "1px 7px", borderRadius: 4, background: "rgba(0,0,0,0.04)", color: "#777" }}>
+                {caseData.rechtsgebiet}
+              </span>
+            )}
+            {caseData.instanz && caseData.instanz !== "Erstinstanz" && (
+              <span style={{ fontSize: 10, fontWeight: 400, padding: "1px 7px", borderRadius: 4, background: "rgba(0,0,0,0.04)", color: "#777" }}>
+                {caseData.instanz}
+              </span>
+            )}
+          </div>
         </div>
-        <PrognoseArc value={caseData.prognose || 0} />
+        {/* Prognose indicator */}
+        <div className="flex-shrink-0 text-right">
+          <p style={{ fontSize: 18, fontWeight: 700, color: progColor, lineHeight: 1 }}>{Math.round(caseData.prognose||0)}%</p>
+          <p style={{ fontSize: 9, color: "#aaa", marginTop: 1 }}>Prognose</p>
+        </div>
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {caseData.status && (
-          <span className={`text-[10px] rounded-full px-2.5 py-0.5 font-semibold ${sc.text} ${sc.bg} ${sc.ring}`}>
-            {caseData.status}
-          </span>
-        )}
-        {caseData.rechtsgebiet && (
-          <span className="text-[10px] bg-slate-50 text-slate-500 rounded-full px-2.5 py-0.5 border border-slate-100">
-            {caseData.rechtsgebiet}
-          </span>
-        )}
-        {caseData.instanz && caseData.instanz !== "Erstinstanz" && (
-          <span className="text-[10px] bg-purple-50 text-purple-600 rounded-full px-2.5 py-0.5 border border-purple-100">
-            {caseData.instanz}
-          </span>
-        )}
-      </div>
-      <div>
-        <div className="flex justify-between text-[10px] text-slate-400 mb-1.5">
+
+      {/* Progress bar */}
+      <div className="px-4 pb-3">
+        <div className="flex justify-between mb-1" style={{ fontSize: 10, color: "#aaa" }}>
           <span>Vollständigkeit</span>
-          <span className="font-medium text-slate-600">{pct}%</span>
+          <span style={{ color: "#666", fontWeight: 500 }}>{pct}%</span>
         </div>
-        <div className="h-1 bg-slate-100 rounded-full overflow-hidden">
-          <div className={`h-full rounded-full transition-all ${pct >= 80 ? "bg-emerald-500" : pct >= 50 ? "bg-amber-400" : "bg-slate-300"}`}
-            style={{ width: `${pct}%` }} />
+        <div style={{ height: 3, background: "rgba(0,0,0,0.07)", borderRadius: 2, overflow: "hidden" }}>
+          <div style={{ height: "100%", borderRadius: 2, width: `${pct}%`, background: pct >= 80 ? "#34C759" : pct >= 50 ? "#FF9500" : "#ccc", transition: "width 0.3s" }} />
         </div>
       </div>
-      <div className="grid grid-cols-4 gap-2 pt-3 border-t border-slate-50">
-        {[["⚔️", counts.args, "Args"], ["📄", counts.evidence, "Beweise"], ["👤", counts.persons, "Pers."], ["⏰", counts.deadlines, "Fristen"]].map(([icon, v, l]) => (
+
+      {/* Stats row */}
+      <div className="grid grid-cols-4 gap-0 px-4 pt-2.5 pb-3" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+        {[["Argum.", counts.args], ["Beweise", counts.evidence], ["Personen", counts.persons], ["Fristen", counts.deadlines]].map(([l, v]) => (
           <div key={l} className="text-center">
-            <p className="text-xs font-bold text-slate-800">{v}</p>
-            <p className="text-[9px] text-slate-400 mt-0.5">{l}</p>
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", lineHeight: 1 }}>{v}</p>
+            <p style={{ fontSize: 9, color: "#aaa", marginTop: 2 }}>{l}</p>
           </div>
         ))}
       </div>
@@ -145,140 +170,145 @@ export default function LexaraDashboard() {
   const totalArgs = Object.values(caseCounts).reduce((s, c) => s + c.args, 0);
   const totalDeadlines = Object.values(caseCounts).reduce((s, c) => s + c.deadlines, 0);
 
+  const sf = { fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" };
+
   return (
-    <div className="min-h-screen bg-[#F5F6F8] font-sans">
-      <div className="border-b border-slate-200/70 bg-white/90 backdrop-blur-sm sticky top-0 z-20 shadow-sm">
-        <div className="max-w-5xl mx-auto px-6 py-3.5 flex items-center gap-3">
-          <div className="flex items-center gap-2.5 mr-auto">
-            <div className="w-8 h-8 rounded-xl bg-[#1a3560] flex items-center justify-center shadow-md">
-              <Scale className="w-[15px] h-[15px] text-white" />
-            </div>
-            <div>
-              <p className="text-[13px] font-bold text-slate-900 tracking-tight leading-none">Fallübersicht</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{cases.length} Mandate verwaltet</p>
-            </div>
+    <div className="min-h-screen" style={{ background: "#f0f0f0", ...sf }}>
+      {/* Toolbar */}
+      <div className="sticky top-0 z-20" style={{ background: "rgba(246,246,246,0.97)", borderBottom: "1px solid rgba(0,0,0,0.1)", backdropFilter: "blur(20px)" }}>
+        <div className="max-w-5xl mx-auto px-5 py-3 flex items-center gap-3">
+          <div className="mr-auto">
+            <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", lineHeight: 1 }}>Fallübersicht</p>
+            <p style={{ fontSize: 10, color: "#999", marginTop: 2 }}>{cases.length} Mandate verwaltet</p>
           </div>
           <div className="relative hidden sm:block">
-            <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "#aaa" }} />
             <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)}
-              className="pl-8 pr-3 w-44 h-8 text-sm rounded-lg border border-slate-200 bg-slate-50 focus:outline-none focus:border-slate-300 focus:bg-white transition-all" />
+              style={{ paddingLeft: 26, paddingRight: 10, width: 160, height: 28, fontSize: 12, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, outline: "none", color: "#333" }} />
           </div>
           <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3.5 py-2 rounded-xl hover:bg-[#142a4d] transition-colors shadow-md shadow-[#1a3560]/20">
-            <Plus className="w-3.5 h-3.5" /> Neuer Fall
+            className="flex items-center gap-1.5 transition-all"
+            style={{ background: "#34C759", color: "#fff", fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6, border: "none" }}>
+            <Plus className="w-3 h-3" /> Neuer Fall
           </button>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-5 py-5 space-y-5">
+        {/* KPIs */}
         {cases.length > 0 && (
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
             {[
-              { icon: <Scale className="w-4 h-4 text-blue-600" />, label: "Aktive Mandate", value: aktiv, accent: "bg-blue-50" },
-              { icon: <TrendingUp className="w-4 h-4 text-emerald-600" />, label: "Ø Erfolgsquote", value: `${avgPrognose}%`, accent: "bg-emerald-50" },
-              { icon: <AlertCircle className="w-4 h-4 text-violet-600" />, label: "Argumente gesamt", value: totalArgs, accent: "bg-violet-50" },
-              { icon: <Clock className="w-4 h-4 text-amber-600" />, label: "Offene Fristen", value: totalDeadlines, accent: "bg-amber-50" },
-            ].map((k, i) => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 px-4 py-4 flex items-center gap-3 shadow-sm">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm ${k.accent}`}>{k.icon}</div>
-                <div>
-                  <p className="text-xl font-bold text-slate-900 leading-none tracking-tight">{k.value}</p>
-                  <p className="text-[10px] text-slate-400 mt-0.5 font-medium">{k.label}</p>
+              { icon: Scale, label: "Aktive Mandate", value: aktiv },
+              { icon: TrendingUp, label: "Ø Erfolgsquote", value: `${avgPrognose}%` },
+              { icon: AlertCircle, label: "Argumente ges.", value: totalArgs },
+              { icon: Clock, label: "Offene Fristen", value: totalDeadlines },
+            ].map((k, i) => {
+              const Icon = k.icon;
+              return (
+                <div key={i} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                  <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "#aaa" }} />
+                  <div>
+                    <p style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", lineHeight: 1 }}>{k.value}</p>
+                    <p style={{ fontSize: 10, color: "#aaa", marginTop: 2 }}>{k.label}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        <div className="flex items-center gap-2 flex-wrap">
+        {/* Filters */}
+        <div className="flex items-center gap-1.5 flex-wrap">
           {["all", "Aktiv", "Vorbereitung", "Ruhend", "Abgeschlossen"].map(s => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all ${
-                statusFilter === s
-                  ? "bg-[#1a3560] text-white border-[#1a3560] shadow-sm shadow-[#1a3560]/20"
-                  : "border-slate-200 text-slate-500 hover:border-slate-300 bg-white shadow-sm"
-              }`}>
+              style={{
+                padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: statusFilter===s ? 600 : 400, border: "1px solid",
+                borderColor: statusFilter===s ? "#34C759" : "rgba(0,0,0,0.1)",
+                background: statusFilter===s ? "rgba(52,199,89,0.1)" : "#fff",
+                color: statusFilter===s ? "#1a7f37" : "#666", transition: "all 0.12s",
+              }}>
               {s === "all" ? "Alle" : s}
-              {s !== "all" && <span className="ml-1.5 text-[10px] opacity-60">{cases.filter(c => c.status === s).length}</span>}
+              {s !== "all" && <span style={{ marginLeft: 5, opacity: 0.5, fontSize: 10 }}>{cases.filter(c => c.status === s).length}</span>}
             </button>
           ))}
         </div>
 
+        {/* Cases grid */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
-            <div className="w-6 h-6 border-2 border-slate-200 border-t-[#1a3560] rounded-full animate-spin" />
+            <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#34C759" }} />
           </div>
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map(c => (
               <CaseCard key={c.id} caseData={c} counts={caseCounts[c.id] || { args: 0, evidence: 0, persons: 0, deadlines: 0 }} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-24">
-            <div className="w-14 h-14 bg-white border border-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-md">
-              <Scale className="w-6 h-6 text-slate-300" />
+          <div className="text-center py-20">
+            <div style={{ width: 44, height: 44, background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
+              <Scale className="w-5 h-5" style={{ color: "#ccc" }} />
             </div>
-            <p className="text-sm font-bold text-slate-800 mb-1 tracking-tight">
+            <p style={{ fontSize: 13, fontWeight: 600, color: "#555", marginBottom: 4 }}>
               {search || statusFilter !== "all" ? "Keine Treffer" : "Noch keine Fälle"}
             </p>
-            <p className="text-xs text-slate-400 font-medium">
-              {search || statusFilter !== "all" ? "Filter oder Suche anpassen" : "Neuer Fall Button anklicken um zu beginnen"}
+            <p style={{ fontSize: 11, color: "#aaa" }}>
+              {search || statusFilter !== "all" ? "Filter oder Suche anpassen" : "Neuen Fall anlegen um zu beginnen"}
             </p>
           </div>
         )}
       </div>
 
+      {/* Create modal — Numbers-style sheet dialog */}
       {showCreate && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-end sm:items-center justify-center p-0 sm:p-4"
+        <div className="fixed inset-0 z-50 flex items-center justify-center"
+          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(8px)" }}
           onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
-          <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full sm:max-w-md shadow-2xl border border-slate-100">
+          <div style={{ background: "rgba(248,248,248,0.98)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 14, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", ...sf }}>
             <div className="flex items-center justify-between mb-5">
-              <div className="flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-xl bg-[#1a3560] flex items-center justify-center shadow-md">
-                  <Scale className="w-[14px] h-[14px] text-white" />
-                </div>
-                <div>
-                  <h2 className="font-bold text-slate-900 text-sm tracking-tight">Neuen Fall anlegen</h2>
-                  <p className="text-[10px] text-slate-400 mt-0.5">Grunddaten — alles weitere im Fall</p>
-                </div>
+              <div>
+                <h2 style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a" }}>Neuen Fall anlegen</h2>
+                <p style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Grunddaten — weitere Details im Fall</p>
               </div>
-              <button onClick={() => setShowCreate(false)} className="text-slate-300 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition-colors">
+              <button onClick={() => setShowCreate(false)} style={{ color: "#aaa", padding: 4, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
                 <X className="w-4 h-4" />
               </button>
             </div>
-            <div className="space-y-3">
-              <input className="w-full border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560] focus:bg-white transition-all"
-                placeholder="Fallname *" value={newCase.fallname} onChange={e => setNewCase({ ...newCase, fallname: e.target.value })}
-                onKeyDown={e => e.key === "Enter" && handleCreate()} />
-              <div className="grid grid-cols-2 gap-3">
-                <input className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560] focus:bg-white transition-all"
-                  placeholder="Aktenzeichen" value={newCase.aktenzeichen} onChange={e => setNewCase({ ...newCase, aktenzeichen: e.target.value })} />
-                <input className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560] focus:bg-white transition-all"
-                  placeholder="Rechtsgebiet" value={newCase.rechtsgebiet} onChange={e => setNewCase({ ...newCase, rechtsgebiet: e.target.value })} />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <select className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560] transition-all"
-                  value={newCase.status} onChange={e => setNewCase({ ...newCase, status: e.target.value })}>
-                  {["Aktiv", "Vorbereitung", "Abgeschlossen", "Ruhend"].map(s => <option key={s}>{s}</option>)}
-                </select>
-                <select className="border border-slate-200 rounded-xl px-3 py-2.5 text-sm bg-slate-50 focus:outline-none focus:border-[#1a3560] transition-all"
-                  value={newCase.instanz} onChange={e => setNewCase({ ...newCase, instanz: e.target.value })}>
-                  {["Erstinstanz", "Berufung", "Revision"].map(s => <option key={s}>{s}</option>)}
-                </select>
+            <div className="space-y-2.5">
+              {[
+                { ph: "Fallname *", key: "fallname", full: true },
+                { ph: "Aktenzeichen", key: "aktenzeichen" },
+                { ph: "Rechtsgebiet", key: "rechtsgebiet" },
+              ].map(f => (
+                <input key={f.key}
+                  className={f.full ? "w-full" : ""}
+                  style={{ display: "block", width: "100%", padding: "8px 10px", fontSize: 12, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, outline: "none", color: "#1a1a1a" }}
+                  placeholder={f.ph} value={newCase[f.key]} onChange={e => setNewCase({ ...newCase, [f.key]: e.target.value })}
+                  onKeyDown={e => e.key === "Enter" && f.key === "fallname" && handleCreate()} />
+              ))}
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { key: "status", opts: ["Aktiv","Vorbereitung","Abgeschlossen","Ruhend"] },
+                  { key: "instanz", opts: ["Erstinstanz","Berufung","Revision"] },
+                ].map(f => (
+                  <select key={f.key} value={newCase[f.key]} onChange={e => setNewCase({ ...newCase, [f.key]: e.target.value })}
+                    style={{ padding: "8px 10px", fontSize: 12, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, outline: "none", color: "#1a1a1a" }}>
+                    {f.opts.map(o => <option key={o}>{o}</option>)}
+                  </select>
+                ))}
               </div>
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={handleCreate} disabled={!newCase.fallname.trim() || creating}
-                className="flex-1 bg-[#1a3560] text-white text-sm font-semibold py-2.5 rounded-xl hover:bg-[#142a4d] disabled:opacity-50 transition-colors shadow-md shadow-[#1a3560]/20">
+                style={{ flex: 1, background: "#34C759", color: "#fff", fontSize: 12, fontWeight: 600, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer", opacity: (!newCase.fallname.trim() || creating) ? 0.5 : 1 }}>
                 {creating ? "Erstelle…" : "Fall erstellen"}
               </button>
               <button onClick={() => setShowCreate(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-200 text-sm text-slate-500 hover:bg-slate-50 transition-colors">
+                style={{ padding: "9px 16px", fontSize: 12, background: "transparent", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 8, color: "#555", cursor: "pointer" }}>
                 Abbrechen
               </button>
             </div>
-            <p className="text-center text-[10px] text-slate-300 mt-4">MachiavelLEX · DSGVO-konform · EU-Server</p>
           </div>
         </div>
       )}

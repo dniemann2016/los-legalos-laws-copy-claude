@@ -197,7 +197,7 @@ Deine Analyse muss folgendes enthalten:
     <div className="space-y-6">
       {/* View Switcher */}
       <div className="flex gap-2">
-        {[["strategie","📊 Strategie & Graph"],["simulation","🔮 Was-wäre-wenn"],["timeline","📅 Zeitstrahl"]].map(([v,l]) => (
+        {[["strategie","Strategie & Graph"],["simulation","Was-wäre-wenn"],["timeline","Zeitstrahl"]].map(([v,l]) => (
           <button key={v} onClick={() => setActiveView(v)}
             className={`text-sm px-4 py-2 rounded-xl border font-medium transition-all ${activeView===v?"bg-gray-900 text-white border-gray-900":"bg-white text-gray-600 border-gray-200 hover:bg-gray-50"}`}>
             {l}
@@ -218,17 +218,16 @@ Deine Analyse muss folgendes enthalten:
 
       {activeView === "timeline" && (
         <div className="bg-white rounded-2xl border border-gray-100 p-5">
-          <h3 className="text-sm font-semibold text-gray-700 mb-4">📅 Zeitstrahl — Fristen & Ereignisse</h3>
+          <h3 className="text-sm font-semibold text-gray-700 mb-4">Zeitstrahl — Fristen & Ereignisse</h3>
           <TimelineVisualization caseId={caseId} args={args} />
         </div>
       )}
 
       {activeView === "strategie" && !kiMode && (
-        <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 flex items-center gap-3">
-          <span className="text-lg">✏️</span>
+        <div className="rounded-lg p-3 flex items-center gap-3" style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.08)" }}>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-amber-800">Manuell-Modus aktiv — KI-Funktionen deaktiviert</p>
-            <p className="text-xs text-amber-600">Alle Prognose-Werte können manuell eingestellt werden. Wechsle zu KI-Modus für automatische Berechnungen.</p>
+            <p className="text-xs font-semibold" style={{ color: "#555" }}>Manuell-Modus aktiv — KI-Funktionen deaktiviert</p>
+            <p className="text-xs" style={{ color: "#888", marginTop: 2 }}>Alle Prognose-Werte können manuell eingestellt werden.</p>
           </div>
         </div>
       )}
@@ -236,7 +235,7 @@ Deine Analyse muss folgendes enthalten:
       {activeView === "strategie" && (
         <>
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-3">GESAMTPROGNOSE — {caseData?.fallname?.toUpperCase()}</p>
+            <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-3">Gesamtprognose — {caseData?.fallname}</p>
             {!kiMode && (
               <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-xl">
                 <label className="text-xs text-amber-700 font-medium block mb-1">Prognose manuell einstellen (%)</label>
@@ -248,7 +247,7 @@ Deine Analyse muss folgendes enthalten:
               <div className="flex-1">
                 <h3 className="text-lg font-bold text-green-700">{recommendation}</h3>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className={`text-xs px-2 py-0.5 rounded font-medium ${prognose>=55?"bg-green-600 text-white":prognose>=40?"bg-yellow-500 text-white":"bg-red-600 text-white"}`}>⚖️ {recTag}</span>
+                  <span className="text-xs px-2 py-0.5 rounded font-medium" style={{ background: prognose>=55?"#34C759":prognose>=40?"#FF9500":"#FF3B30", color: "#fff" }}>{recTag}</span>
                 </div>
                 <p className="text-xs text-gray-500 mt-2">Berechnung auf Basis von {args.length} Argumenten, {evidence.length} Beweisstücken, {persons.length} Personen, {deadlines.length} Fristen.</p>
                 <Button onClick={savePrognose} disabled={saving} className="mt-3 bg-gray-900 text-white rounded-xl text-xs px-4 py-2 h-auto">
@@ -262,24 +261,23 @@ Deine Analyse muss folgendes enthalten:
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
               <div>
-                <h3 className="text-sm font-semibold text-gray-700">🤖 KI-Urteilsprognose & Gegenargumente</h3>
+                <h3 className="text-sm font-semibold text-gray-700">KI-Urteilsprognose & Gegenargumente</h3>
                 <p className="text-[10px] text-gray-400 mt-0.5">Ganzheitliche KI-Analyse des gesamten Falls · Erfolgswahrscheinlichkeit + kritische Gegenargumente</p>
               </div>
               <Button onClick={runKiPrognose} disabled={kiPrognoseLoading}
-                className="bg-violet-600 hover:bg-violet-700 text-white rounded-xl text-xs">
-                {kiPrognoseLoading ? "Analysiere…" : "✨ KI-Analyse starten"}
+                className="text-white rounded-lg text-xs" style={{ background: "#34C759", border: "none" }}>
+                {kiPrognoseLoading ? "Analysiere…" : "KI-Analyse starten"}
               </Button>
             </div>
             {!kiPrognose && !kiPrognoseLoading && (
-              <div className="text-center py-8 text-gray-400">
-                <p className="text-2xl mb-2">⚖️</p>
+              <div className="text-center py-8" style={{ color: "#bbb" }}>
                 <p className="text-sm">Noch keine KI-Analyse durchgeführt.</p>
                 <p className="text-xs mt-1">Klicken Sie auf „KI-Analyse starten" für eine vollständige Fallbewertung.</p>
               </div>
             )}
             {kiPrognoseLoading && (
-              <div className="text-center py-8 text-violet-500">
-                <div className="inline-block w-6 h-6 border-2 border-violet-200 border-t-violet-600 rounded-full animate-spin mb-2" />
+              <div className="text-center py-8" style={{ color: "#888" }}>
+                <div className="inline-block w-5 h-5 border-2 rounded-full animate-spin mb-2" style={{ borderColor: "rgba(52,199,89,0.2)", borderTopColor: "#34C759" }} />
                 <p className="text-xs">KI analysiert den gesamten Fall…</p>
               </div>
             )}
@@ -311,7 +309,7 @@ Deine Analyse muss folgendes enthalten:
 
                 {(kiPrognose.staerkste_gegenargumente||[]).length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-red-700 mb-2">⚔️ Stärkste Gegenargumente der Gegenseite</p>
+                    <p className="text-xs font-semibold text-red-700 mb-2">Stärkste Gegenargumente der Gegenseite</p>
                     <div className="space-y-2">
                       {kiPrognose.staerkste_gegenargumente.map((g,i) => (
                         <div key={i} className={`rounded-xl border p-3 ${g.schwere==="hoch"?"bg-red-50 border-red-200":g.schwere==="mittel"?"bg-amber-50 border-amber-200":"bg-gray-50 border-gray-200"}`}>
@@ -328,7 +326,7 @@ Deine Analyse muss folgendes enthalten:
 
                 {(kiPrognose.kritische_schwachstellen||[]).length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-amber-700 mb-2">⚠️ Kritische Schwachstellen unserer Position</p>
+                    <p className="text-xs font-semibold text-amber-700 mb-2">Kritische Schwachstellen unserer Position</p>
                     <div className="space-y-2">
                       {kiPrognose.kritische_schwachstellen.map((s,i) => (
                         <div key={i} className="bg-amber-50 border border-amber-100 rounded-xl p-3">
@@ -342,14 +340,14 @@ Deine Analyse muss folgendes enthalten:
 
                 {kiPrognose.strategische_empfehlung && (
                   <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-blue-800 mb-1">💡 Strategische Empfehlung</p>
+                    <p className="text-xs font-semibold text-blue-800 mb-1">Strategische Empfehlung</p>
                     <p className="text-xs text-blue-700">{kiPrognose.strategische_empfehlung}</p>
                   </div>
                 )}
 
                 {(kiPrognose.gegenmassnahmen||[]).length > 0 && (
                   <div>
-                    <p className="text-xs font-semibold text-gray-900 mb-2">⚔️ Aggressive Gegenmaßnahmen — Juristische Angriffstaktiken</p>
+                    <p className="text-xs font-semibold text-gray-900 mb-2">Aggressive Gegenmaßnahmen — Juristische Angriffstaktiken</p>
                     <p className="text-[10px] text-gray-400 mb-3">Alle juristischen Mittel zur Schwächung, Ablenkung und Druckausübung auf die Gegenseite</p>
                     <div className="space-y-2">
                       {kiPrognose.gegenmassnahmen.map((g, i) => {
@@ -401,7 +399,7 @@ Deine Analyse muss folgendes enthalten:
             ];
             return (
               <div className="bg-white rounded-2xl border border-gray-100 p-6">
-                <h3 className="text-sm font-semibold text-gray-700 mb-1">⚖️ Prozessstärke-Gesamtscore (Algorithmus)</h3>
+                <h3 className="text-sm font-semibold text-gray-700 mb-1">Prozessstärke-Gesamtscore (Algorithmus)</h3>
                 <p className="text-[10px] text-gray-400 mb-4">Rein algorithmisch · keine KI · gewichtete Faktoren</p>
                 <div className="flex items-center gap-5 mb-5">
                   <div className={`text-3xl font-black px-5 py-3 rounded-2xl border-2 ${scoreColor}`}>{gesamtScore}<span className="text-base font-medium">/100</span></div>
@@ -428,7 +426,7 @@ Deine Analyse muss folgendes enthalten:
           })()}
 
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">🎯 6-Stufen-Algorithmus (vollständig einsehbar)</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">6-Stufen-Algorithmus (vollständig einsehbar)</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {[["Stufe 1","Argument-Basisgewichtung",algorithm.argBasis||0,`${args.filter(a=>a.side==="eigen").length} eigene vs. ${args.filter(a=>a.side==="gegner").length} gegnerische Argumente`],["Stufe 2","Beweisboost",`+${algorithm.beweisBoost||0}%`,"Kettenergebnis × 0.5 Boost-Faktor"],["Stufe 3","Kanteneffekte",algorithm.kantenEffekt||"100%","Widersprüche und Ausschluss-Kanten"],["Stufe 4","Zeugenmultiplikator",algorithm.zeugenMult||"100%","Mult = 0.70 + (Glaubwürdigkeit/100) × 0.30"],["Stufe 5","Richter-Kalibrierung",algorithm.richterAdj||"100%",`Klägerquote: ${caseData?.richter_klaeger_rate||50}%`],["Stufe 6","Fristenkorrektur",algorithm.fristenFaktor||"100%",`${deadlines.filter(d=>d.status==="versaeumt").length} versäumte Fristen`]].map(([step,title,val,desc]) => (
                 <div key={step} className="bg-gray-50 rounded-xl p-3">
@@ -442,9 +440,9 @@ Deine Analyse muss folgendes enthalten:
 
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-              <h3 className="text-sm font-semibold text-gray-700">📊 Datenvisualisierung</h3>
+              <h3 className="text-sm font-semibold text-gray-700">Datenvisualisierung</h3>
               <div className="flex gap-1 flex-wrap">
-                {[["overlap","↔ Überlappend"],["bar","▦ Balken"],["radar","🕸 Radar"],["evidence","🔍 Beweise"]].map(([v,l]) => (
+                {[["overlap","Überlappend"],["bar","Balken"],["radar","Radar"],["evidence","Beweise"]].map(([v,l]) => (
                   <button key={v} onClick={()=>setChartView(v)} className={`text-xs px-3 py-1 rounded-lg border transition-all ${chartView===v?"bg-gray-900 text-white border-gray-900":"text-gray-500 border-gray-200 hover:bg-gray-50"}`}>{l}</button>
                 ))}
               </div>
@@ -456,15 +454,15 @@ Deine Analyse muss folgendes enthalten:
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
-            <h3 className="text-sm font-semibold text-gray-700 mb-4">🔗 Beweisketten-Graph</h3>
+            <h3 className="text-sm font-semibold text-gray-700 mb-4">Beweisketten-Graph</h3>
             <ArgumentEvidenceGraph args={args} evidence={evidence} />
           </div>
 
           <div className="bg-white rounded-2xl border border-gray-100 p-6">
             <div className="flex items-center gap-4 mb-4">
-              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">SORTIERUNG</h3>
+              <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Sortierung</h3>
               <div className="flex gap-2">
-                {[["chrono","⏰ Chronologisch"],["staerke","💪 Stärke"],["manuell","🔢 Manuell"]].map(([m,l]) => (
+                {[["chrono","Chronologisch"],["staerke","Stärke"],["manuell","Manuell"]].map(([m,l]) => (
                   <button key={m} onClick={()=>setSortMode(m)} className={`text-xs px-3 py-1 rounded-lg ${sortMode===m?"bg-gray-900 text-white":"text-gray-500 hover:bg-gray-100"}`}>{l}</button>
                 ))}
               </div>
@@ -488,7 +486,7 @@ Deine Analyse muss folgendes enthalten:
             </div>
             <div className="mt-6 pt-4 border-t border-gray-100">
               <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-widest mb-3">Taktisches Arsenal</h4>
-              <p className="text-[10px] font-bold text-gray-400 uppercase mb-2">JURISTISCHE HEBEL</p>
+              <p className="text-[10px] font-semibold text-gray-400 uppercase tracking-widest mb-2">Juristische Hebel</p>
               <div className="space-y-2">
                 {eigenArgs.filter(a=>(a.strength||0)>=7).slice(0,3).map(a => (
                   <div key={a.id}><p className="text-xs font-medium text-gray-700">{a.title}</p>{(a.paragraphs||[]).slice(0,1).map(p=><p key={p} className="text-[10px] text-gray-400">{p}</p>)}</div>

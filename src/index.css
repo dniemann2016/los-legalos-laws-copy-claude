@@ -80,6 +80,60 @@ h1, h2, h3, h4, h5, h6 { font-family: -apple-system, "SF Pro Display", "Helvetic
 /* Smooth transitions like macOS */
 *, *::before, *::after { transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
 
+/* Numbers-style card / panel overrides for all Lexara content */
+.bg-white.rounded-2xl,
+.bg-white.rounded-xl {
+  border-radius: 8px !important;
+  border: 1px solid rgba(0,0,0,0.08) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+}
+
+/* Clean up KI result panels */
+.bg-violet-50, .bg-amber-50, .bg-green-50, .bg-blue-50, .bg-red-50,
+.bg-violet-600, .bg-amber-600, .bg-green-600 {
+  /* keep these only for intentional colored elements */
+}
+
+/* Professional monospace for legal references / IDs */
+.font-mono { font-family: "SF Mono", "Monaco", "Menlo", Consolas, monospace !important; }
+
+/* Numbers-style section headers */
+.section-header {
+  font-size: 10px !important;
+  font-weight: 600 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 0.07em !important;
+  color: #aaa !important;
+}
+
+/* Table-style list rows (like Numbers cells) */
+.numbers-row {
+  border-bottom: 1px solid rgba(0,0,0,0.06);
+  padding: 8px 0;
+  font-size: 12px;
+}
+.numbers-row:last-child { border-bottom: none; }
+
+/* Remove emoji-like colored icon backgrounds in content areas */
+.bg-violet-100, .bg-emerald-100, .bg-blue-100, .bg-amber-100, .bg-red-100 {
+  background: rgba(0,0,0,0.05) !important;
+}
+
+/* Input fields — Numbers-style */
+input[type="text"], input[type="number"], textarea, select {
+  font-family: -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+}
+
+/* Progress bars — subtle */
+.h-1.5, .h-2 {
+  border-radius: 99px !important;
+}
+
+/* Badges: flatten and neutralize */
+.rounded-full.px-2, .rounded-full.px-2\.5, .rounded-full.px-3 {
+  border-radius: 4px !important;
+}
+
 
 
 @keyframes floatA {
