@@ -55,23 +55,50 @@ export default function TabKIBerater({ caseId, caseData, onUpdate, kiMode = true
       const eigene = args.filter(a=>a.side==="eigen");
       const gegner = args.filter(a=>a.side==="gegner");
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein strategischer Rechtsberater. Analysiere diesen Fall und gib NUR valides JSON zurück (kein Markdown, keine Erklärung).
+        prompt: `Du bist ein hochspezialisierter juristischer Berater und strategischer Analytiker auf Senior-Partner-Niveau einer Großkanzlei. Du beherrschst DACH-Recht (BGB, HGB, AktG, GmbHG, InsO, ZPO, DSGVO, UWG, GWB, ArbR) und US-Recht (UCC, common law, securities law) und kombinierst juristische Präzision mit strategischer Verhandlungsführung nach Harvard-Methode, FBI-Taktiken (Voss) und Machiavelli-Prinzipien.
 
-Fall: ${caseData?.fallname||""}, Rechtsgebiet: ${caseData?.rechtsgebiet||""}, Prognose: ${caseData?.prognose||0}%
-Eigene Argumente: ${eigene.map(a=>a.title).join(", ")||"keine"}
-Gegner-Argumente: ${gegner.map(a=>a.title).join(", ")||"keine"}
-Gegner: ${profil.gegner_name||"unbekannt"}
+Analysiere diesen Fall vollständig und gib NUR valides JSON zurück (kein Markdown, keine Erklärung außerhalb des JSON).
+
+Fall: ${caseData?.fallname||""} 
+Rechtsgebiet: ${caseData?.rechtsgebiet||""} | Instanz: ${caseData?.instanz||""} | Prognose: ${caseData?.prognose||0}%
+Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage||""}
+Prozessziel: ${caseData?.prozessziel||""}
+Eigene Argumente: ${eigene.map(a=>`${a.title} (${a.strength||5}/10)`).join(", ")||"keine"}
+Gegner-Argumente: ${gegner.map(a=>`${a.title} (${a.strength||5}/10)`).join(", ")||"keine"}
+Gegner-Organisation: ${profil.gegner_name||"unbekannt"} | Branche: ${profil.gegner_branche||""} | Finanzlage: ${profil.gegner_finanzlage||""}
+Entscheider: ${profil.entscheider_name||""} | Persönlichkeit: ${profil.entscheider_persoenlichkeit||""} | Schwächen: ${profil.entscheider_schwaechen||""}
+Gegner-Anwalt: ${profil.anwalt_kanzlei||""} | Bekannt für: ${profil.anwalt_bekannt_fuer||""} | Schwächen: ${profil.anwalt_schwaechen||""}
+Bisheriges Verhalten: ${profil.verhalten_taktik||""} | Fehler: ${profil.verhalten_fehler||""}
+Unsere Stärken: ${profil.eigene_staerken||""} | Schwächen: ${profil.eigene_schwaechen||""}
+Ziele: Max ${profil.ziel_maximal||""} | Realistisch ${profil.ziel_realistisch||""} | Minimal ${profil.ziel_minimal||""} | Nicht verhandelbar: ${profil.nicht_verhandelbar||""}
+Externe Faktoren: ${profil.kontext_zeitdruck||""} ${profil.kontext_oeffentlichkeit||""} ${profil.kontext_weitere||""}
+
+DEINE AUFGABE – erstelle eine vollständige juristische + strategische Analyse:
+
+1. RECHTLICHE EINORDNUNG: Identifiziere alle relevanten Anspruchsgrundlagen (BGB/HGB/ZPO oder US-Recht), Prüfungsaufbau, typische Gegenargumente der Gegenseite und kritische Schwachstellen unserer Position.
+2. ISSUE SPOTTING: Welche rechtlichen Risiken sind noch nicht erfasst? (DD-Lücken, Compliance-Risiken, prozessrechtliche Fallstricke)
+3. PSYCHOLOGISCHES PROFIL des Gegners nach Big Five und Dark Triad.
+4. DRUCKMITTEL: Alle Hebelpunkte (juristische wie außerjuristische).
+5. STRATEGIEOPTIONEN: 3-5 Optionen von kooperativ bis aggressiv, mit Erfolgswahrscheinlichkeit.
+6. TIMING & MOMENTUM: Kritische Zeitfenster, nächster Schritt.
+7. INFORMATIONSSTRATEGIE: Was offenlegen/verbergen/bluffen.
+8. VERHANDLUNGSSKRIPT nach Harvard/FBI/Machiavelli.
+9. COMPLIANCE-CHECK: Gibt es Compliance-, Kartellrecht- oder DSGVO-Risiken im Fall?
 
 JSON-Format:
 {
+  "rechtliche_einordnung": {"anspruchsgrundlagen":["..."],"pruefungsschema":"...","gegner_gegenargumente":["..."],"kritische_schwachstellen":["..."]},
+  "issue_spotting": [{"risiko":"...","kategorie":"...","empfehlung":"...","prioritaet":"hoch"}],
   "psychologisches_profil": { "big_five": {"Offenheit":7,"Gewissenhaftigkeit":8,"Extraversion":5,"Verträglichkeit":4,"Neurotizismus":6}, "dark_triad": {"Narzissmus":5,"Machiavelismus":6,"Psychopathie":3}, "trigger": [{"trigger":"...","beschreibung":"...","intensitaet":"hoch"}], "empfehlung":"..." },
   "druckmittel": [{"titel":"...","kategorie":"...","wie_nutzen":"...","timing":"...","risiko":"...","staerke":7}],
   "strategien": [{"name":"...","stil":"...","schritte":["..."],"risiko":"...","zitat":"...","erfolg_pct":65}],
   "timing": {"momentum":"...","momentum_pct":60,"zeitfenster":[{"zeitraum":"...","aktion":"..."}],"naechster_schritt":"..."},
   "informationsstrategie": {"sofort_offenlegen":["..."],"verbergen":["..."],"als_bluff":["..."]},
   "verhandlungsskript": {"vorbereitung":"...","opening":"...","argumentation":"...","closing":"...","einwand":"...","backup":"...","psycho_notizen":["..."]},
+  "compliance_check": {"risiken":["..."],"empfehlungen":["..."]},
   "empfehlung":"..."
 }`,
+        model: "claude_sonnet_4_6"
       });
       let parsed;
       if (typeof res === "string") {
