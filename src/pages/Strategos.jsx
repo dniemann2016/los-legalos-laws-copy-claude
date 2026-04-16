@@ -122,14 +122,17 @@ export default function Strategos() {
 
   const saveScenario = async (updates) => {
     const updated = await base44.entities.StrategosScenario.update(activeScenario.id, updates);
-    setActiveScenario(updated);
-    loadData();
+    setActiveScenario(prev => ({ ...prev, ...updates, ...updated }));
+    return updated;
   };
 
   const deleteLoophole = async (id) => { await base44.entities.LegalLoophole.delete(id); loadData(); };
 
   const goNext = async () => {
-    await saveScenario({ step_completed: Math.max(activeScenario.step_completed || 1, activeStep) });
+    const updated = await base44.entities.StrategosScenario.update(activeScenario.id, {
+      step_completed: Math.max(activeScenario.step_completed || 1, activeStep)
+    });
+    setActiveScenario(updated);
     setActiveStep(s => Math.min(7, s + 1));
   };
 
@@ -294,6 +297,7 @@ export default function Strategos() {
 function StepContent({ step, scenario, onSave, loopholes, onLoadData }) {
   const [form, setForm] = useState({});
 
+  // Sync form whenever scenario data changes (e.g. after save/reload)
   useEffect(() => {
     setForm({
       ausgangslage: scenario.ausgangslage || "",
@@ -306,16 +310,19 @@ function StepContent({ step, scenario, onSave, loopholes, onLoadData }) {
       empfehlung: scenario.empfehlung || "",
       notes: scenario.notes || "",
     });
-  }, [scenario.id]);
+  }, [scenario.id, scenario.updated_date]);
 
   const save = (updates) => { setForm(f => ({ ...f, ...updates })); onSave(updates); };
 
+  // Merged scenario: combine DB scenario with current local form for KI calls
+  const mergedScenario = { ...scenario, ...form };
+
   if (step === 1) return <Step1 form={form} setForm={setForm} save={save} />;
-  if (step === 2) return <Step2 form={form} setForm={setForm} save={save} scenario={scenario} />;
+  if (step === 2) return <Step2 form={form} setForm={setForm} save={save} scenario={mergedScenario} />;
   if (step === 3) return <Step3 form={form} setForm={setForm} save={save} />;
-  if (step === 4) return <Step4 form={form} setForm={setForm} save={save} scenario={scenario} />;
-  if (step === 5) return <Step5 form={form} setForm={setForm} save={save} scenario={scenario} loopholes={loopholes} onLoadData={onLoadData} />;
-  if (step === 6) return <Step6 scenario={scenario} onSave={onSave} />;
+  if (step === 4) return <Step4 form={form} setForm={setForm} save={save} scenario={mergedScenario} />;
+  if (step === 5) return <Step5 form={form} setForm={setForm} save={save} scenario={mergedScenario} loopholes={loopholes} onLoadData={onLoadData} />;
+  if (step === 6) return <Step6 scenario={mergedScenario} onSave={onSave} />;
   if (step === 7) return <Step7 form={form} setForm={setForm} save={save} />;
   return null;
 }
@@ -356,33 +363,21 @@ function Step2({ form, setForm, save, scenario }) {
   const generateOptions = async () => {
     setGenerating(true);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Stratege und Rechtsanwalt. Analysiere den folgenden Sachverhalt und die Fragestellung und erarbeite konkrete, praxistaugliche Handlungsoptionen.
+      prompt: `Du bist ein erfahrener Stratege, Unternehmensberater und Rechtsanwalt für Wirtschaftsrecht. Analysiere den folgenden Sachverhalt und erarbeite konkrete, praxistaugliche Handlungsoptionen für Unternehmen und Mandanten.
 
 Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || scenario.szenario_typ}
-Rechtsgebiet: ${scenario.rechtsgebiet || "nicht angegeben"}
-Ausgangslage: ${scenario.ausgangslage || ""}
-Fragestellung: ${scenario.fragestellung || ""}
+Rechtsgebiet: ${scenario.rechtsgebiet || "Wirtschaftsrecht / Unternehmensrecht"}
+Szenario-Titel: ${scenario.title || ""}
+Ausgangslage: ${scenario.ausgangslage || "(Bitte basiere deine Analyse auf dem Szenario-Typ und -Titel)"}
+Zentrale Fragestellung: ${scenario.fragestellung || "(Leite aus dem Szenario-Typ die relevante Fragestellung ab)"}
+Nutzer-Hinweise: ${extraOptions.length > 0 ? extraOptions.map(o => o.text).join("; ") : "Keine weiteren Hinweise"}
 
-Erstelle 3 differenzierte Handlungsoptionen:
-- Option A: Der sichere, rechtlich einwandfreie Weg (konservativ)
-- Option B: Der aggressive, risikoreiche Weg mit höherem Potential
-- Option C: Ein Hybrid / kreativer Mittelweg
+Erstelle 3 differenzierte Handlungsoptionen mit konkreten, unternehmensbezogenen Empfehlungen:
+- Option A: Der sichere, rechtlich einwandfreie Weg (konservativ, minimales Risiko)
+- Option B: Der aggressive, risikoreiche Weg mit höherem Potential (maximiert Gewinn/Vorteil)
+- Option C: Ein Hybrid / kreativer Mittelweg (balanciert Risiko und Potential)
 
-Antworte im JSON-Format:
-{
-  "option_a": {
-    "beschreibung": "...",
-    "kernstrategie": "...",
-    "erfolg_pct": 75,
-    "risiko_pct": 15,
-    "zeithorizont": "...",
-    "vorteile": ["...", "..."],
-    "nachteile": ["...", "..."]
-  },
-  "option_b": { ... },
-  "option_c": { ... },
-  "begruendung": "Warum diese drei Optionen für diesen spezifischen Sachverhalt relevant sind"
-}`,
+Sei dabei KONKRET und PRAXISNAH — keine allgemeinen Aussagen, sondern spezifische Maßnahmen, Paragraphen, Fristen und Handlungsschritte für Unternehmen.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -558,17 +553,20 @@ function Step4({ form, setForm, save, scenario }) {
   const generateRisiken = async () => {
     setGenerating(true);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein Risiko-Experte und Senior-Anwalt. Analysiere die folgenden Handlungsoptionen auf rechtliche und wirtschaftliche Risiken.
+      prompt: `Du bist ein Risiko-Experte, Senior-Anwalt und Unternehmensberater. Analysiere die folgenden Handlungsoptionen umfassend auf rechtliche, wirtschaftliche, steuerliche und reputationsbezogene Risiken für Unternehmen.
 
-Sachverhalt: ${scenario.ausgangslage || ""}
+Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || "Unternehmensrecht"}
+Szenario-Titel: ${scenario.title || ""}
+Rechtsgebiet: ${scenario.rechtsgebiet || "Wirtschaftsrecht"}
+Sachverhalt: ${scenario.ausgangslage || "(Basiere auf Szenario-Typ und -Titel)"}
 Fragestellung: ${scenario.fragestellung || ""}
-Option A: ${JSON.stringify(scenario.option_a || {})}
-Option B: ${JSON.stringify(scenario.option_b || {})}
-Option C: ${JSON.stringify(scenario.option_c || {})}
+Option A: ${JSON.stringify(scenario.option_a || { beschreibung: "Konservativer Weg" })}
+Option B: ${JSON.stringify(scenario.option_b || { beschreibung: "Aggressiver Weg" })}
+Option C: ${JSON.stringify(scenario.option_c || { beschreibung: "Hybrid-Weg" })}
 
-${manualRisiken.length > 0 ? `Bereits manuell erfasste Risiken (berücksichtigen): ${manualRisiken.map(r => r.titel).join(", ")}` : ""}
+${manualRisiken.length > 0 ? `Bereits manuell erfasste Risiken (zwingend berücksichtigen): ${manualRisiken.map(r => r.titel).join(", ")}` : ""}
 
-Identifiziere die 5-8 wichtigsten Risiken über alle Optionen hinweg.`,
+Identifiziere 6-8 konkrete Risiken: rechtliche Haftung, Bußgelder, Strafverfolgung, Vertragsstrafen, Reputationsschäden, steuerliche Konsequenzen, Wettbewerbsrecht, Datenschutz (DSGVO), Insolvenzrisiko. Sei spezifisch mit Paragraphen und Normen.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -696,17 +694,18 @@ function Step5({ form, setForm, save, scenario, loopholes, onLoadData }) {
   const generateLoopholes = async () => {
     setGenerating(true);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein Experte für Gesetzeslücken und rechtliche Graubereiche. Analysiere den Sachverhalt und die Handlungsoptionen auf ausnutzbare Lücken im Recht.
+      prompt: `Du bist ein Top-Experte für Gesetzeslücken, rechtliche Graubereiche und steuerliche Optimierungsmöglichkeiten für Unternehmen. Analysiere den Sachverhalt auf konkret ausnutzbare Lücken im deutschen/europäischen Recht.
 
-Sachverhalt: ${scenario.ausgangslage || ""}
+Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || "Unternehmensrecht"}
+Szenario-Titel: ${scenario.title || ""}
+Rechtsgebiet: ${scenario.rechtsgebiet || "Wirtschafts-/Steuerrecht"}
+Sachverhalt: ${scenario.ausgangslage || "(Basiere auf Szenario-Typ und -Titel)"}
 Fragestellung: ${scenario.fragestellung || ""}
-Rechtsgebiet: ${scenario.rechtsgebiet || ""}
-Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || ""}
-Optionen: ${JSON.stringify({ a: scenario.option_a, b: scenario.option_b, c: scenario.option_c })}
+Handlungsoptionen: ${JSON.stringify({ a: scenario.option_a?.beschreibung || "Konservativ", b: scenario.option_b?.beschreibung || "Aggressiv", c: scenario.option_c?.beschreibung || "Hybrid" })}
 
-${scenarioLoopholes.length > 0 ? `Bereits manuell erfasste Lücken (ergänzen, nicht duplizieren): ${scenarioLoopholes.map(l => l.titel).join(", ")}` : ""}
+${scenarioLoopholes.length > 0 ? `Bereits erfasste Lücken (NICHT duplizieren, ergänzen): ${scenarioLoopholes.map(l => l.titel).join(", ")}` : ""}
 
-Identifiziere 3-6 konkrete Gesetzeslücken oder Graubereiche die für dieses Szenario relevant sind.`,
+Identifiziere 4-6 KONKRETE Gesetzeslücken oder Graubereiche — mit spezifischen Paragraphen (BGB, HGB, AktG, GmbHG, AO, UStG, KStG, GewStG, UWG, GWB, DSGVO etc.). Denke an: Steueroasen-Strukturen, Gestaltungsmissbrauch-Grenzen, Holdingstrukturen, Lizenzgestaltung, Verrechnungspreise, Umwandlungsrecht, Insolvenzverschleppung-Grenzen, Kartellrechtliche Grauzonen.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -787,29 +786,31 @@ function Step6({ scenario, onSave }) {
     const extraOptions = ki?.extra_options || [];
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein strategischer Senior-Partner und Rechtsberater auf höchstem Niveau. Führe eine vollständige, schonungslose Analyse durch.
+      prompt: `Du bist ein strategischer Senior-Partner, Unternehmensberater und Rechtsberater auf höchstem Niveau. Führe eine vollständige, schonungslose Gesamtanalyse für das Unternehmen durch.
 
 SZENARIO: ${scenario.title}
-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label}
-Rechtsgebiet: ${scenario.rechtsgebiet || "–"}
-Ausgangslage: ${scenario.ausgangslage || "–"}
-Fragestellung: ${scenario.fragestellung || "–"}
+Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || "Unternehmensrecht"}
+Rechtsgebiet: ${scenario.rechtsgebiet || "Wirtschafts- und Unternehmensrecht"}
+Ausgangslage: ${scenario.ausgangslage || "(Leite aus Szenario-Typ und -Titel ab)"}
+Fragestellung: ${scenario.fragestellung || "(Leite aus Szenario-Typ und -Titel ab)"}
 
-Option A: ${JSON.stringify(scenario.option_a || {})}
-Option B: ${JSON.stringify(scenario.option_b || {})}
-Option C: ${JSON.stringify(scenario.option_c || {})}
+Option A (Konservativ): ${JSON.stringify(scenario.option_a || {})}
+Option B (Aggressiv): ${JSON.stringify(scenario.option_b || {})}
+Option C (Hybrid): ${JSON.stringify(scenario.option_c || {})}
 
-${extraOptions.length > 0 ? `Weitere vom Nutzer gewünschte Optionsaspekte: ${extraOptions.map(o => o.text).join("; ")}` : ""}
+${extraOptions.length > 0 ? `Besondere Nutzer-Anforderungen (zwingend beachten): ${extraOptions.map(o => o.text).join("; ")}` : ""}
 
-Finanzdaten: ${JSON.stringify(scenario.finanzdaten || {})}
-Gesetzeslücken: ${JSON.stringify(scenario.gesetzesluecken || [])}
-${manualRisiken.length > 0 ? `Manuell erfasste Risiken (besonders beachten): ${JSON.stringify(manualRisiken)}` : ""}
+Finanzdaten des Unternehmens: ${JSON.stringify(scenario.finanzdaten || {})}
+Identifizierte Gesetzeslücken: ${JSON.stringify((scenario.gesetzesluecken || []).map(l => ({ gesetz: l.gesetz, titel: l.titel })))}
+${manualRisiken.length > 0 ? `Manuell erfasste Risiken (BESONDERS gewichten als Trainings-Input): ${JSON.stringify(manualRisiken)}` : ""}
+${(scenario.ki_analyse?.ki_risiken?.risiken || []).length > 0 ? `KI-Risikoanalyse-Ergebnisse: ${JSON.stringify(scenario.ki_analyse.ki_risiken.risiken.map(r => ({ titel: r.titel, wahrscheinlichkeit: r.wahrscheinlichkeit, auswirkung: r.auswirkung })))}` : ""}
 
-DEINE AUFGABE:
-1. Bewerte jede Option mit Erfolgswahrscheinlichkeit, Risiko, ROI und EV
-2. Berechne Best/Worst/Expected Case in €
-3. Berücksichtige ALLE manuellen Ergänzungen als Trainingsdaten
-4. Gib eine klare, unmissverständliche Empfehlung`,
+DEINE AUFGABE (vollständig und konkret):
+1. Bewerte JEDE Option präzise: Erfolgswahrscheinlichkeit %, Risiko %, ROI %, Erwartungswert in €
+2. Berechne realistische Best/Worst/Expected Case Szenarien in € (falls keine Finanzdaten: schätze typische Werte für diesen Szenario-Typ)
+3. Berücksichtige ALLE manuellen Ergänzungen als trainingswürdig gewichtete Inputs
+4. Gib eine KLARE, unmissverständliche Handlungsempfehlung mit konkreten nächsten Schritten
+5. Identifiziere kritische Zeitfaktoren und Deadlines`,
       response_json_schema: {
         type: "object",
         properties: {
