@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ArrowLeft, ArrowRight, Check, Target, BookOpen, ChevronDown, ChevronUp, Sparkles, Wand2, AlertTriangle } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ArrowRight, Check, Target, BookOpen, ChevronDown, ChevronUp, Sparkles, Wand2, GitCompare } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SZENARIO_TYPEN = {
@@ -93,6 +93,7 @@ export default function Strategos() {
   const [showCreate, setShowCreate] = useState(false);
   const [newScenario, setNewScenario] = useState({ title: "", szenario_typ: "sonstiges", rechtsgebiet: "" });
   const [view, setView] = useState("scenarios");
+  const [compareIds, setCompareIds] = useState([]);
 
   useEffect(() => { loadData(); }, []);
 
@@ -203,6 +204,7 @@ export default function Strategos() {
           </div>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setView("scenarios")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "scenarios" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>Szenarien</button>
+            <button onClick={() => setView("compare")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "compare" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>Vergleich</button>
             <button onClick={() => setView("loopholes")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "loopholes" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>Gesetzeslücken-DB</button>
           </div>
           <Button size="sm" onClick={() => setShowCreate(true)} className="bg-gray-900 text-white rounded-lg text-xs gap-1">
@@ -224,9 +226,21 @@ export default function Strategos() {
             </div>
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {scenarios.map(sc => <ScenarioCard key={sc.id} scenario={sc} onClick={() => openScenario(sc)} />)}
+              {scenarios.map(sc => (
+                <div key={sc.id} className="relative group">
+                  <ScenarioCard scenario={sc} onClick={() => openScenario(sc)} />
+                  <button
+                    onClick={e => { e.stopPropagation(); setCompareIds(ids => ids.includes(sc.id) ? ids.filter(i => i !== sc.id) : ids.length < 2 ? [...ids, sc.id] : [ids[1], sc.id]); setView("compare"); }}
+                    className={`absolute top-2 right-2 text-[10px] px-2 py-1 rounded-lg border transition-all ${compareIds.includes(sc.id) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-400 border-gray-200 opacity-0 group-hover:opacity-100"}`}
+                    title="Zum Vergleich hinzufügen">
+                    <GitCompare className="w-3 h-3" />
+                  </button>
+                </div>
+              ))}
             </div>
           )
+        ) : view === "compare" ? (
+          <ScenarioCompare scenarios={scenarios} compareIds={compareIds} setCompareIds={setCompareIds} />
         ) : (
           <div className="space-y-3">
             {loopholes.length === 0 ? (
@@ -415,7 +429,7 @@ Antworte im JSON-Format:
           <p className="text-xs text-gray-500 mt-0.5">Die KI analysiert Sachverhalt und Fragestellung und ermittelt optimale Handlungsoptionen.</p>
           {kiOptionen?.begruendung && <p className="text-xs text-green-700 mt-2 bg-green-50 rounded-lg p-2">{kiOptionen.begruendung}</p>}
         </div>
-        <Button size="sm" onClick={generateOptions} disabled={generating || !scenario.ausgangslage}
+        <Button size="sm" onClick={generateOptions} disabled={generating}
           className="flex-shrink-0 bg-violet-600 text-white rounded-lg text-xs gap-1">
           <Wand2 className="w-3 h-3" /> {generating ? "Analysiere..." : kiOptionen ? "Neu generieren" : "KI-Optionen ermitteln"}
         </Button>
@@ -941,6 +955,193 @@ function Step7({ form, setForm, save }) {
       <Button onClick={() => save({ status: "ergebnis", step_completed: 7 })} className="w-full bg-green-600 text-white rounded-lg">
         <Check className="w-4 h-4 mr-2" /> Analyse abschließen
       </Button>
+    </div>
+  );
+}
+
+// ── SCENARIO COMPARE ─────────────────────────────────────────────────────────
+function ScenarioCompare({ scenarios, compareIds, setCompareIds }) {
+  const [kiLearning, setKiLearning] = useState(null);
+  const [loadingKI, setLoadingKI] = useState(false);
+
+  const completed = scenarios.filter(s => s.status === "ergebnis" || (s.step_completed || 0) >= 6);
+  const scA = scenarios.find(s => s.id === compareIds[0]) || null;
+  const scB = scenarios.find(s => s.id === compareIds[1]) || null;
+
+  const runKILearning = async () => {
+    if (!scA || !scB) return;
+    setLoadingKI(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein lernender Strategieberater. Vergleiche zwei abgeschlossene Szenarien und leite daraus Lernerkenntnisse für zukünftige Strategien ab.
+
+SZENARIO 1: ${scA.title}
+Typ: ${SZENARIO_TYPEN[scA.szenario_typ]?.label}
+Ausgangslage: ${scA.ausgangslage || "–"}
+Gewählte Empfehlung: ${scA.empfehlung || scA.ki_analyse?.empfehlung?.begruendung || "–"}
+Option A Erfolg: ${scA.option_a?.erfolg_pct || "?"}%  |  Option B: ${scA.option_b?.erfolg_pct || "?"}%  |  Option C: ${scA.option_c?.erfolg_pct || "?"}%
+KI-Empfehlung war: Option ${scA.ki_analyse?.empfehlung?.option || "?"}
+Ergebnis/Abschluss: ${scA.status}
+
+SZENARIO 2: ${scB.title}
+Typ: ${SZENARIO_TYPEN[scB.szenario_typ]?.label}
+Ausgangslage: ${scB.ausgangslage || "–"}
+Gewählte Empfehlung: ${scB.empfehlung || scB.ki_analyse?.empfehlung?.begruendung || "–"}
+Option A Erfolg: ${scB.option_a?.erfolg_pct || "?"}%  |  Option B: ${scB.option_b?.erfolg_pct || "?"}%  |  Option C: ${scB.option_c?.erfolg_pct || "?"}%
+KI-Empfehlung war: Option ${scB.ki_analyse?.empfehlung?.option || "?"}
+Ergebnis/Abschluss: ${scB.status}
+
+Leite daraus ab:
+1. Welche Strategiemuster haben funktioniert?
+2. Was hätte besser gemacht werden können?
+3. Wie sollen Erfolgswahrscheinlichkeiten bei ähnlichen Szenarien in Zukunft gewichtet werden?
+4. Konkrete Lernregeln für den Nutzer`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          muster_die_funktionierten: { type: "array", items: { type: "string" } },
+          verbesserungspotenzial: { type: "array", items: { type: "string" } },
+          gewichtungshinweise: { type: "array", items: { type: "string" } },
+          lernregeln: { type: "array", items: { type: "string" } },
+          fazit: { type: "string" }
+        }
+      },
+      model: "claude_sonnet_4_6"
+    });
+    setKiLearning(result);
+    setLoadingKI(false);
+  };
+
+  const CompareCol = ({ sc, label }) => {
+    if (!sc) return (
+      <div className="flex-1 bg-white rounded-xl border-2 border-dashed border-gray-200 p-5 flex flex-col items-center justify-center gap-2 min-h-48">
+        <p className="text-xs font-semibold text-gray-400">{label}</p>
+        <p className="text-[10px] text-gray-300 text-center">Szenario auswählen</p>
+        <div className="mt-2 space-y-1 w-full max-h-48 overflow-y-auto">
+          {completed.map(s => (
+            <button key={s.id} onClick={() => setCompareIds(ids => label === "Szenario A" ? [s.id, ids[1] || null] : [ids[0] || null, s.id])}
+              className="w-full text-left px-3 py-2 text-xs rounded-lg bg-gray-50 hover:bg-gray-100 transition-all text-gray-600 truncate">
+              {SZENARIO_TYPEN[s.szenario_typ]?.icon} {s.title}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+
+    const ki = sc.ki_analyse;
+    const typ = SZENARIO_TYPEN[sc.szenario_typ] || SZENARIO_TYPEN.sonstiges;
+
+    return (
+      <div className="flex-1 bg-white rounded-xl border border-gray-100 p-5 space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <p className="text-[10px] text-gray-400 uppercase font-semibold">{label}</p>
+            <h3 className="text-sm font-semibold text-gray-900 mt-0.5">{sc.title}</h3>
+            <span className="text-[10px] px-1.5 py-0.5 rounded mt-1 inline-block" style={{ background: typ.color + "15", color: typ.color }}>{typ.icon} {typ.label}</span>
+          </div>
+          <button onClick={() => setCompareIds(ids => label === "Szenario A" ? [null, ids[1]] : [ids[0], null])} className="text-gray-300 hover:text-red-400 text-xs">✕</button>
+        </div>
+
+        {/* Optionen */}
+        <div>
+          <p className="text-[10px] font-semibold text-gray-400 uppercase mb-2">Handlungsoptionen</p>
+          {[["option_a", "A", "#34C759"], ["option_b", "B", "#FF9500"], ["option_c", "C", "#007AFF"]].map(([key, lbl, color]) => sc[key]?.beschreibung ? (
+            <div key={key} className="flex items-start gap-2 mb-2">
+              <div className="w-4 h-4 rounded-full flex-shrink-0 mt-0.5 flex items-center justify-center" style={{ background: color }}>
+                <span className="text-[8px] text-white font-bold">{lbl}</span>
+              </div>
+              <div>
+                <p className="text-xs text-gray-700 line-clamp-2">{sc[key].beschreibung}</p>
+                {sc[key].erfolg_pct && <p className="text-[10px] text-gray-400 mt-0.5">{sc[key].erfolg_pct}% Erfolg · {sc[key].risiko_pct}% Risiko</p>}
+              </div>
+            </div>
+          ) : null)}
+        </div>
+
+        {/* KI Empfehlung */}
+        {ki?.empfehlung && (
+          <div className="bg-green-50 rounded-lg p-3">
+            <p className="text-[10px] font-semibold text-green-700 uppercase mb-1">KI empfahl Option {ki.empfehlung.option}</p>
+            <p className="text-xs text-green-700 line-clamp-3">{ki.empfehlung.begruendung}</p>
+          </div>
+        )}
+
+        {/* Erwartungswerte */}
+        {ki?.erwartungswert_gesamt && (
+          <div className="grid grid-cols-3 gap-1">
+            {[["Best", ki.erwartungswert_gesamt.best_case_eur, "text-green-600"],
+              ["EV", ki.erwartungswert_gesamt.expected_eur, "text-blue-600"],
+              ["Worst", ki.erwartungswert_gesamt.worst_case_eur, "text-red-500"]].map(([l, v, cls]) => (
+              <div key={l} className="bg-gray-50 rounded-lg p-2 text-center">
+                <p className="text-[9px] text-gray-400 uppercase">{l}</p>
+                <p className={`text-xs font-bold ${cls}`}>{v ? (v / 1000).toFixed(0) + "k€" : "–"}</p>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Abschlussstatus */}
+        <div className="pt-2 border-t border-gray-100">
+          <p className="text-[10px] text-gray-400">Status: <span className="font-semibold text-gray-600">{sc.status}</span></p>
+          {sc.empfehlung && <p className="text-xs text-gray-600 mt-1 line-clamp-2 italic">"{sc.empfehlung}"</p>}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <div className="space-y-5">
+      <div className="flex items-start gap-3">
+        <div className="flex-1 flex gap-4">
+          <CompareCol sc={scA} label="Szenario A" />
+          <CompareCol sc={scB} label="Szenario B" />
+        </div>
+      </div>
+
+      {scA && scB && (
+        <div className="bg-white rounded-xl border border-gray-100 p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h3 className="text-sm font-semibold text-gray-800">KI-Lernanalyse</h3>
+              <p className="text-xs text-gray-500 mt-0.5">Was können wir aus diesen zwei Szenarien lernen? Wie sollen Erfolgswahrscheinlichkeiten zukünftig gewichtet werden?</p>
+            </div>
+            <Button size="sm" onClick={runKILearning} disabled={loadingKI} className="bg-violet-600 text-white rounded-lg text-xs gap-1">
+              <Sparkles className="w-3 h-3" /> {loadingKI ? "Lerne..." : kiLearning ? "Neu analysieren" : "Lernanalyse starten"}
+            </Button>
+          </div>
+
+          {kiLearning ? (
+            <div className="space-y-4">
+              {[
+                ["Strategiemuster die funktionierten", kiLearning.muster_die_funktionierten, "bg-green-50 border-green-100 text-green-800"],
+                ["Verbesserungspotenzial", kiLearning.verbesserungspotenzial, "bg-amber-50 border-amber-100 text-amber-800"],
+                ["Gewichtungshinweise für zukünftige Prognosen", kiLearning.gewichtungshinweise, "bg-blue-50 border-blue-100 text-blue-800"],
+                ["Lernregeln", kiLearning.lernregeln, "bg-violet-50 border-violet-100 text-violet-800"],
+              ].map(([title, items, cls]) => items?.length > 0 && (
+                <div key={title} className={`rounded-lg border p-3 ${cls}`}>
+                  <p className="text-[10px] font-bold uppercase mb-2">{title}</p>
+                  {items.map((item, i) => <p key={i} className="text-xs mb-1">→ {item}</p>)}
+                </div>
+              ))}
+              {kiLearning.fazit && (
+                <div className="bg-gray-900 text-white rounded-lg p-4">
+                  <p className="text-[10px] font-bold uppercase mb-1 text-gray-400">Fazit</p>
+                  <p className="text-sm">{kiLearning.fazit}</p>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-400 text-center py-6">Starten Sie die Lernanalyse um aus beiden Szenarien strategische Erkenntnisse zu gewinnen.</p>
+          )}
+        </div>
+      )}
+
+      {completed.length === 0 && (
+        <div className="text-center py-12 bg-white rounded-xl border border-gray-100">
+          <GitCompare className="w-8 h-8 mx-auto mb-3 text-gray-300" />
+          <p className="text-sm font-semibold text-gray-500">Noch keine abgeschlossenen Szenarien</p>
+          <p className="text-xs text-gray-400 mt-1">Schließen Sie mindestens zwei Szenarien ab, um sie vergleichen zu können.</p>
+        </div>
+      )}
     </div>
   );
 }
