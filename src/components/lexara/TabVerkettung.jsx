@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, X, Sparkles, RefreshCw, Pencil, Check, Network, BarChart3 } from "lucide-react";
+import { Plus, X, Sparkles, RefreshCw, Pencil, Check, Network, BarChart3, GitBranch } from "lucide-react";
 import ArgumentGraphiOS from "./ArgumentGraphiOS";
 import ArgumentZeitstrahlChart from "./ArgumentZeitstrahlChart";
+import ArgumentationskettenVisualisierung from "./ArgumentationskettenVisualisierung";
 import { Button } from "@/components/ui/button";
 
 const CONN_TYPES = ["stützt", "entkräftet", "schließt aus", "kausal", "widerspricht", "schwächt", "verstärkt"];
@@ -20,7 +21,7 @@ export default function TabVerkettung({ caseId }) {
   const [args, setArgs] = useState([]);
   const [deadlines, setDeadlines] = useState([]);
   const [showAddConn, setShowAddConn] = useState(false);
-  const [view, setView] = useState("zeitstrahl"); // "zeitstrahl" | "liste" | "graph"
+  const [view, setView] = useState("argumentkette"); // "argumentkette" | "zeitstrahl" | "liste" | "graph"
   const [newConn, setNewConn] = useState({ from: "", to: "", type: "stützt", explanation: "", intensitaet: 5 });
   const [editConn, setEditConn] = useState(null); // { fromId, toId, type, explanation, intensitaet }
   const [kiAnalyzing, setKiAnalyzing] = useState(false);
@@ -143,7 +144,7 @@ export default function TabVerkettung({ caseId }) {
         <div className="flex gap-2 flex-wrap">
           {/* View Toggle */}
           <div className="flex border border-slate-200 rounded-lg overflow-hidden">
-            {[["zeitstrahl", <BarChart3 className="w-3 h-3" />, "Zeitstrahl"],["liste", null, "Liste"],["graph", <Network className="w-3 h-3" />, "Graph"]].map(([v, icon, label]) => (
+            {[["argumentkette", <GitBranch className="w-3 h-3" />, "Argumentkette"],["zeitstrahl", <BarChart3 className="w-3 h-3" />, "Zeitstrahl"],["liste", null, "Liste"],["graph", <Network className="w-3 h-3" />, "Graph"]].map(([v, icon, label]) => (
               <button key={v} onClick={() => setView(v)}
                 className={`flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium transition-colors ${
                   view === v ? "bg-[#1a3560] text-white" : "text-slate-500 hover:bg-slate-50"
@@ -221,6 +222,11 @@ export default function TabVerkettung({ caseId }) {
             </div>
           ))}
         </div>
+      )}
+
+      {/* Argumentkette View */}
+      {view === "argumentkette" && (
+        <ArgumentationskettenVisualisierung caseId={caseId} />
       )}
 
       {/* Zeitstrahl View */}

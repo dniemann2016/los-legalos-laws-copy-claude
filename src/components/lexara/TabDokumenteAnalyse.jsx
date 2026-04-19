@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, Loader2, X, Check, AlertCircle, FileText, Image, Film, File, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Upload, Loader2, X, Check, AlertCircle, FileText, Image, Film, File, ChevronDown, ChevronUp, RefreshCw, Info, MapPin, ArrowRight } from "lucide-react";
 
 const FILE_ACCEPT = "*/*"; // all types
 
@@ -26,6 +26,141 @@ const STEP_LABELS = [
   "Abschluss",
   "KI-Protokoll",
 ];
+
+// ── KI EXPLANATION PANEL ─────────────────────────────────────────────────────
+
+const KI_STEPS_EXPLANATION = [
+  {
+    schritt: "Schritt 1 — Fallerfassung (Basisdaten)",
+    tab: "Tab 1 › Basisdaten",
+    felder: ["Gericht", "Aktenzeichen", "Rechtsgebiet", "Instanz", "Prozessziel", "Zentrale Rechtsfrage", "Streitwert"],
+    beschreibung: "Die KI liest Kopfdaten aus dem Dokument (Briefkopf, Urteilsrubrum, Aktenzeichen) und befüllt die Basisdaten automatisch — aber nur wenn das Feld noch leer ist.",
+    color: "#34C759",
+  },
+  {
+    schritt: "Schritt 2 — Fallsubstanz › Argumente & Beweise",
+    tab: "Tab 2 › Argumente & Beweise",
+    felder: [
+      "Argumente (eigene Seite & Gegner) → Stärke, Typ, Beschreibung",
+      "Beweise → Titel, Typ, Gewicht, Quelle (Dokumentname)",
+    ],
+    beschreibung: "Für jedes erkannte Argument wird ein Eintrag unter 'Argumente' erstellt (Seite: eigen/gegner). Für jeden Beweis wird ein Eintrag unter 'Beweise' erstellt mit Verweis auf das Quelldokument. Die Beweise sind dabei NOCH NICHT automatisch einem Argument zugeordnet — dies kann manuell oder per Verkettung erfolgen.",
+    color: "#007AFF",
+  },
+  {
+    schritt: "Schritt 2 — Fallsubstanz › Personen",
+    tab: "Tab 2 › Personen",
+    felder: ["Name", "Rolle (Richter, Zeuge, Partei…)", "Organisation"],
+    beschreibung: "Alle im Dokument genannten Personen werden extrahiert und unter 'Personen' gespeichert.",
+    color: "#5856D6",
+  },
+  {
+    schritt: "Schritt 2 — Fallsubstanz › Fristen",
+    tab: "Tab 2 › Fristen",
+    felder: ["Titel", "Fristtyp", "Fälligkeitsdatum", "Seite: Eigene", "Status: offen"],
+    beschreibung: "Erkannte Fristen und Deadlines werden unter 'Fristen' angelegt. Datum wird aus dem Dokument extrahiert.",
+    color: "#FF9500",
+  },
+  {
+    schritt: "Schritt 2 — Fallsubstanz › Zeitstrahl",
+    tab: "Tab 2 › Dokumentenanalyse / Zeitstrahl",
+    felder: ["Chronologische Ereignisse", "Vertragspunkte mit Fälligkeitsdaten"],
+    beschreibung: "Kann aus den Dokumenten separat per KI generiert werden (Button 'Aus Dokumenten generieren' im Zeitstrahl).",
+    color: "#FF6B35",
+  },
+  {
+    schritt: "Schritt 1–10 — Informationslücken",
+    tab: "Alle Tabs (Hinweise)",
+    felder: ["Fehlende Basisdaten", "Fehlende Argumente", "Fehlende Beweise", "Fehlende Gegnerinfos"],
+    beschreibung: "Die KI analysiert alle 11 Schritte und weist auf fehlende Informationen hin — direkt nach der Analyse sichtbar als orangener Hinweisblock.",
+    color: "#FF3B30",
+  },
+];
+
+function KIExplanationPanel() {
+  const [open, setOpen] = useState(false);
+  const [detailStep, setDetailStep] = useState(null);
+
+  return (
+    <div className="rounded-xl border" style={{ borderColor: "rgba(0,122,255,0.2)", background: "rgba(0,122,255,0.03)" }}>
+      <button onClick={() => setOpen(o => !o)} className="w-full flex items-center gap-2 px-4 py-3 text-left">
+        <Info className="w-4 h-4 flex-shrink-0" style={{ color: "#007AFF" }} />
+        <div className="flex-1">
+          <p className="text-xs font-semibold" style={{ color: "#007AFF" }}>Was macht die KI-Analyse genau?</p>
+          <p className="text-[10px]" style={{ color: "#888" }}>Welche Daten werden wo abgespeichert — Schritt für Schritt erklärt</p>
+        </div>
+        {open ? <ChevronUp className="w-4 h-4" style={{ color: "#aaa" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "#aaa" }} />}
+      </button>
+
+      {open && (
+        <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+          <p className="text-[11px] pt-3" style={{ color: "#555" }}>
+            Wenn Sie ein Dokument analysieren lassen, durchläuft die KI folgende Schritte automatisch:
+          </p>
+
+          {/* Process flow */}
+          <div className="flex items-center gap-1 text-[10px] text-gray-500 flex-wrap">
+            <span className="px-2 py-0.5 rounded bg-gray-100">📄 Dokument</span>
+            <ArrowRight style={{ width: 10, height: 10 }} />
+            <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600">Text extrahieren</span>
+            <ArrowRight style={{ width: 10, height: 10 }} />
+            <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-600">KI analysiert</span>
+            <ArrowRight style={{ width: 10, height: 10 }} />
+            <span className="px-2 py-0.5 rounded bg-green-50 text-green-600">Daten verteilen</span>
+          </div>
+
+          {/* Step cards */}
+          <div className="space-y-2">
+            {KI_STEPS_EXPLANATION.map((step, i) => (
+              <div key={i}
+                className="rounded-lg border cursor-pointer transition-all"
+                style={{ borderColor: detailStep === i ? step.color + "50" : "rgba(0,0,0,0.08)", background: detailStep === i ? step.color + "06" : "#fff" }}
+                onClick={() => setDetailStep(detailStep === i ? null : i)}>
+                <div className="flex items-center gap-3 px-3 py-2.5">
+                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: step.color }} />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[11px] font-semibold text-gray-700">{step.schritt}</p>
+                    <p className="text-[10px]" style={{ color: "#aaa" }}><MapPin style={{ width: 9, height: 9, display: "inline", marginRight: 2 }} />{step.tab}</p>
+                  </div>
+                  {detailStep === i ? <ChevronUp style={{ width: 12, height: 12, color: "#aaa", flexShrink: 0 }} /> : <ChevronDown style={{ width: 12, height: 12, color: "#aaa", flexShrink: 0 }} />}
+                </div>
+
+                {detailStep === i && (
+                  <div className="px-3 pb-3 space-y-2" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+                    <p className="text-[11px] text-gray-600 pt-2">{step.beschreibung}</p>
+                    <div>
+                      <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "#aaa" }}>Gespeicherte Felder</p>
+                      <div className="flex flex-wrap gap-1">
+                        {step.felder.map((f, j) => (
+                          <span key={j} className="text-[10px] px-2 py-0.5 rounded"
+                            style={{ background: step.color + "12", color: step.color, border: `1px solid ${step.color}25` }}>
+                            {f}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          {/* Important note */}
+          <div className="rounded-lg p-3" style={{ background: "rgba(255,149,0,0.07)", border: "1px solid rgba(255,149,0,0.2)" }}>
+            <p className="text-[10px] font-semibold text-amber-700 mb-1">⚠ Wichtige Hinweise</p>
+            <ul className="space-y-0.5 text-[10px] text-amber-700">
+              <li>• Basisdaten werden nur befüllt wenn das Feld noch <strong>leer</strong> ist (kein Überschreiben)</li>
+              <li>• Beweise werden dem Dokument als Quelle zugeordnet, aber <strong>nicht automatisch einem Argument</strong> — Verknüpfung unter Tab 2 › Verkettung</li>
+              <li>• Bei Fotos/Videos: KI analysiert Bildinhalt, Personen, Ort und Beweiswert</li>
+              <li>• Alle KI-Ergebnisse können manuell bearbeitet/korrigiert werden</li>
+              <li>• Im KI-Protokoll (Tab 11) werden alle Analyse-Schritte protokolliert</li>
+            </ul>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function GapBadge({ gaps }) {
   if (!gaps || gaps.length === 0) return null;
@@ -449,6 +584,9 @@ Gib NUR valides JSON zurück.`,
       </div>
       <input ref={fileRef} type="file" accept={FILE_ACCEPT} multiple className="hidden"
         onChange={e => { if (e.target.files?.length) addFiles(e.target.files); e.target.value = ""; }} />
+
+      {/* KI Explanation */}
+      <KIExplanationPanel />
 
       {/* Docs list */}
       {loading ? (
