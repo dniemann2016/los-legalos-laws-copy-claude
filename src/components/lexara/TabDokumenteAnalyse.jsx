@@ -345,7 +345,7 @@ function DocCard({ doc, analyzing, ocr_status, onAnalyze, onDelete, result }) {
           {isAnalyzing ? (
             <span className="flex items-center gap-1 text-[11px] px-2 py-1 rounded" style={{ background: "rgba(52,199,89,0.1)", color: "#1a7f37" }}>
               <Loader2 className="w-3 h-3 animate-spin" />
-              {ocr_status === "extracting" ? "Extrahiere…" : "KI analysiert…"}
+              {"KI analysiert…"}
             </span>
           ) : analyzed ? (
             <button onClick={() => setOpen(!open)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-all"
@@ -471,215 +471,20 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
 
   const analyzeDocument = async (doc) => {
     setAnalyzing(doc.id);
+    setOcrStatus(prev => ({ ...prev, [doc.id]: "analyzing" }));
     try {
-      let ocrText = "";
-      const isExtractable = doc.file_type?.includes("pdf") || doc.file_type?.includes("word") ||
-        doc.file_type?.includes("document") || doc.file_type?.includes("text") ||
-        doc.file_url?.toLowerCase().match(/\.(pdf|docx|xlsx|csv|txt|pages|numbers)$/);
-
-      if (isExtractable && doc.file_url) {
-        setOcrStatus(prev => ({ ...prev, [doc.id]: "extracting" }));
-        try {
-          const ocrResult = await base44.integrations.Core.ExtractDataFromUploadedFile({
-            file_url: doc.file_url,
-            json_schema: { type: "object", properties: { volltext: { type: "string" } } }
-          });
-          if (ocrResult.status === "success" && ocrResult.output?.volltext) ocrText = ocrResult.output.volltext;
-        } catch {}
-        setOcrStatus(prev => ({ ...prev, [doc.id]: "done" }));
-      }
-
-      const isImage = doc.file_type?.startsWith("image/");
-      const isVideo = doc.file_type?.startsWith("video/");
-
-      const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein erfahrener Rechtsanwalt auf Senior-Partner-Niveau. Analysiere diese Datei VOLLSTÄNDIG und SYSTEMATISCH für den Fall "${caseData?.fallname || ""}" (Rechtsgebiet: ${caseData?.rechtsgebiet || ""}, Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}, Prozessziel: ${caseData?.prozessziel || ""}, Gericht: ${caseData?.gericht || ""}).
-
-${ocrText ? `VOLLSTÄNDIGER DOKUMENTTEXT:\n${ocrText.slice(0, 14000)}` : ""}
-${isImage ? "WICHTIG: Dies ist ein Foto/Bild. Analysiere: Bildinhalt, erkennbare Personen, Ort, Datum, Beweisrelevanz, visuelle Details die juristisch relevant sein könnten." : ""}
-${isVideo ? "WICHTIG: Dies ist ein Video. Analysiere den möglichen Inhalt, Personen, Orte und Beweiswert auf juristische Relevanz." : ""}
-
-Befülle ALLE 10 Schritte so vollständig wie möglich. Extrahiere ALLES was du aus dem Dokument ableiten kannst. Wenn nichts vorhanden: leeres Array / leerer String.
-
-SCHRITT 1 (Basisdaten): Gericht, Aktenzeichen, Rechtsgebiet, Instanz, Prozessziel, Zentrale Rechtsfrage, Streitwert.
-SCHRITT 2 (Fallsubstanz): Argumente (eigen/gegner mit Stärke 1-10), Beweise (Titel, Typ, Gewicht 1-10), Fristen mit Datum (YYYY-MM-DD), Personen (Richter, Zeugen, Parteien, Anwälte).
-SCHRITT 3 (Gegneranalyse): Gegnerische Strategie, erkannte Taktiken, Schwachstellen des Gegners, Gegner-Profil.
-SCHRITT 4 (Rechtliche Analyse): Relevante Paragrafen, Gesetze, Präzedenzfälle, Compliance-Risiken.
-SCHRITT 5 (Strategie): Empfohlene Prozessstrategie, Stärken unserer Position, Schwächen/Risiken.
-SCHRITT 6 (Risiko): Risiko-Level (gering/mittel/hoch/kritisch), konkrete Risiken, Beweisprobleme.
-SCHRITT 7 (Simulation): Verhandlungsszenarien, Vergleichswert in EUR, Prognose-Einfluss.
-SCHRITT 8 (Aktion/Schriftsätze): Nächste Handlungsschritte, einzureichende Dokumente, Antwortfristen.
-SCHRITT 9 (Cockpit): Gesamtüberblick, Prognose-Delta in % (positiv oder negativ).
-SCHRITT 10 (Abschluss): Prozessziel erreichbar?, Vergleichsempfehlung.
-
-Gib NUR valides JSON zurück.`,
-        file_urls: doc.file_url ? [doc.file_url] : undefined,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            zusammenfassung: { type: "string" },
-            basisdaten: {
-              type: "object",
-              properties: {
-                gericht: { type: "string" }, aktenzeichen: { type: "string" },
-                rechtsgebiet: { type: "string" }, prozessziel: { type: "string" },
-                zentrale_rechtsfrage: { type: "string" }, instanz: { type: "string" },
-              }
-            },
-            streitwert: { type: "number" },
-            argumente: {
-              type: "array",
-              items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, seite: { type: "string", enum: ["eigen", "gegner"] }, staerke: { type: "number" } } }
-            },
-            beweise: {
-              type: "array",
-              items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, typ: { type: "string" }, gewicht: { type: "number" } } }
-            },
-            fristen: {
-              type: "array",
-              items: { type: "object", properties: { titel: { type: "string" }, datum: { type: "string" }, fristtyp: { type: "string" } } }
-            },
-            personen: {
-              type: "array",
-              items: { type: "object", properties: { name: { type: "string" }, rolle: { type: "string" }, organisation: { type: "string" } } }
-            },
-            schritt3_gegneranalyse: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, taktiken: { type: "array", items: { type: "string" } }, schwachstellen: { type: "array", items: { type: "string" } }, gegner_profil: { type: "string" } }
-            },
-            schritt4_rechtliche_analyse: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, relevante_paragrafen: { type: "array", items: { type: "string" } }, praezedenzfaelle: { type: "array", items: { type: "string" } }, compliance_risiken: { type: "array", items: { type: "string" } } }
-            },
-            schritt5_strategie: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, empfohlene_strategie: { type: "string" }, staerken: { type: "array", items: { type: "string" } }, schwaechen: { type: "array", items: { type: "string" } } }
-            },
-            schritt6_risiko: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, risiken: { type: "array", items: { type: "string" } }, risiko_level: { type: "string" } }
-            },
-            schritt7_simulation: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, vergleichswert_eur: { type: "number" }, prognose_einfluss: { type: "string" } }
-            },
-            schritt8_aktion: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, naechste_schritte: { type: "array", items: { type: "string" } }, erforderliche_dokumente: { type: "array", items: { type: "string" } } }
-            },
-            schritt9_cockpit: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, prognose_einfluss_positiv: { type: "boolean" }, prognose_delta_pct: { type: "number" } }
-            },
-            schritt10_abschluss: {
-              type: "object",
-              properties: { zusammenfassung: { type: "string" }, prozessziel_erreichbar: { type: "boolean" }, vergleichsempfehlung: { type: "string" } }
-            },
-            informationsluecken: {
-              type: "array",
-              items: { type: "object", properties: { schritt: { type: "string" }, hinweis: { type: "string" } } }
-            }
-          }
-        },
-        model: "claude_sonnet_4_6"
+      const response = await base44.functions.invoke("analyzeDocument", {
+        docId: doc.id,
+        caseId,
       });
-
-      // Save to Document entity
-      await base44.entities.Document.update(doc.id, {
-        ai_summary: result.zusammenfassung || "",
-        ai_raw: result,
-      });
-
-      // ── SCHRITT 1: Basisdaten → Case (nur wenn leer) ────────────────────
-      const bd = result.basisdaten || {};
-      const caseUpdate = {};
-      if (bd.gericht && !caseData?.gericht) caseUpdate.gericht = bd.gericht;
-      if (bd.aktenzeichen && !caseData?.aktenzeichen) caseUpdate.aktenzeichen = bd.aktenzeichen;
-      if (bd.rechtsgebiet && !caseData?.rechtsgebiet) caseUpdate.rechtsgebiet = bd.rechtsgebiet;
-      if (bd.prozessziel && !caseData?.prozessziel) caseUpdate.prozessziel = bd.prozessziel;
-      if (bd.zentrale_rechtsfrage && !caseData?.zentrale_rechtsfrage) caseUpdate.zentrale_rechtsfrage = bd.zentrale_rechtsfrage;
-      if (bd.instanz && !caseData?.instanz) caseUpdate.instanz = bd.instanz;
-      if (result.streitwert && !caseData?.streitwert) caseUpdate.streitwert = result.streitwert;
-
-      // ── SCHRITT 3: Gegneranalyse → Case.gegner_profil ──────────────────
-      const g3 = result.schritt3_gegneranalyse;
-      if (g3?.zusammenfassung) {
-        caseUpdate.gegner_profil = {
-          ...(caseData?.gegner_profil || {}),
-          ki_zusammenfassung: g3.zusammenfassung,
-          taktiken: [...(caseData?.gegner_profil?.taktiken || []), ...(g3.taktiken || [])],
-          schwachstellen: [...(caseData?.gegner_profil?.schwachstellen || []), ...(g3.schwachstellen || [])],
-          profil_text: g3.gegner_profil || caseData?.gegner_profil?.profil_text || "",
-        };
-      }
-
-      // ── SCHRITT 5+6: Strategie & Risiko → Case.notes (ergänzen) ────────
-      const notizTeile = [];
-      if (result.schritt5_strategie?.empfohlene_strategie)
-        notizTeile.push(`[Strategie aus Dok. "${doc.title}"]: ${result.schritt5_strategie.empfohlene_strategie}`);
-      if (result.schritt6_risiko?.zusammenfassung)
-        notizTeile.push(`[Risiko aus Dok. "${doc.title}" — Level ${result.schritt6_risiko.risiko_level || "?"}]: ${result.schritt6_risiko.zusammenfassung}`);
-      if (result.schritt8_aktion?.naechste_schritte?.length)
-        notizTeile.push(`[Nächste Schritte aus Dok. "${doc.title}"]: ${result.schritt8_aktion.naechste_schritte.join("; ")}`);
-      if (notizTeile.length > 0) {
-        caseUpdate.notes = [(caseData?.notes || ""), ...notizTeile].filter(Boolean).join("\n\n");
-      }
-
-      // ── SCHRITT 7+9+10: KI-Berater-Result ───────────────────────────────
-      const existingKi = caseData?.ki_berater_result || {};
-      const newKiData = {};
-      if (result.schritt7_simulation?.prognose_einfluss)
-        newKiData.simulation_hinweis = result.schritt7_simulation.prognose_einfluss;
-      if (result.schritt7_simulation?.vergleichswert_eur)
-        newKiData.vergleichswert_eur = result.schritt7_simulation.vergleichswert_eur;
-      if (result.schritt9_cockpit?.prognose_delta_pct != null)
-        newKiData.prognose_delta = (existingKi.prognose_delta || 0) + result.schritt9_cockpit.prognose_delta_pct;
-      if (result.schritt10_abschluss?.vergleichsempfehlung)
-        newKiData.vergleichsempfehlung = result.schritt10_abschluss.vergleichsempfehlung;
-      if (result.schritt4_rechtliche_analyse?.relevante_paragrafen?.length)
-        newKiData.relevante_paragrafen = [...(existingKi.relevante_paragrafen || []), ...result.schritt4_rechtliche_analyse.relevante_paragrafen];
-      if (Object.keys(newKiData).length > 0) {
-        caseUpdate.ki_berater_result = { ...existingKi, ...newKiData };
-      }
-
-      if (Object.keys(caseUpdate).length > 0) {
-        await base44.entities.Case.update(caseId, caseUpdate);
-      }
-
-      // ── SCHRITT 2: Argumente, Beweise, Fristen, Personen → Entities ────
-      await Promise.all([
-        ...(result.argumente || []).map(arg =>
-          base44.entities.Argument.create({
-            case_id: caseId, title: arg.titel,
-            description: `${arg.beschreibung || ""}\n[KI aus: ${doc.title}]`,
-            side: arg.seite || "eigen", strength: arg.staerke || 5, type: "Rechtsargument",
-          })
-        ),
-        ...(result.beweise || []).map(bew =>
-          base44.entities.Evidence.create({
-            case_id: caseId, title: bew.titel,
-            description: `${bew.beschreibung || ""}\n[KI aus: ${doc.title}]`,
-            type: bew.typ, weight: bew.gewicht || 5, source: doc.title,
-          })
-        ),
-        ...(result.fristen || []).map(frist =>
-          base44.entities.Deadline.create({
-            case_id: caseId, title: frist.titel, frist_type: frist.fristtyp,
-            due_date: frist.datum, side: "Eigene", status: "offen",
-          })
-        ),
-        ...(result.personen || []).map(person =>
-          base44.entities.Person.create({
-            case_id: caseId, name: person.name, role: person.rolle, organization: person.organisation,
-          })
-        ),
-      ]);
-
+      const { result, stats } = response.data;
+      console.log("Analyse abgeschlossen:", stats);
       setResults(prev => ({ ...prev, [doc.id]: result }));
       onDataImport && onDataImport();
     } catch (error) {
-      setResults(prev => ({ ...prev, [doc.id]: { error: error.message } }));
+      setResults(prev => ({ ...prev, [doc.id]: { error: error.response?.data?.error || error.message } }));
     }
+    setOcrStatus(prev => ({ ...prev, [doc.id]: "done" }));
     setAnalyzing(null);
   };
 
