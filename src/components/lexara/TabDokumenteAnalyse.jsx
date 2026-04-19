@@ -1,9 +1,198 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, Loader2, X, Check, AlertCircle, FileText, Image, Film, File, ChevronDown, ChevronUp, RefreshCw, Info, MapPin, ArrowRight } from "lucide-react";
+import { Upload, Loader2, X, Check, AlertCircle, FileText, Image, Film, File, ChevronDown, ChevronUp, RefreshCw, Info, ArrowRight } from "lucide-react";
 
-const FILE_ACCEPT = "*/*"; // all types
+const FILE_ACCEPT = "*/*";
 
+// ── STEP MAPPING: was wird wo in Lexara eingetragen ─────────────────────────
+const STEP_MAP = [
+  {
+    num: 1, label: "Fallerfassung — Basisdaten", color: "#34C759",
+    wo: "Tab 1 › Basisdaten",
+    felder: ["Gericht", "Aktenzeichen", "Rechtsgebiet", "Instanz", "Prozessziel", "Zentrale Rechtsfrage", "Streitwert"],
+    hinweis: "Nur wenn Feld noch leer — kein Überschreiben",
+    getItems: r => [
+      r?.basisdaten?.gericht && `Gericht: ${r.basisdaten.gericht}`,
+      r?.basisdaten?.aktenzeichen && `AZ: ${r.basisdaten.aktenzeichen}`,
+      r?.basisdaten?.rechtsgebiet && `Rechtsgebiet: ${r.basisdaten.rechtsgebiet}`,
+      r?.basisdaten?.prozessziel && `Prozessziel: ${r.basisdaten.prozessziel}`,
+      r?.basisdaten?.instanz && `Instanz: ${r.basisdaten.instanz}`,
+      r?.streitwert && `Streitwert: ${Number(r.streitwert).toLocaleString()} €`,
+    ].filter(Boolean),
+    isCovered: r => !!(r?.basisdaten?.gericht || r?.basisdaten?.aktenzeichen || r?.basisdaten?.rechtsgebiet || r?.streitwert),
+  },
+  {
+    num: 2, label: "Fallsubstanz", color: "#007AFF",
+    wo: "Tab 2 › Argumente, Beweise, Fristen, Personen",
+    felder: ["Argumente (eigen/gegner)", "Beweise → Quelle = Dokument", "Fristen mit Datum", "Beteiligte Personen"],
+    hinweis: "Beweise werden dem Dokument als Quelle zugeordnet, aber nicht automatisch Argumenten verknüpft (→ Tab 2 › Verkettung)",
+    getItems: r => {
+      const args = r?.argumente || [];
+      const bew = r?.beweise || [];
+      const fri = r?.fristen || [];
+      const per = r?.personen || [];
+      if (!args.length && !bew.length && !fri.length && !per.length) return [];
+      return [
+        args.length && `${args.length} Argumente (${args.filter(a => a.seite === "eigen").length} eigene, ${args.filter(a => a.seite === "gegner").length} Gegner)`,
+        bew.length && `${bew.length} Beweise`,
+        fri.length && `${fri.length} Fristen`,
+        per.length && `${per.length} Personen`,
+      ].filter(Boolean);
+    },
+    getDetails: r => [
+      ...(r?.argumente || []).map(a => `${a.seite === "gegner" ? "⚔" : "✓"} ${a.titel}`),
+      ...(r?.beweise || []).map(b => `📎 ${b.titel}`),
+      ...(r?.fristen || []).map(f => `📅 ${f.titel}${f.datum ? ` (${f.datum})` : ""}`),
+      ...(r?.personen || []).map(p => `👤 ${p.name}${p.rolle ? ` — ${p.rolle}` : ""}`),
+    ],
+    isCovered: r => !!(r?.argumente?.length || r?.beweise?.length || r?.personen?.length || r?.fristen?.length),
+  },
+  {
+    num: 3, label: "Gegneranalyse", color: "#FF3B30",
+    wo: "Tab 3 › Gegner-Profil (Feld: gegner_profil)",
+    felder: ["Gegner-Strategie / Profil", "Erkannte Taktiken", "Schwachstellen des Gegners"],
+    hinweis: "Wird in Case.gegner_profil gespeichert und unter Tab 3 sichtbar",
+    getItems: r => {
+      const g = r?.schritt3_gegneranalyse;
+      if (!g?.zusammenfassung) return [];
+      return [
+        g.zusammenfassung,
+        g.taktiken?.length && `${g.taktiken.length} Taktiken erkannt`,
+        g.schwachstellen?.length && `${g.schwachstellen.length} Schwachstellen`,
+      ].filter(Boolean);
+    },
+    getDetails: r => [
+      ...(r?.schritt3_gegneranalyse?.taktiken || []).map(t => `⚔ ${t}`),
+      ...(r?.schritt3_gegneranalyse?.schwachstellen || []).map(s => `⚠ ${s}`),
+    ],
+    isCovered: r => !!(r?.schritt3_gegneranalyse?.zusammenfassung || r?.argumente?.some(a => a.seite === "gegner")),
+  },
+  {
+    num: 4, label: "Rechtliche Analyse", color: "#FF9500",
+    wo: "Tab 4 › Compliance, Streitwert, Präzedenzfälle",
+    felder: ["Relevante Paragrafen / Gesetze", "Präzedenzfälle", "Compliance-Risiken", "Streitwert"],
+    hinweis: "Informiert Tab 4 inhaltlich; Streitwert wird in Basisdaten gespeichert",
+    getItems: r => {
+      const g = r?.schritt4_rechtliche_analyse;
+      return [
+        g?.zusammenfassung,
+        g?.relevante_paragrafen?.length && `${g.relevante_paragrafen.length} Paragrafen`,
+        g?.praezedenzfaelle?.length && `${g.praezedenzfaelle.length} Präzedenzfälle`,
+        g?.compliance_risiken?.length && `${g.compliance_risiken.length} Compliance-Risiken`,
+      ].filter(Boolean);
+    },
+    getDetails: r => [
+      ...(r?.schritt4_rechtliche_analyse?.relevante_paragrafen || []).map(p => `§ ${p}`),
+      ...(r?.schritt4_rechtliche_analyse?.praezedenzfaelle || []).map(p => `⚖ ${p}`),
+      ...(r?.schritt4_rechtliche_analyse?.compliance_risiken || []).map(c => `⚠ ${c}`),
+    ],
+    isCovered: r => !!(r?.schritt4_rechtliche_analyse?.zusammenfassung || r?.streitwert),
+  },
+  {
+    num: 5, label: "Strategie", color: "#5856D6",
+    wo: "Tab 5 › Fallnotizen (Case.notes)",
+    felder: ["Empfohlene Prozessstrategie", "Stärken unserer Position", "Schwächen / Risiken"],
+    hinweis: "Strategie-Erkenntnisse werden als Notiz zu Case.notes hinzugefügt",
+    getItems: r => {
+      const g = r?.schritt5_strategie;
+      return [
+        g?.empfohlene_strategie,
+        g?.staerken?.length && `${g.staerken.length} Stärken identifiziert`,
+        g?.schwaechen?.length && `${g.schwaechen.length} Schwächen identifiziert`,
+      ].filter(Boolean);
+    },
+    getDetails: r => [
+      ...(r?.schritt5_strategie?.staerken || []).map(s => `+ ${s}`),
+      ...(r?.schritt5_strategie?.schwaechen || []).map(s => `– ${s}`),
+    ],
+    isCovered: r => !!(r?.schritt5_strategie?.empfohlene_strategie || r?.schritt5_strategie?.zusammenfassung),
+  },
+  {
+    num: 6, label: "Risiko", color: "#FF2D55",
+    wo: "Tab 6 › Risikoanalyse (Case.notes + ki_berater_result)",
+    felder: ["Risiko-Level (gering/mittel/hoch)", "Konkrete Risiken", "Beweisprobleme"],
+    hinweis: "Risiko-Zusammenfassung wird in Fallnotizen ergänzt",
+    getItems: r => {
+      const g = r?.schritt6_risiko;
+      return [
+        g?.risiko_level && `Risiko-Level: ${g.risiko_level}`,
+        g?.zusammenfassung,
+        g?.risiken?.length && `${g.risiken.length} Risiken erkannt`,
+      ].filter(Boolean);
+    },
+    getDetails: r => (r?.schritt6_risiko?.risiken || []).map(ri => `⚠ ${ri}`),
+    isCovered: r => !!(r?.schritt6_risiko?.zusammenfassung),
+  },
+  {
+    num: 7, label: "Simulation", color: "#AF52DE",
+    wo: "Tab 7 › Verhandlungssimulation (Case.ki_berater_result)",
+    felder: ["Vergleichswert in €", "Prognose-Einfluss", "Verhandlungsszenarien"],
+    hinweis: "Vergleichswert & Prognosehinweis werden in ki_berater_result gespeichert",
+    getItems: r => {
+      const g = r?.schritt7_simulation;
+      return [
+        g?.prognose_einfluss,
+        g?.vergleichswert_eur && `Vergleichswert: ${Number(g.vergleichswert_eur).toLocaleString()} €`,
+        g?.zusammenfassung,
+      ].filter(Boolean);
+    },
+    getDetails: () => [],
+    isCovered: r => !!(r?.schritt7_simulation?.zusammenfassung || r?.schritt7_simulation?.prognose_einfluss),
+  },
+  {
+    num: 8, label: "Aktion / Schriftsätze", color: "#FF6B35",
+    wo: "Tab 8 › Verhandlungsführung, Schriftsatz-Generator",
+    felder: ["Nächste Handlungsschritte", "Einzureichende Dokumente", "Antwortfristen"],
+    hinweis: "Handlungsempfehlungen werden als Notiz und in ki_berater_result ergänzt",
+    getItems: r => {
+      const g = r?.schritt8_aktion;
+      return [
+        g?.zusammenfassung,
+        g?.naechste_schritte?.length && `${g.naechste_schritte.length} nächste Schritte`,
+        g?.erforderliche_dokumente?.length && `${g.erforderliche_dokumente.length} einzureichende Dokumente`,
+      ].filter(Boolean);
+    },
+    getDetails: r => [
+      ...(r?.schritt8_aktion?.naechste_schritte || []).map(s => `→ ${s}`),
+      ...(r?.schritt8_aktion?.erforderliche_dokumente || []).map(d => `📄 ${d}`),
+    ],
+    isCovered: r => !!(r?.schritt8_aktion?.zusammenfassung),
+  },
+  {
+    num: 9, label: "Cockpit", color: "#00BCD4",
+    wo: "Tab 9 › Fall-Cockpit (Case.ki_berater_result.prognose_delta)",
+    felder: ["Prognose-Delta (%)", "Gesamteinfluss des Dokuments"],
+    hinweis: "Prognose-Delta wird in ki_berater_result gespeichert und im Cockpit sichtbar",
+    getItems: r => {
+      const g = r?.schritt9_cockpit;
+      const delta = g?.prognose_delta_pct;
+      return [
+        g?.zusammenfassung,
+        delta != null && `Prognose-Einfluss: ${delta > 0 ? "+" : ""}${delta}%`,
+      ].filter(Boolean);
+    },
+    getDetails: () => [],
+    isCovered: r => !!(r?.schritt9_cockpit?.zusammenfassung),
+  },
+  {
+    num: 10, label: "Abschluss", color: "#34C759",
+    wo: "Tab 10 › Abschluss (Case.ki_berater_result.vergleichsempfehlung)",
+    felder: ["Prozessziel erreichbar?", "Vergleichsempfehlung"],
+    hinweis: "Vergleichsempfehlung wird in ki_berater_result gespeichert",
+    getItems: r => {
+      const g = r?.schritt10_abschluss;
+      return [
+        g?.zusammenfassung,
+        g?.vergleichsempfehlung,
+        g?.prozessziel_erreichbar != null && `Prozessziel erreichbar: ${g.prozessziel_erreichbar ? "✓ Ja" : "⚠ Unklar"}`,
+      ].filter(Boolean);
+    },
+    getDetails: () => [],
+    isCovered: r => !!(r?.schritt10_abschluss?.zusammenfassung),
+  },
+];
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
 function fileIcon(type) {
   if (!type) return <File className="w-4 h-4" style={{ color: "#aaa" }} />;
   if (type.startsWith("image/")) return <Image className="w-4 h-4" style={{ color: "#007AFF" }} />;
@@ -13,70 +202,7 @@ function fileIcon(type) {
   return <File className="w-4 h-4" style={{ color: "#aaa" }} />;
 }
 
-const STEP_LABELS = [
-  "Fallerfassung (Basisdaten)",
-  "Fallsubstanz (Argumente & Beweise)",
-  "Gegneranalyse",
-  "Rechtliche Analyse",
-  "Strategie",
-  "Risiko",
-  "Simulation",
-  "Aktion / Schriftsätze",
-  "Cockpit",
-  "Abschluss",
-  "KI-Protokoll",
-];
-
 // ── KI EXPLANATION PANEL ─────────────────────────────────────────────────────
-
-const KI_STEPS_EXPLANATION = [
-  {
-    schritt: "Schritt 1 — Fallerfassung (Basisdaten)",
-    tab: "Tab 1 › Basisdaten",
-    felder: ["Gericht", "Aktenzeichen", "Rechtsgebiet", "Instanz", "Prozessziel", "Zentrale Rechtsfrage", "Streitwert"],
-    beschreibung: "Die KI liest Kopfdaten aus dem Dokument (Briefkopf, Urteilsrubrum, Aktenzeichen) und befüllt die Basisdaten automatisch — aber nur wenn das Feld noch leer ist.",
-    color: "#34C759",
-  },
-  {
-    schritt: "Schritt 2 — Fallsubstanz › Argumente & Beweise",
-    tab: "Tab 2 › Argumente & Beweise",
-    felder: [
-      "Argumente (eigene Seite & Gegner) → Stärke, Typ, Beschreibung",
-      "Beweise → Titel, Typ, Gewicht, Quelle (Dokumentname)",
-    ],
-    beschreibung: "Für jedes erkannte Argument wird ein Eintrag unter 'Argumente' erstellt (Seite: eigen/gegner). Für jeden Beweis wird ein Eintrag unter 'Beweise' erstellt mit Verweis auf das Quelldokument. Die Beweise sind dabei NOCH NICHT automatisch einem Argument zugeordnet — dies kann manuell oder per Verkettung erfolgen.",
-    color: "#007AFF",
-  },
-  {
-    schritt: "Schritt 2 — Fallsubstanz › Personen",
-    tab: "Tab 2 › Personen",
-    felder: ["Name", "Rolle (Richter, Zeuge, Partei…)", "Organisation"],
-    beschreibung: "Alle im Dokument genannten Personen werden extrahiert und unter 'Personen' gespeichert.",
-    color: "#5856D6",
-  },
-  {
-    schritt: "Schritt 2 — Fallsubstanz › Fristen",
-    tab: "Tab 2 › Fristen",
-    felder: ["Titel", "Fristtyp", "Fälligkeitsdatum", "Seite: Eigene", "Status: offen"],
-    beschreibung: "Erkannte Fristen und Deadlines werden unter 'Fristen' angelegt. Datum wird aus dem Dokument extrahiert.",
-    color: "#FF9500",
-  },
-  {
-    schritt: "Schritt 2 — Fallsubstanz › Zeitstrahl",
-    tab: "Tab 2 › Dokumentenanalyse / Zeitstrahl",
-    felder: ["Chronologische Ereignisse", "Vertragspunkte mit Fälligkeitsdaten"],
-    beschreibung: "Kann aus den Dokumenten separat per KI generiert werden (Button 'Aus Dokumenten generieren' im Zeitstrahl).",
-    color: "#FF6B35",
-  },
-  {
-    schritt: "Schritt 1–10 — Informationslücken",
-    tab: "Alle Tabs (Hinweise)",
-    felder: ["Fehlende Basisdaten", "Fehlende Argumente", "Fehlende Beweise", "Fehlende Gegnerinfos"],
-    beschreibung: "Die KI analysiert alle 11 Schritte und weist auf fehlende Informationen hin — direkt nach der Analyse sichtbar als orangener Hinweisblock.",
-    color: "#FF3B30",
-  },
-];
-
 function KIExplanationPanel() {
   const [open, setOpen] = useState(false);
   const [detailStep, setDetailStep] = useState(null);
@@ -87,114 +213,100 @@ function KIExplanationPanel() {
         <Info className="w-4 h-4 flex-shrink-0" style={{ color: "#007AFF" }} />
         <div className="flex-1">
           <p className="text-xs font-semibold" style={{ color: "#007AFF" }}>Was macht die KI-Analyse genau?</p>
-          <p className="text-[10px]" style={{ color: "#888" }}>Welche Daten werden wo abgespeichert — Schritt für Schritt erklärt</p>
+          <p className="text-[10px]" style={{ color: "#888" }}>Welche Daten aus diesem Dokument werden in welchem Schritt eingetragen</p>
         </div>
         {open ? <ChevronUp className="w-4 h-4" style={{ color: "#aaa" }} /> : <ChevronDown className="w-4 h-4" style={{ color: "#aaa" }} />}
       </button>
 
       {open && (
         <div className="px-4 pb-4 space-y-3" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-          <p className="text-[11px] pt-3" style={{ color: "#555" }}>
-            Wenn Sie ein Dokument analysieren lassen, durchläuft die KI folgende Schritte automatisch:
-          </p>
-
-          {/* Process flow */}
-          <div className="flex items-center gap-1 text-[10px] text-gray-500 flex-wrap">
+          <div className="flex items-center gap-1 text-[10px] text-gray-500 flex-wrap pt-3">
             <span className="px-2 py-0.5 rounded bg-gray-100">📄 Dokument</span>
             <ArrowRight style={{ width: 10, height: 10 }} />
             <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-600">Text extrahieren</span>
             <ArrowRight style={{ width: 10, height: 10 }} />
-            <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-600">KI analysiert</span>
+            <span className="px-2 py-0.5 rounded bg-violet-50 text-violet-600">KI analysiert alle 10 Schritte</span>
             <ArrowRight style={{ width: 10, height: 10 }} />
-            <span className="px-2 py-0.5 rounded bg-green-50 text-green-600">Daten verteilen</span>
+            <span className="px-2 py-0.5 rounded bg-green-50 text-green-600">Daten in Lexara eintragen</span>
           </div>
 
-          {/* Step cards */}
-          <div className="space-y-2">
-            {KI_STEPS_EXPLANATION.map((step, i) => (
-              <div key={i}
-                className="rounded-lg border cursor-pointer transition-all"
-                style={{ borderColor: detailStep === i ? step.color + "50" : "rgba(0,0,0,0.08)", background: detailStep === i ? step.color + "06" : "#fff" }}
+          <div className="space-y-1.5">
+            {STEP_MAP.map((step, i) => (
+              <div key={i} className="rounded-lg border cursor-pointer transition-all"
+                style={{ borderColor: detailStep === i ? step.color + "40" : "rgba(0,0,0,0.07)", background: detailStep === i ? step.color + "06" : "#fff" }}
                 onClick={() => setDetailStep(detailStep === i ? null : i)}>
-                <div className="flex items-center gap-3 px-3 py-2.5">
-                  <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: step.color }} />
+                <div className="flex items-center gap-2.5 px-3 py-2">
+                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white" style={{ background: step.color, minWidth: 18, textAlign: "center" }}>{step.num}</span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[11px] font-semibold text-gray-700">{step.schritt}</p>
-                    <p className="text-[10px]" style={{ color: "#aaa" }}><MapPin style={{ width: 9, height: 9, display: "inline", marginRight: 2 }} />{step.tab}</p>
+                    <p className="text-[11px] font-semibold text-gray-700">{step.label}</p>
+                    <p className="text-[9px] font-mono" style={{ color: "#aaa" }}>→ {step.wo}</p>
                   </div>
-                  {detailStep === i ? <ChevronUp style={{ width: 12, height: 12, color: "#aaa", flexShrink: 0 }} /> : <ChevronDown style={{ width: 12, height: 12, color: "#aaa", flexShrink: 0 }} />}
+                  {detailStep === i ? <ChevronUp style={{ width: 11, height: 11, color: "#aaa" }} /> : <ChevronDown style={{ width: 11, height: 11, color: "#aaa" }} />}
                 </div>
-
                 {detailStep === i && (
-                  <div className="px-3 pb-3 space-y-2" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
-                    <p className="text-[11px] text-gray-600 pt-2">{step.beschreibung}</p>
-                    <div>
-                      <p className="text-[9px] font-bold uppercase tracking-widest mb-1" style={{ color: "#aaa" }}>Gespeicherte Felder</p>
-                      <div className="flex flex-wrap gap-1">
-                        {step.felder.map((f, j) => (
-                          <span key={j} className="text-[10px] px-2 py-0.5 rounded"
-                            style={{ background: step.color + "12", color: step.color, border: `1px solid ${step.color}25` }}>
-                            {f}
-                          </span>
-                        ))}
-                      </div>
+                  <div className="px-3 pb-3 space-y-2" style={{ borderTop: `1px solid ${step.color}20` }}>
+                    <div className="flex flex-wrap gap-1 pt-2">
+                      {step.felder.map((f, j) => (
+                        <span key={j} className="text-[10px] px-2 py-0.5 rounded"
+                          style={{ background: step.color + "12", color: step.color, border: `1px solid ${step.color}25` }}>{f}</span>
+                      ))}
                     </div>
+                    <p className="text-[10px]" style={{ color: "#888" }}>ℹ {step.hinweis}</p>
                   </div>
                 )}
               </div>
             ))}
           </div>
-
-          {/* Important note */}
-          <div className="rounded-lg p-3" style={{ background: "rgba(255,149,0,0.07)", border: "1px solid rgba(255,149,0,0.2)" }}>
-            <p className="text-[10px] font-semibold text-amber-700 mb-1">⚠ Wichtige Hinweise</p>
-            <ul className="space-y-0.5 text-[10px] text-amber-700">
-              <li>• Basisdaten werden nur befüllt wenn das Feld noch <strong>leer</strong> ist (kein Überschreiben)</li>
-              <li>• Beweise werden dem Dokument als Quelle zugeordnet, aber <strong>nicht automatisch einem Argument</strong> — Verknüpfung unter Tab 2 › Verkettung</li>
-              <li>• Bei Fotos/Videos: KI analysiert Bildinhalt, Personen, Ort und Beweiswert</li>
-              <li>• Alle KI-Ergebnisse können manuell bearbeitet/korrigiert werden</li>
-              <li>• Im KI-Protokoll (Tab 11) werden alle Analyse-Schritte protokolliert</li>
-            </ul>
-          </div>
         </div>
       )}
     </div>
   );
 }
 
-function DocResultStep({ num, label, color, items = [], details = [], note }) {
+// ── DOC RESULT STEP ───────────────────────────────────────────────────────────
+function DocResultStep({ step, result }) {
   const [open, setOpen] = useState(false);
-  const hasContent = items.length > 0 || details.length > 0;
+  const items = step.getItems(result);
+  const details = step.getDetails ? step.getDetails(result) : [];
+  const hasContent = items.length > 0;
+
   return (
-    <div className="rounded-lg overflow-hidden" style={{ border: `1px solid ${hasContent ? color + "30" : "rgba(0,0,0,0.06)"}`, background: hasContent ? color + "05" : "transparent" }}>
+    <div className="rounded-lg overflow-hidden"
+      style={{ border: `1px solid ${hasContent ? step.color + "35" : "rgba(0,0,0,0.06)"}`, background: hasContent ? step.color + "05" : "transparent" }}>
       <div className="flex items-center gap-2 px-3 py-2 cursor-pointer" onClick={() => hasContent && setOpen(o => !o)}>
-        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded" style={{ background: hasContent ? color : "#ddd", color: "#fff", minWidth: 20, textAlign: "center" }}>{num}</span>
-        <span className="text-[11px] font-semibold flex-1" style={{ color: hasContent ? "#1a1a1a" : "#ccc" }}>{label}</span>
+        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded text-white flex-shrink-0"
+          style={{ background: hasContent ? step.color : "#ddd", minWidth: 18, textAlign: "center" }}>{step.num}</span>
+        <span className="text-[11px] font-semibold flex-1 min-w-0 truncate" style={{ color: hasContent ? "#1a1a1a" : "#ccc" }}>{step.label}</span>
         {hasContent ? (
           <>
-            <span className="text-[10px]" style={{ color: color }}>{items[0]?.slice(0, 50)}{items[0]?.length > 50 ? "…" : ""}</span>
+            <span className="text-[10px] max-w-[160px] truncate flex-shrink-0" style={{ color: step.color }}>{items[0]}</span>
             {open ? <ChevronUp style={{ width: 11, height: 11, color: "#aaa", flexShrink: 0 }} /> : <ChevronDown style={{ width: 11, height: 11, color: "#aaa", flexShrink: 0 }} />}
           </>
         ) : (
-          <span className="text-[10px]" style={{ color: "#ccc" }}>Keine Infos aus diesem Dokument</span>
+          <span className="text-[10px] flex-shrink-0" style={{ color: "#ccc" }}>—</span>
         )}
       </div>
+
       {open && hasContent && (
-        <div className="px-3 pb-2.5 space-y-1" style={{ borderTop: `1px solid ${color}20` }}>
-          {items.slice(1).map((item, i) => <p key={i} className="text-[11px]" style={{ color: "#555" }}>{item}</p>)}
+        <div className="px-3 pb-2.5" style={{ borderTop: `1px solid ${step.color}20` }}>
+          <p className="text-[9px] font-mono mt-2 mb-1.5" style={{ color: step.color + "aa" }}>→ {step.wo}</p>
+          <div className="space-y-0.5 mb-1.5">
+            {items.map((item, i) => <p key={i} className="text-[11px]" style={{ color: "#444" }}>• {item}</p>)}
+          </div>
           {details.length > 0 && (
-            <div className="mt-1.5 space-y-0.5">
-              {details.slice(0, 8).map((d, i) => <p key={i} className="text-[10px]" style={{ color: "#777" }}>{d}</p>)}
-              {details.length > 8 && <p className="text-[10px]" style={{ color: "#aaa" }}>+ {details.length - 8} weitere…</p>}
+            <div className="space-y-0.5 mt-1.5 pt-1.5" style={{ borderTop: `1px solid ${step.color}15` }}>
+              {details.slice(0, 10).map((d, i) => <p key={i} className="text-[10px]" style={{ color: "#777" }}>{d}</p>)}
+              {details.length > 10 && <p className="text-[10px]" style={{ color: "#aaa" }}>+ {details.length - 10} weitere…</p>}
             </div>
           )}
-          {note && <p className="text-[9px] mt-1.5 font-medium" style={{ color: color + "aa" }}>{note}</p>}
+          {step.hinweis && <p className="text-[9px] mt-1.5 italic" style={{ color: "#bbb" }}>ℹ {step.hinweis}</p>}
         </div>
       )}
     </div>
   );
 }
 
+// ── GAP BADGE ─────────────────────────────────────────────────────────────────
 function GapBadge({ gaps }) {
   if (!gaps || gaps.length === 0) return null;
   return (
@@ -212,11 +324,14 @@ function GapBadge({ gaps }) {
   );
 }
 
+// ── DOC CARD ──────────────────────────────────────────────────────────────────
 function DocCard({ doc, analyzing, ocr_status, onAnalyze, onDelete, result }) {
   const [open, setOpen] = useState(false);
   const isAnalyzing = analyzing === doc.id;
   const analyzed = !!result && !result.error;
   const hasError = result?.error;
+
+  const coveredCount = analyzed ? STEP_MAP.filter(s => s.isCovered(result)).length : 0;
 
   return (
     <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 8, overflow: "hidden" }}>
@@ -235,24 +350,24 @@ function DocCard({ doc, analyzing, ocr_status, onAnalyze, onDelete, result }) {
           ) : analyzed ? (
             <button onClick={() => setOpen(!open)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded transition-all"
               style={{ background: "rgba(52,199,89,0.08)", color: "#1a7f37", border: "1px solid rgba(52,199,89,0.2)" }}>
-              <Check className="w-3 h-3" /> Analysiert
+              <Check className="w-3 h-3" />
+              {coveredCount}/10 Schritte
               {open ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
             </button>
           ) : hasError ? (
-            <button onClick={() => onAnalyze(doc)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded" style={{ background: "rgba(255,59,48,0.08)", color: "#c0392b", border: "1px solid rgba(255,59,48,0.2)" }}>
+            <button onClick={() => onAnalyze(doc)} className="flex items-center gap-1 text-[11px] px-2 py-1 rounded"
+              style={{ background: "rgba(255,59,48,0.08)", color: "#c0392b", border: "1px solid rgba(255,59,48,0.2)" }}>
               <RefreshCw className="w-3 h-3" /> Retry
             </button>
           ) : (
             <button onClick={() => onAnalyze(doc)} className="text-[11px] px-2 py-1 rounded transition-all"
-              style={{ background: "rgba(0,0,0,0.05)", color: "#555", border: "1px solid rgba(0,0,0,0.1)" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.1)"}
-              onMouseLeave={e => e.currentTarget.style.background = "rgba(0,0,0,0.05)"}>
+              style={{ background: "rgba(0,0,0,0.05)", color: "#555", border: "1px solid rgba(0,0,0,0.1)" }}>
               Analysieren
             </button>
           )}
           {doc.file_url && (
             <a href={doc.file_url} target="_blank" rel="noopener noreferrer"
-              className="text-[11px] px-2 py-1 rounded transition-all"
+              className="text-[11px] px-2 py-1 rounded"
               style={{ background: "rgba(0,122,255,0.07)", color: "#007AFF", border: "1px solid rgba(0,122,255,0.15)" }}>
               Öffnen
             </a>
@@ -271,109 +386,21 @@ function DocCard({ doc, analyzing, ocr_status, onAnalyze, onDelete, result }) {
             <p className="text-xs mb-3" style={{ color: "#444", lineHeight: 1.6, borderLeft: "3px solid #34C759", paddingLeft: 10 }}>{doc.ai_summary}</p>
           )}
 
-          {/* All 10 steps */}
+          {/* Step progress bar */}
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex gap-0.5 flex-1">
+              {STEP_MAP.map(s => (
+                <div key={s.num} className="flex-1 h-1.5 rounded-full" style={{ background: s.isCovered(result) ? s.color : "#e5e5e5" }} title={`Schritt ${s.num}: ${s.label}`} />
+              ))}
+            </div>
+            <span className="text-[10px] font-semibold flex-shrink-0" style={{ color: "#555" }}>{coveredCount}/10</span>
+          </div>
+
           <p className="text-[10px] font-bold uppercase tracking-widest mb-2" style={{ color: "#aaa" }}>Eingetragene Informationen pro Schritt</p>
           <div className="space-y-1.5">
-            <DocResultStep num={1} label="Fallerfassung — Basisdaten" color="#34C759"
-              items={[
-                result.basisdaten?.gericht && `Gericht: ${result.basisdaten.gericht}`,
-                result.basisdaten?.aktenzeichen && `AZ: ${result.basisdaten.aktenzeichen}`,
-                result.basisdaten?.rechtsgebiet && `Rechtsgebiet: ${result.basisdaten.rechtsgebiet}`,
-                result.basisdaten?.prozessziel && `Prozessziel: ${result.basisdaten.prozessziel}`,
-                result.basisdaten?.instanz && `Instanz: ${result.basisdaten.instanz}`,
-                result.streitwert && `Streitwert: ${result.streitwert.toLocaleString()} €`,
-              ].filter(Boolean)}
-              note="→ Tab 1 Basisdaten" />
-
-            <DocResultStep num={2} label="Fallsubstanz" color="#007AFF"
-              items={[
-                result.argumente?.length && `${result.argumente.length} Argumente (${result.argumente.filter(a=>a.seite==="eigen").length} eigene, ${result.argumente.filter(a=>a.seite==="gegner").length} Gegner)`,
-                result.beweise?.length && `${result.beweise.length} Beweise`,
-                result.fristen?.length && `${result.fristen.length} Fristen`,
-                result.personen?.length && `${result.personen.length} Personen`,
-              ].filter(Boolean)}
-              details={[
-                ...(result.argumente||[]).map(a=>`${a.seite==="gegner"?"⚔":"✓"} ${a.titel}`),
-                ...(result.beweise||[]).map(b=>`📎 ${b.titel}`),
-                ...(result.fristen||[]).map(f=>`📅 ${f.titel} (${f.datum})`),
-                ...(result.personen||[]).map(p=>`👤 ${p.name} — ${p.rolle}`),
-              ]}
-              note="→ Tab 2 Argumente, Beweise, Fristen, Personen" />
-
-            <DocResultStep num={3} label="Gegneranalyse" color="#FF3B30"
-              items={[
-                result.schritt3_gegneranalyse?.zusammenfassung,
-                result.schritt3_gegneranalyse?.taktiken?.length && `${result.schritt3_gegneranalyse.taktiken.length} Taktiken erkannt`,
-                result.schritt3_gegneranalyse?.schwachstellen?.length && `${result.schritt3_gegneranalyse.schwachstellen.length} Schwachstellen`,
-              ].filter(Boolean)}
-              details={[
-                ...(result.schritt3_gegneranalyse?.taktiken||[]).map(t=>`⚔ ${t}`),
-                ...(result.schritt3_gegneranalyse?.schwachstellen||[]).map(s=>`⚠ ${s}`),
-              ]}
-              note="→ Tab 3 Gegner-Profil" />
-
-            <DocResultStep num={4} label="Rechtliche Analyse" color="#FF9500"
-              items={[
-                result.schritt4_rechtliche_analyse?.zusammenfassung,
-                result.schritt4_rechtliche_analyse?.relevante_paragrafen?.length && `${result.schritt4_rechtliche_analyse.relevante_paragrafen.length} Paragrafen`,
-                result.schritt4_rechtliche_analyse?.praezedenzfaelle?.length && `${result.schritt4_rechtliche_analyse.praezedenzfaelle.length} Präzedenzfälle`,
-              ].filter(Boolean)}
-              details={[
-                ...(result.schritt4_rechtliche_analyse?.relevante_paragrafen||[]).map(p=>`§ ${p}`),
-                ...(result.schritt4_rechtliche_analyse?.praezedenzfaelle||[]).map(p=>`⚖ ${p}`),
-                ...(result.schritt4_rechtliche_analyse?.compliance_risiken||[]).map(r=>`⚠ ${r}`),
-              ]}
-              note="→ Tab 4 Rechtliche Analyse" />
-
-            <DocResultStep num={5} label="Strategie" color="#5856D6"
-              items={[
-                result.schritt5_strategie?.zusammenfassung,
-                result.schritt5_strategie?.empfohlene_strategie,
-              ].filter(Boolean)}
-              details={[
-                ...(result.schritt5_strategie?.staerken||[]).map(s=>`+ ${s}`),
-                ...(result.schritt5_strategie?.schwaechen||[]).map(s=>`– ${s}`),
-              ]}
-              note="→ Tab 5 Strategie & Notizen" />
-
-            <DocResultStep num={6} label="Risiko" color="#FF2D55"
-              items={[
-                result.schritt6_risiko?.zusammenfassung,
-                result.schritt6_risiko?.risiko_level && `Risiko-Level: ${result.schritt6_risiko.risiko_level}`,
-              ].filter(Boolean)}
-              details={(result.schritt6_risiko?.risiken||[]).map(r=>`⚠ ${r}`)}
-              note="→ Tab 6 Risikoanalyse" />
-
-            <DocResultStep num={7} label="Simulation" color="#AF52DE"
-              items={[
-                result.schritt7_simulation?.zusammenfassung,
-                result.schritt7_simulation?.vergleichswert_eur && `Vergleichswert: ${result.schritt7_simulation.vergleichswert_eur.toLocaleString()} €`,
-                result.schritt7_simulation?.prognose_einfluss,
-              ].filter(Boolean)}
-              note="→ Tab 7 Simulation" />
-
-            <DocResultStep num={8} label="Aktion / Schriftsätze" color="#FF9500"
-              items={[result.schritt8_aktion?.zusammenfassung].filter(Boolean)}
-              details={[
-                ...(result.schritt8_aktion?.naechste_schritte||[]).map(s=>`→ ${s}`),
-                ...(result.schritt8_aktion?.erforderliche_dokumente||[]).map(d=>`📄 ${d}`),
-              ]}
-              note="→ Tab 8 Aktion" />
-
-            <DocResultStep num={9} label="Cockpit" color="#00BCD4"
-              items={[
-                result.schritt9_cockpit?.zusammenfassung,
-                result.schritt9_cockpit?.prognose_delta_pct != null && `Prognose-Einfluss: ${result.schritt9_cockpit.prognose_delta_pct > 0 ? "+" : ""}${result.schritt9_cockpit.prognose_delta_pct}%`,
-              ].filter(Boolean)}
-              note="→ Tab 9 Cockpit" />
-
-            <DocResultStep num={10} label="Abschluss" color="#34C759"
-              items={[
-                result.schritt10_abschluss?.zusammenfassung,
-                result.schritt10_abschluss?.vergleichsempfehlung,
-                result.schritt10_abschluss?.prozessziel_erreichbar != null && `Prozessziel erreichbar: ${result.schritt10_abschluss.prozessziel_erreichbar ? "Ja" : "Unklar"}`,
-              ].filter(Boolean)}
-              note="→ Tab 10 Abschluss" />
+            {STEP_MAP.map(step => (
+              <DocResultStep key={step.num} step={step} result={result} />
+            ))}
           </div>
 
           <GapBadge gaps={result.informationsluecken} />
@@ -394,13 +421,14 @@ function DocCard({ doc, analyzing, ocr_status, onAnalyze, onDelete, result }) {
   );
 }
 
+// ── MAIN COMPONENT ────────────────────────────────────────────────────────────
 export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) {
   const [docs, setDocs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [analyzing, setAnalyzing] = useState(null);
   const [ocrStatus, setOcrStatus] = useState({});
   const [results, setResults] = useState({});
-  const [pendingFiles, setPendingFiles] = useState([]); // { file, name, uploading }
+  const [pendingFiles, setPendingFiles] = useState([]);
   const [dragOver, setDragOver] = useState(false);
   const [analyzingAll, setAnalyzingAll] = useState(false);
   const fileRef = useRef(null);
@@ -426,15 +454,11 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
   };
 
   const uploadAndAnalyze = async (pending) => {
-    // upload
     setPendingFiles(prev => prev.map(p => p.id === pending.id ? { ...p, uploading: true } : p));
     const uploadRes = await base44.integrations.Core.UploadFile({ file: pending.file });
     const newDoc = await base44.entities.Document.create({
-      case_id: caseId,
-      title: pending.name,
-      file_url: uploadRes.file_url,
-      file_type: pending.file.type,
-      description: "",
+      case_id: caseId, title: pending.name,
+      file_url: uploadRes.file_url, file_type: pending.file.type, description: "",
     });
     setPendingFiles(prev => prev.filter(p => p.id !== pending.id));
     await loadDocs();
@@ -442,15 +466,12 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
   };
 
   const uploadAllPending = async () => {
-    for (const p of pendingFiles) {
-      await uploadAndAnalyze(p);
-    }
+    for (const p of pendingFiles) await uploadAndAnalyze(p);
   };
 
   const analyzeDocument = async (doc) => {
     setAnalyzing(doc.id);
     try {
-      // Extract text for docs/PDFs
       let ocrText = "";
       const isExtractable = doc.file_type?.includes("pdf") || doc.file_type?.includes("word") ||
         doc.file_type?.includes("document") || doc.file_type?.includes("text") ||
@@ -463,9 +484,7 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
             file_url: doc.file_url,
             json_schema: { type: "object", properties: { volltext: { type: "string" } } }
           });
-          if (ocrResult.status === "success" && ocrResult.output?.volltext) {
-            ocrText = ocrResult.output.volltext;
-          }
+          if (ocrResult.status === "success" && ocrResult.output?.volltext) ocrText = ocrResult.output.volltext;
         } catch {}
         setOcrStatus(prev => ({ ...prev, [doc.id]: "done" }));
       }
@@ -480,43 +499,19 @@ ${ocrText ? `VOLLSTÄNDIGER DOKUMENTTEXT:\n${ocrText.slice(0, 14000)}` : ""}
 ${isImage ? "WICHTIG: Dies ist ein Foto/Bild. Analysiere: Bildinhalt, erkennbare Personen, Ort, Datum, Beweisrelevanz, visuelle Details die juristisch relevant sein könnten." : ""}
 ${isVideo ? "WICHTIG: Dies ist ein Video. Analysiere den möglichen Inhalt, Personen, Orte und Beweiswert auf juristische Relevanz." : ""}
 
-DEINE AUFGABE: Befülle ALLE folgenden Bereiche so vollständig wie möglich. Extrahiere ALLES was du aus dem Dokument ableiten kannst. Schreibe für jede Kategorie eine klare Zusammenfassung was konkret aus diesem Dokument entnommen wurde.
+Befülle ALLE 10 Schritte so vollständig wie möglich. Extrahiere ALLES was du aus dem Dokument ableiten kannst. Wenn nichts vorhanden: leeres Array / leerer String.
 
-=== SCHRITT 1: FALLERFASSUNG (BASISDATEN) ===
-Extrahiere: Gericht, Aktenzeichen, Rechtsgebiet, Instanz, Prozessziel, Zentrale Rechtsfrage, Streitwert.
+SCHRITT 1 (Basisdaten): Gericht, Aktenzeichen, Rechtsgebiet, Instanz, Prozessziel, Zentrale Rechtsfrage, Streitwert.
+SCHRITT 2 (Fallsubstanz): Argumente (eigen/gegner mit Stärke 1-10), Beweise (Titel, Typ, Gewicht 1-10), Fristen mit Datum (YYYY-MM-DD), Personen (Richter, Zeugen, Parteien, Anwälte).
+SCHRITT 3 (Gegneranalyse): Gegnerische Strategie, erkannte Taktiken, Schwachstellen des Gegners, Gegner-Profil.
+SCHRITT 4 (Rechtliche Analyse): Relevante Paragrafen, Gesetze, Präzedenzfälle, Compliance-Risiken.
+SCHRITT 5 (Strategie): Empfohlene Prozessstrategie, Stärken unserer Position, Schwächen/Risiken.
+SCHRITT 6 (Risiko): Risiko-Level (gering/mittel/hoch/kritisch), konkrete Risiken, Beweisprobleme.
+SCHRITT 7 (Simulation): Verhandlungsszenarien, Vergleichswert in EUR, Prognose-Einfluss.
+SCHRITT 8 (Aktion/Schriftsätze): Nächste Handlungsschritte, einzureichende Dokumente, Antwortfristen.
+SCHRITT 9 (Cockpit): Gesamtüberblick, Prognose-Delta in % (positiv oder negativ).
+SCHRITT 10 (Abschluss): Prozessziel erreichbar?, Vergleichsempfehlung.
 
-=== SCHRITT 2: FALLSUBSTANZ ===
-- Argumente der eigenen Seite (was spricht FÜR unseren Mandanten)
-- Argumente der Gegenseite (was spricht GEGEN unseren Mandanten)  
-- Beweise: Dokumente, Zeugen, Fotos, Verträge, Schriftstücke die als Beweis dienen
-- Fristen und Deadlines mit konkreten Daten
-- Beteiligte Personen (Richter, Zeugen, Parteien, Anwälte)
-
-=== SCHRITT 3: GEGNERANALYSE ===
-Analysiere: Gegnerische Strategie, erkannte Taktiken, Argumentation der Gegenseite, Schwachstellen des Gegners, Verhalten und Reaktionen der Gegenseite, Gegner-Profil.
-
-=== SCHRITT 4: RECHTLICHE ANALYSE ===
-Identifiziere: Relevante Paragrafen, Gesetze, Präzedenzfälle die erwähnt werden, Streitwert, Compliance-Risiken, rechtliche Grundlage der Ansprüche.
-
-=== SCHRITT 5: STRATEGIE ===
-Ableitung aus dem Dokument: Empfohlene Prozessstrategie, Verhandlungsposition, Stärken und Schwächen unserer Position, strategische Optionen.
-
-=== SCHRITT 6: RISIKO ===
-Identifiziere: Risiken aus dem Dokument, potenzielle Gefahren für unseren Mandanten, Beweisprobleme, Risiken der Gegenseite.
-
-=== SCHRITT 7: SIMULATION ===
-Was ergibt das Dokument für Verhandlungsszenarien? Welche Vergleichsmöglichkeiten ergeben sich? Welches Verhandlungsergebnis ist wahrscheinlich?
-
-=== SCHRITT 8: AKTION / SCHRIFTSÄTZE ===
-Welche Handlungen sind aufgrund dieses Dokuments erforderlich? Einzureichende Dokumente, nächste Schritte, Antwortfristen.
-
-=== SCHRITT 9: COCKPIT (GESAMTÜBERBLICK) ===
-Wie verändert dieses Dokument den Gesamtüberblick des Falls? Prognose-Einfluss positiv/negativ?
-
-=== SCHRITT 10: ABSCHLUSS ===
-Wie beeinflusst dieses Dokument das Prozessziel? Prognose-Einfluss auf Erfolgswahrscheinlichkeit? Vergleichswert?
-
-Schreibe bei JEDEM Schritt was konkret aus dem Dokument gewonnen wurde. Wenn nichts vorhanden: leeres Array / leerer String.
 Gib NUR valides JSON zurück.`,
         file_urls: doc.file_url ? [doc.file_url] : undefined,
         response_json_schema: {
@@ -526,150 +521,76 @@ Gib NUR valides JSON zurück.`,
             basisdaten: {
               type: "object",
               properties: {
-                gericht: { type: "string" },
-                aktenzeichen: { type: "string" },
-                rechtsgebiet: { type: "string" },
-                prozessziel: { type: "string" },
-                zentrale_rechtsfrage: { type: "string" },
-                instanz: { type: "string" },
+                gericht: { type: "string" }, aktenzeichen: { type: "string" },
+                rechtsgebiet: { type: "string" }, prozessziel: { type: "string" },
+                zentrale_rechtsfrage: { type: "string" }, instanz: { type: "string" },
               }
             },
             streitwert: { type: "number" },
             argumente: {
               type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  titel: { type: "string" },
-                  beschreibung: { type: "string" },
-                  seite: { type: "string", enum: ["eigen", "gegner"] },
-                  staerke: { type: "number" },
-                }
-              }
+              items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, seite: { type: "string", enum: ["eigen", "gegner"] }, staerke: { type: "number" } } }
             },
             beweise: {
               type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  titel: { type: "string" },
-                  beschreibung: { type: "string" },
-                  typ: { type: "string" },
-                  gewicht: { type: "number" },
-                }
-              }
+              items: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, typ: { type: "string" }, gewicht: { type: "number" } } }
             },
             fristen: {
               type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  titel: { type: "string" },
-                  datum: { type: "string" },
-                  fristtyp: { type: "string" },
-                }
-              }
+              items: { type: "object", properties: { titel: { type: "string" }, datum: { type: "string" }, fristtyp: { type: "string" } } }
             },
             personen: {
               type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  name: { type: "string" },
-                  rolle: { type: "string" },
-                  organisation: { type: "string" },
-                }
-              }
+              items: { type: "object", properties: { name: { type: "string" }, rolle: { type: "string" }, organisation: { type: "string" } } }
             },
             schritt3_gegneranalyse: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                taktiken: { type: "array", items: { type: "string" } },
-                schwachstellen: { type: "array", items: { type: "string" } },
-                gegner_profil: { type: "string" },
-              }
+              properties: { zusammenfassung: { type: "string" }, taktiken: { type: "array", items: { type: "string" } }, schwachstellen: { type: "array", items: { type: "string" } }, gegner_profil: { type: "string" } }
             },
             schritt4_rechtliche_analyse: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                relevante_paragrafen: { type: "array", items: { type: "string" } },
-                praezedenzfaelle: { type: "array", items: { type: "string" } },
-                compliance_risiken: { type: "array", items: { type: "string" } },
-              }
+              properties: { zusammenfassung: { type: "string" }, relevante_paragrafen: { type: "array", items: { type: "string" } }, praezedenzfaelle: { type: "array", items: { type: "string" } }, compliance_risiken: { type: "array", items: { type: "string" } } }
             },
             schritt5_strategie: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                empfohlene_strategie: { type: "string" },
-                staerken: { type: "array", items: { type: "string" } },
-                schwaechen: { type: "array", items: { type: "string" } },
-              }
+              properties: { zusammenfassung: { type: "string" }, empfohlene_strategie: { type: "string" }, staerken: { type: "array", items: { type: "string" } }, schwaechen: { type: "array", items: { type: "string" } } }
             },
             schritt6_risiko: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                risiken: { type: "array", items: { type: "string" } },
-                risiko_level: { type: "string" },
-              }
+              properties: { zusammenfassung: { type: "string" }, risiken: { type: "array", items: { type: "string" } }, risiko_level: { type: "string" } }
             },
             schritt7_simulation: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                vergleichswert_eur: { type: "number" },
-                prognose_einfluss: { type: "string" },
-              }
+              properties: { zusammenfassung: { type: "string" }, vergleichswert_eur: { type: "number" }, prognose_einfluss: { type: "string" } }
             },
             schritt8_aktion: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                naechste_schritte: { type: "array", items: { type: "string" } },
-                erforderliche_dokumente: { type: "array", items: { type: "string" } },
-              }
+              properties: { zusammenfassung: { type: "string" }, naechste_schritte: { type: "array", items: { type: "string" } }, erforderliche_dokumente: { type: "array", items: { type: "string" } } }
             },
             schritt9_cockpit: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                prognose_einfluss_positiv: { type: "boolean" },
-                prognose_delta_pct: { type: "number" },
-              }
+              properties: { zusammenfassung: { type: "string" }, prognose_einfluss_positiv: { type: "boolean" }, prognose_delta_pct: { type: "number" } }
             },
             schritt10_abschluss: {
               type: "object",
-              properties: {
-                zusammenfassung: { type: "string" },
-                prozessziel_erreichbar: { type: "boolean" },
-                vergleichsempfehlung: { type: "string" },
-              }
+              properties: { zusammenfassung: { type: "string" }, prozessziel_erreichbar: { type: "boolean" }, vergleichsempfehlung: { type: "string" } }
             },
             informationsluecken: {
               type: "array",
-              items: {
-                type: "object",
-                properties: {
-                  schritt: { type: "string" },
-                  hinweis: { type: "string" },
-                }
-              }
+              items: { type: "object", properties: { schritt: { type: "string" }, hinweis: { type: "string" } } }
             }
           }
         },
         model: "claude_sonnet_4_6"
       });
 
-      // Save doc analysis
+      // Save to Document entity
       await base44.entities.Document.update(doc.id, {
         ai_summary: result.zusammenfassung || "",
         ai_raw: result,
       });
 
-      // Auto-fill Case basisdaten (Schritt 1) — nur wenn Feld leer
+      // ── SCHRITT 1: Basisdaten → Case (nur wenn leer) ────────────────────
       const bd = result.basisdaten || {};
       const caseUpdate = {};
       if (bd.gericht && !caseData?.gericht) caseUpdate.gericht = bd.gericht;
@@ -680,32 +601,43 @@ Gib NUR valides JSON zurück.`,
       if (bd.instanz && !caseData?.instanz) caseUpdate.instanz = bd.instanz;
       if (result.streitwert && !caseData?.streitwert) caseUpdate.streitwert = result.streitwert;
 
-      // Schritt 3: Gegneranalyse — befülle gegner_profil
+      // ── SCHRITT 3: Gegneranalyse → Case.gegner_profil ──────────────────
       const g3 = result.schritt3_gegneranalyse;
-      if (g3?.zusammenfassung && !caseData?.gegner_profil?.ki_zusammenfassung) {
+      if (g3?.zusammenfassung) {
         caseUpdate.gegner_profil = {
           ...(caseData?.gegner_profil || {}),
           ki_zusammenfassung: g3.zusammenfassung,
-          taktiken: g3.taktiken || [],
-          schwachstellen: g3.schwachstellen || [],
-          profil_text: g3.gegner_profil || "",
+          taktiken: [...(caseData?.gegner_profil?.taktiken || []), ...(g3.taktiken || [])],
+          schwachstellen: [...(caseData?.gegner_profil?.schwachstellen || []), ...(g3.schwachstellen || [])],
+          profil_text: g3.gegner_profil || caseData?.gegner_profil?.profil_text || "",
         };
       }
 
-      // Schritt 5/6/7/9/10: Notizen & KI-Berater-Result ergänzen
+      // ── SCHRITT 5+6: Strategie & Risiko → Case.notes (ergänzen) ────────
       const notizTeile = [];
-      if (result.schritt5_strategie?.empfohlene_strategie) notizTeile.push(`[Strategie aus Dok. "${doc.title}"]: ${result.schritt5_strategie.empfohlene_strategie}`);
-      if (result.schritt6_risiko?.zusammenfassung) notizTeile.push(`[Risiko aus Dok. "${doc.title}"]: ${result.schritt6_risiko.zusammenfassung}`);
+      if (result.schritt5_strategie?.empfohlene_strategie)
+        notizTeile.push(`[Strategie aus Dok. "${doc.title}"]: ${result.schritt5_strategie.empfohlene_strategie}`);
+      if (result.schritt6_risiko?.zusammenfassung)
+        notizTeile.push(`[Risiko aus Dok. "${doc.title}" — Level ${result.schritt6_risiko.risiko_level || "?"}]: ${result.schritt6_risiko.zusammenfassung}`);
+      if (result.schritt8_aktion?.naechste_schritte?.length)
+        notizTeile.push(`[Nächste Schritte aus Dok. "${doc.title}"]: ${result.schritt8_aktion.naechste_schritte.join("; ")}`);
       if (notizTeile.length > 0) {
         caseUpdate.notes = [(caseData?.notes || ""), ...notizTeile].filter(Boolean).join("\n\n");
       }
 
-      // KI-Berater-Result erweitern
+      // ── SCHRITT 7+9+10: KI-Berater-Result ───────────────────────────────
       const existingKi = caseData?.ki_berater_result || {};
       const newKiData = {};
-      if (result.schritt7_simulation?.prognose_einfluss) newKiData.simulation_hinweis = result.schritt7_simulation.prognose_einfluss;
-      if (result.schritt9_cockpit?.prognose_delta_pct) newKiData.prognose_delta = (existingKi.prognose_delta || 0) + result.schritt9_cockpit.prognose_delta_pct;
-      if (result.schritt10_abschluss?.vergleichsempfehlung) newKiData.vergleichsempfehlung = result.schritt10_abschluss.vergleichsempfehlung;
+      if (result.schritt7_simulation?.prognose_einfluss)
+        newKiData.simulation_hinweis = result.schritt7_simulation.prognose_einfluss;
+      if (result.schritt7_simulation?.vergleichswert_eur)
+        newKiData.vergleichswert_eur = result.schritt7_simulation.vergleichswert_eur;
+      if (result.schritt9_cockpit?.prognose_delta_pct != null)
+        newKiData.prognose_delta = (existingKi.prognose_delta || 0) + result.schritt9_cockpit.prognose_delta_pct;
+      if (result.schritt10_abschluss?.vergleichsempfehlung)
+        newKiData.vergleichsempfehlung = result.schritt10_abschluss.vergleichsempfehlung;
+      if (result.schritt4_rechtliche_analyse?.relevante_paragrafen?.length)
+        newKiData.relevante_paragrafen = [...(existingKi.relevante_paragrafen || []), ...result.schritt4_rechtliche_analyse.relevante_paragrafen];
       if (Object.keys(newKiData).length > 0) {
         caseUpdate.ki_berater_result = { ...existingKi, ...newKiData };
       }
@@ -714,32 +646,34 @@ Gib NUR valides JSON zurück.`,
         await base44.entities.Case.update(caseId, caseUpdate);
       }
 
-      // Schritt 2: Argumente, Beweise, Fristen, Personen anlegen
-      for (const arg of result.argumente || []) {
-        await base44.entities.Argument.create({
-          case_id: caseId, title: arg.titel,
-          description: `${arg.beschreibung}\n[KI aus: ${doc.title}]`,
-          side: arg.seite || "eigen", strength: arg.staerke || 5, type: "Rechtsargument",
-        });
-      }
-      for (const bew of result.beweise || []) {
-        await base44.entities.Evidence.create({
-          case_id: caseId, title: bew.titel,
-          description: `${bew.beschreibung}\n[KI aus: ${doc.title}]`,
-          type: bew.typ, weight: bew.gewicht || 5, source: doc.title,
-        });
-      }
-      for (const frist of result.fristen || []) {
-        await base44.entities.Deadline.create({
-          case_id: caseId, title: frist.titel, frist_type: frist.fristtyp,
-          due_date: frist.datum, side: "Eigene", status: "offen",
-        });
-      }
-      for (const person of result.personen || []) {
-        await base44.entities.Person.create({
-          case_id: caseId, name: person.name, role: person.rolle, organization: person.organisation,
-        });
-      }
+      // ── SCHRITT 2: Argumente, Beweise, Fristen, Personen → Entities ────
+      await Promise.all([
+        ...(result.argumente || []).map(arg =>
+          base44.entities.Argument.create({
+            case_id: caseId, title: arg.titel,
+            description: `${arg.beschreibung || ""}\n[KI aus: ${doc.title}]`,
+            side: arg.seite || "eigen", strength: arg.staerke || 5, type: "Rechtsargument",
+          })
+        ),
+        ...(result.beweise || []).map(bew =>
+          base44.entities.Evidence.create({
+            case_id: caseId, title: bew.titel,
+            description: `${bew.beschreibung || ""}\n[KI aus: ${doc.title}]`,
+            type: bew.typ, weight: bew.gewicht || 5, source: doc.title,
+          })
+        ),
+        ...(result.fristen || []).map(frist =>
+          base44.entities.Deadline.create({
+            case_id: caseId, title: frist.titel, frist_type: frist.fristtyp,
+            due_date: frist.datum, side: "Eigene", status: "offen",
+          })
+        ),
+        ...(result.personen || []).map(person =>
+          base44.entities.Person.create({
+            case_id: caseId, name: person.name, role: person.rolle, organization: person.organisation,
+          })
+        ),
+      ]);
 
       setResults(prev => ({ ...prev, [doc.id]: result }));
       onDataImport && onDataImport();
@@ -752,7 +686,7 @@ Gib NUR valides JSON zurück.`,
   const analyzeAll = async () => {
     setAnalyzingAll(true);
     for (const doc of docs) {
-      if (!results[doc.id]) await analyzeDocument(doc);
+      if (!results[doc.id] && !doc.ai_raw) await analyzeDocument(doc);
     }
     setAnalyzingAll(false);
   };
@@ -762,11 +696,18 @@ Gib NUR valides JSON zurück.`,
     loadDocs();
   };
 
-  const sf = { fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" };
+  // Overall coverage across all docs
+  const allCoverage = STEP_MAP.map(s => ({
+    ...s,
+    covered: docs.some(d => {
+      const r = results[d.id] || d.ai_raw;
+      return r && s.isCovered(r);
+    })
+  }));
 
   return (
-    <div className="space-y-4" style={sf}>
-      {/* Drop zone + queue */}
+    <div className="space-y-4" style={{ fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
+      {/* Drop zone */}
       <div
         onDragOver={e => { e.preventDefault(); setDragOver(true); }}
         onDragLeave={() => setDragOver(false)}
@@ -779,7 +720,6 @@ Gib NUR valides JSON zurück.`,
           background: dragOver ? "rgba(52,199,89,0.05)" : "rgba(0,0,0,0.02)",
           padding: pendingFiles.length ? "12px 16px" : "28px 16px",
           textAlign: pendingFiles.length ? "left" : "center",
-          transition: "all 0.15s",
         }}
       >
         {pendingFiles.length === 0 ? (
@@ -801,8 +741,7 @@ Gib NUR valides JSON zurück.`,
                   className="text-[11px] px-3 py-1 rounded font-semibold" style={{ background: "#34C759", color: "#fff" }}>
                   Alle hochladen & analysieren
                 </button>
-                <button onClick={e => { e.stopPropagation(); setPendingFiles([]); }}
-                  style={{ color: "#aaa", padding: 2 }}>
+                <button onClick={e => { e.stopPropagation(); setPendingFiles([]); }} style={{ color: "#aaa", padding: 2 }}>
                   <X className="w-3.5 h-3.5" />
                 </button>
               </div>
@@ -813,8 +752,7 @@ Gib NUR valides JSON zurück.`,
                 <span className="text-xs flex-1 truncate" style={{ color: "#333" }}>{p.name}</span>
                 <span className="text-[10px]" style={{ color: "#aaa" }}>{Math.round(p.file.size / 1024)} KB</span>
                 {p.uploading && <Loader2 className="w-3 h-3 animate-spin" style={{ color: "#34C759" }} />}
-                <button onClick={e => { e.stopPropagation(); setPendingFiles(prev => prev.filter(x => x.id !== p.id)); }}
-                  style={{ color: "#ccc" }}>
+                <button onClick={e => { e.stopPropagation(); setPendingFiles(prev => prev.filter(x => x.id !== p.id)); }} style={{ color: "#ccc" }}>
                   <X className="w-3 h-3" />
                 </button>
               </div>
@@ -841,7 +779,7 @@ Gib NUR valides JSON zurück.`,
         <>
           <div className="flex items-center justify-between">
             <p className="text-[11px]" style={{ color: "#aaa" }}>{docs.length} Dokument(e)</p>
-            {docs.some(d => !results[d.id]) && (
+            {docs.some(d => !results[d.id] && !d.ai_raw) && (
               <button onClick={analyzeAll} disabled={analyzingAll}
                 className="flex items-center gap-1.5 text-[11px] px-3 py-1.5 rounded transition-all"
                 style={{ background: "rgba(52,199,89,0.1)", color: "#1a7f37", border: "1px solid rgba(52,199,89,0.25)" }}>
@@ -866,35 +804,24 @@ Gib NUR valides JSON zurück.`,
         </>
       )}
 
-      {/* Step coverage legend */}
-      <div className="rounded-lg p-3" style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.07)" }}>
-        <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#aaa" }}>11 Analyse-Schritte</p>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
-          {STEP_LABELS.map((label, i) => {
-            const covered = docs.some(d => {
-              const r = results[d.id] || d.ai_raw;
-              if (!r) return false;
-              if (i === 0) return !!(r.basisdaten?.gericht || r.basisdaten?.aktenzeichen || r.basisdaten?.rechtsgebiet);
-              if (i === 1) return !!(r.argumente?.length || r.beweise?.length || r.personen?.length || r.fristen?.length);
-              if (i === 2) return !!(r.schritt3_gegneranalyse?.zusammenfassung || r.argumente?.some(a => a.seite === "gegner"));
-              if (i === 3) return !!(r.schritt4_rechtliche_analyse?.zusammenfassung || r.basisdaten?.rechtsgebiet || r.streitwert);
-              if (i === 4) return !!(r.schritt5_strategie?.zusammenfassung);
-              if (i === 5) return !!(r.schritt6_risiko?.zusammenfassung);
-              if (i === 6) return !!(r.schritt7_simulation?.zusammenfassung);
-              if (i === 7) return !!(r.schritt8_aktion?.zusammenfassung);
-              if (i === 8) return !!(r.schritt9_cockpit?.zusammenfassung);
-              if (i === 9) return !!(r.schritt10_abschluss?.zusammenfassung);
-              return !!(r.zusammenfassung);
-            });
-            return (
-              <div key={i} className="flex items-center gap-1.5 py-0.5">
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: covered ? "#34C759" : "#ddd", flexShrink: 0 }} />
-                <span className="text-[10px]" style={{ color: covered ? "#1a7f37" : "#bbb" }}>{label}</span>
+      {/* Overall step coverage across ALL docs */}
+      {docs.length > 0 && (
+        <div className="rounded-lg p-3" style={{ background: "rgba(0,0,0,0.03)", border: "1px solid rgba(0,0,0,0.07)" }}>
+          <p className="text-[10px] font-semibold uppercase tracking-widest mb-2" style={{ color: "#aaa" }}>
+            Gesamtabdeckung — {allCoverage.filter(s => s.covered).length}/10 Schritte aus Dokumenten befüllt
+          </p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-0.5">
+            {allCoverage.map(s => (
+              <div key={s.num} className="flex items-center gap-1.5 py-0.5">
+                <div style={{ width: 6, height: 6, borderRadius: "50%", background: s.covered ? s.color : "#ddd", flexShrink: 0 }} />
+                <span className="text-[10px]" style={{ color: s.covered ? "#1a1a1a" : "#bbb" }}>
+                  <strong>{s.num}.</strong> {s.label}
+                </span>
               </div>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
