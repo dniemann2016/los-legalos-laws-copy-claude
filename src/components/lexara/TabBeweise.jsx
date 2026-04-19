@@ -200,7 +200,14 @@ export default function TabBeweise({ caseId }) {
     load();
   };
 
-  const del = async (id) => { await base44.entities.Evidence.delete(id); load(); };
+  const del = async (id) => {
+    try {
+      await base44.entities.Evidence.delete(id);
+    } catch (e) {
+      console.warn("Evidence bereits gelöscht oder nicht gefunden:", id);
+    }
+    load();
+  };
 
   const linkExisting = async (evId) => {
     await base44.entities.Evidence.update(evId, { argument_id: selectedArg });
