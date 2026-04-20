@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle } from "lucide-react";
+import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle, LogIn } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/AuthContext";
 
 const STATUS_CONFIG = {
   Aktiv:        { text: "text-emerald-700", bg: "bg-emerald-50", ring: "ring-1 ring-emerald-200" },
@@ -114,6 +115,7 @@ function CaseCard({ caseData, counts }) {
 }
 
 export default function LexaraDashboard() {
+  const { isAuthenticated, isLoadingAuth, navigateToLogin } = useAuth();
   const [cases, setCases] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -123,7 +125,7 @@ export default function LexaraDashboard() {
   const [caseCounts, setCaseCounts] = useState({});
   const [creating, setCreating] = useState(false);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (isAuthenticated) loadData(); }, [isAuthenticated]);
 
   const loadData = async () => {
     setLoading(true);
@@ -171,6 +173,32 @@ export default function LexaraDashboard() {
   const totalDeadlines = Object.values(caseCounts).reduce((s, c) => s + c.deadlines, 0);
 
   const sf = { fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" };
+
+  if (isLoadingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" style={{ background: "#f0f0f0" }}>
+        <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#34C759" }} />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen" style={{ background: "#f0f0f0", ...sf }}>
+        <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 14, padding: 40, textAlign: "center", maxWidth: 340, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
+          <div style={{ width: 48, height: 48, background: "rgba(52,199,89,0.1)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
+            <Scale className="w-6 h-6" style={{ color: "#34C759" }} />
+          </div>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>Anmeldung erforderlich</h2>
+          <p style={{ fontSize: 12, color: "#888", marginBottom: 24, lineHeight: 1.6 }}>Um Fälle zu verwalten und auf alle Funktionen zuzugreifen, bitte anmelden.</p>
+          <button onClick={navigateToLogin}
+            style={{ width: "100%", background: "#34C759", color: "#fff", fontSize: 13, fontWeight: 600, padding: "10px", borderRadius: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <LogIn className="w-4 h-4" /> Jetzt anmelden
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen" style={{ background: "#f0f0f0", ...sf }}>
