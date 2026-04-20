@@ -59,14 +59,21 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
     );
   }
 
+  // Juristisches Datum: zeitpunkt (wann Argument verfasst/geäußert/bewiesen) bevorzugt, fallback created_date
+  const getArgDate = (a) => a.zeitpunkt ? new Date(a.zeitpunkt) : new Date(a.created_date);
+
+  // Nur Argumente mit zeitpunkt für die Skala berücksichtigen; ohne zeitpunkt am Rand platzieren
+  const datedArgs = args.filter(a => !!a.zeitpunkt);
+  const undatedArgs = args.filter(a => !a.zeitpunkt);
+
   // Gather all dates for scale
   const allDates = [
-    ...args.map(a => new Date(a.created_date).getTime()),
+    ...datedArgs.map(a => getArgDate(a).getTime()),
     ...deadlines.map(d => new Date(d.due_date).getTime()),
-  ].filter(Boolean);
-  const minMs = Math.min(...allDates);
-  const maxMs = Math.max(...allDates);
-  // Pad by 5%
+  ].filter(d => !isNaN(d));
+  const minMs = allDates.length > 0 ? Math.min(...allDates) : Date.now() - 1000 * 60 * 60 * 24 * 90;
+  const maxMs = allDates.length > 0 ? Math.max(...allDates) : Date.now();
+  // Pad by 8%
   const range = maxMs - minMs || 1000 * 60 * 60 * 24 * 30;
   const padMs = range * 0.08;
   const scaleMin = minMs - padMs;
@@ -75,7 +82,7 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
   const { w, h } = dims;
 
   const getPos = (a) => ({
-    x: toX(a.created_date, scaleMin, scaleMax, w),
+    x: toX(getArgDate(a).getTime(), scaleMin, scaleMax, w),
     y: toY(a.strength || a.ki_strength || 5, h),
   });
 
@@ -112,7 +119,7 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
     if (args.length < 1) return;
     setKiLoading(true);
     setKiResult(null);
-    const argDesc = args.map(a => `[${a.side === "eigen" ? "EIGEN" : "GEGNER"}] "${a.title}" | Stärke: ${a.strength || 5}/10 | Datum: ${format(new Date(a.created_date), "dd.MM.yyyy")}`).join("\n");
+    const argDesc = args.map(a => `[${a.side === "eigen" ? "EIGEN" : "GEGNER"}] "${a.title}" | Stärke: ${a.strength || 5}/10 | ${a.zeitpunkt ? `Geäußert/Bewiesen: ${format(new Date(a.zeitpunkt), "dd.MM.yyyy")}` : "Datum: unbekannt"}`).join("\n");
     const dlDesc = deadlines.length > 0 ? deadlines.map(d => `Frist: "${d.title}" | Datum: ${format(new Date(d.due_date), "dd.MM.yyyy")} | Status: ${d.status}`).join("\n") : "Keine Fristen";
     const connDesc = connections.length > 0 ? connections.map(c => {
       const f = args.find(a => a.id === c.fromId)?.title || c.fromId;
@@ -159,7 +166,10 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
       <div className="flex items-center justify-between flex-wrap gap-2">
         <div>
           <p className="text-xs font-bold text-slate-700">📊 Argument-Zeitstrahl</p>
-          <p className="text-[10px] text-slate-400 mt-0.5">Y = Argumentstärke · X = Zeitpunkt · Verbindungen = Einfluss</p>
+          <p className="text-[10px] text-slate-400 mt-0.5">Y = Argumentstärke · X = Juristisches Datum (Äußerung/Beweisführung) · Verbindungen = Einfluss</p>
+        {undatedArgs.length > 0 && (
+          <p className="text-[10px] text-amber-500 mt-0.5">⚠ {undatedArgs.length} Argument(e) ohne juristisches Datum — bitte in Tab 2 › Argumente das Feld „Zeitpunkt" setzen</p>
+        )}
         </div>
         <button onClick={runKiAnalysis} disabled={kiLoading || args.length === 0}
           className="flex items-center gap-1.5 text-xs bg-violet-600 text-white px-3 py-2 rounded-xl hover:bg-violet-700 disabled:opacity-40 transition-colors font-semibold">
@@ -245,9 +255,12 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
                   onMouseEnter={(e) => setTooltip({ a, x: pos.x, y: pos.y })}
                   onMouseLeave={() => setTooltip(null)}>
                   <circle cx={pos.x} cy={pos.y} r={r + 3} fill={fill} opacity={isSel ? 0.2 : 0.08} />
-                  <circle cx={pos.x} cy={pos.y} r={r} fill={fill} opacity={0.9}
-                    stroke={isSel ? "#1e40af" : "white"} strokeWidth={isSel ? 2.5 : 1.5} />
-                  <text x={pos.x} y={pos.y + 3} textAnchor="middle" fontSize={8} fill="white" fontWeight="bold">
+                  <circle cx={pos.x} cy={pos.y} r={r} fill={!a.zeitpunkt ? "white" : fill}
+                   opacity={a.zeitpunkt ? 0.9 : 0.6}
+                   stroke={isSel ? "#1e40af" : a.zeitpunkt ? "white" : fill}
+                   strokeWidth={isSel ? 2.5 : a.zeitpunkt ? 1.5 : 2}
+                   strokeDasharray={a.zeitpunkt ? undefined : "4,2"} />
+                  <text x={pos.x} y={pos.y + 3} textAnchor="middle" fontSize={8} fill={a.zeitpunkt ? "white" : fill} fontWeight="bold">
                     {a.strength || 5}
                   </text>
                   {/* Label below */}
@@ -272,7 +285,9 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
                   </text>
                   <text x={tx + 8} y={ty + 27} fontSize={9} fill="#334155">{(a.title || "").slice(0, 30)}</text>
                   <text x={tx + 8} y={ty + 40} fontSize={9} fill="#64748b">Stärke: {a.strength || 5}/10</text>
-                  <text x={tx + 8} y={ty + 52} fontSize={9} fill="#94a3b8">{format(new Date(a.created_date), "dd.MM.yyyy")}</text>
+                  <text x={tx + 8} y={ty + 52} fontSize={9} fill="#94a3b8">
+                    {a.zeitpunkt ? `Geäußert: ${format(new Date(a.zeitpunkt), "dd.MM.yyyy")}` : `Eingetragen: ${format(new Date(a.created_date), "dd.MM.yyyy")}`}
+                  </text>
                 </g>
               );
             })()}
@@ -290,7 +305,7 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
           <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-blue-500 opacity-90" /><span className="text-[10px] text-slate-500">Eigene Argumente</span></div>
           <div className="flex items-center gap-1.5"><div className="w-3 h-3 rounded-full bg-red-500 opacity-90" /><span className="text-[10px] text-slate-500">Gegnerargumente</span></div>
           <div className="flex items-center gap-1.5"><div className="w-8 h-0.5 bg-orange-400 opacity-60 border-dashed border" style={{ borderStyle: "dashed" }} /><span className="text-[10px] text-slate-500">Frist</span></div>
-          <div className="flex items-center gap-1.5"><span className="text-[10px] text-slate-400 italic">Knotengröße = Argumentstärke</span></div>
+          <div className="flex items-center gap-1.5"><span className="text-[10px] text-slate-400 italic">Knotengröße = Argumentstärke · Gestrichelt = kein juristisches Datum</span></div>
           {connections.length > 0 && (
             <div className="ml-auto flex items-center gap-1.5 text-[10px]">
               <TrendingUp className="w-3 h-3 text-slate-400" />
@@ -315,7 +330,10 @@ export default function ArgumentZeitstrahlChart({ caseId, args, deadlines = [], 
               {selected.description && <p className="text-xs text-slate-500 mb-2">{selected.description}</p>}
               <div className="flex gap-3 text-xs text-slate-400">
                 <span>Stärke: <strong className="text-slate-700">{selected.strength || 5}/10</strong></span>
-                <span>Eingetragen: <strong className="text-slate-700">{format(new Date(selected.created_date), "dd.MM.yyyy")}</strong></span>
+                {selected.zeitpunkt
+                  ? <span>⚖ Geäußert/Bewiesen: <strong className="text-slate-700">{format(new Date(selected.zeitpunkt), "dd.MM.yyyy")}</strong></span>
+                  : <span className="text-slate-300 italic">Kein juristisches Datum gesetzt</span>
+                }
                 {selected.type && <span>Typ: <strong className="text-slate-700">{selected.type}</strong></span>}
               </div>
             </div>
