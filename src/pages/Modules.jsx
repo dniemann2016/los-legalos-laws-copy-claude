@@ -3,6 +3,7 @@ import { Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword, Ch
 import { useJurisdiction } from "../hooks/useJurisdiction";
 import { getT } from "../lib/jurisdictionConfig";
 import { useAuth } from "@/lib/AuthContext";
+import StrategischerBeweisstrang from "@/components/modules/StrategischerBeweisstrang";
 
 const PATHS = [
   "/chat/fall-assistent",
@@ -226,6 +227,17 @@ export default function Modules() {
           <p className="text-[10px]" style={{ color: "#ccc" }}>{t.copyright}</p>
           <p className="text-[10px]" style={{ color: "#ccc" }}>{t.dsgvo}</p>
         </div>
+      </div>
+
+      {/* Strategischer Beweisstrang – unterhalb der Hauptkarte */}
+      <div className="max-w-3xl mx-auto mt-5">
+        <p
+          className="text-[10px] font-semibold uppercase tracking-widest mb-3 px-1"
+          style={{ color: "#aaa", letterSpacing: "0.08em" }}
+        >
+          Strategischer Beweisstrang
+        </p>
+        <StrategischerBeweisstrang />
       </div>
     </div>
   );
