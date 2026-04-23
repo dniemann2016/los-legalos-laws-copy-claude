@@ -103,6 +103,239 @@
       "type": "number",
       "title": "Aktueller Schritt (1-7)",
       "default": 1
+    },
+    "unternehmenskontext": {
+      "type": "object",
+      "title": "Enterprise-Kontext (Schritt 1 Enterprise)",
+      "properties": {
+        "unternehmen_name": {
+          "type": "string"
+        },
+        "rechtsform": {
+          "type": "string"
+        },
+        "branche": {
+          "type": "string"
+        },
+        "branche_freitext": {
+          "type": "string"
+        },
+        "umsatz": {
+          "type": "number"
+        },
+        "waehrung": {
+          "type": "string"
+        },
+        "mitarbeiter": {
+          "type": "number"
+        },
+        "hauptsitz_land": {
+          "type": "string"
+        },
+        "hauptsitz_stadt": {
+          "type": "string"
+        },
+        "operative_maerkte": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "situationstyp": {
+          "type": "string"
+        },
+        "sachverhalt_lang": {
+          "type": "string"
+        },
+        "gegner_name": {
+          "type": "string"
+        },
+        "gegner_rolle": {
+          "type": "string"
+        },
+        "gegner_info": {
+          "type": "string"
+        },
+        "zeitkritikalitaet": {
+          "type": "number"
+        },
+        "dokumente": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "rechtsgebiete": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "lexara_case_id": {
+          "type": "string"
+        }
+      }
+    },
+    "situationsanalyse": {
+      "type": "object",
+      "title": "Situationsanalyse (Schritt 2 Enterprise)",
+      "properties": {
+        "module": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "gesamt_risiko": {
+          "type": "number"
+        },
+        "kritische_punkte": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "gesamt_exposure_eur": {
+          "type": "number"
+        },
+        "zeitachse": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "quantifizierung": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "szenario_matrix": {
+      "type": "object",
+      "title": "Szenario-Matrix (Schritt 3 Enterprise)",
+      "properties": {
+        "ausgangsfrage": {
+          "type": "string"
+        },
+        "szenarien": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "vergleich_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "aktionsplan": {
+      "type": "object",
+      "title": "Aktionsplan (Schritt 4 Enterprise)",
+      "properties": {
+        "massnahmen": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "ressourcen_gesamt": {
+          "type": "object"
+        }
+      }
+    },
+    "strategos_empfehlung": {
+      "type": "object",
+      "title": "Strategos-Gesamtempfehlung (Schritt 5 Enterprise)",
+      "properties": {
+        "machtposition": {
+          "type": "string"
+        },
+        "groesste_hebel": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "groesste_risiken": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "grundhaltung": {
+          "type": "string"
+        },
+        "sun_tzu": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "machiavelli": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "harvard": {
+          "type": "object"
+        },
+        "horizont_1": {
+          "type": "object"
+        },
+        "horizont_2": {
+          "type": "object"
+        },
+        "horizont_3": {
+          "type": "object"
+        },
+        "risiko_chancen_karte": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "lexara_sync": {
+      "type": "object",
+      "title": "LEXARA-Sync (Schritt 6 Enterprise)",
+      "properties": {
+        "sync_frequenz": {
+          "type": "string"
+        },
+        "letzter_sync": {
+          "type": "string"
+        },
+        "synchronisierte_felder": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "sync_log": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "konflikte": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        }
+      }
+    },
+    "enterprise_step": {
+      "type": "number",
+      "title": "Aktueller Enterprise-Schritt (1-6)",
+      "default": 1
     }
   },
   "required": [
