@@ -3,29 +3,65 @@ import { base44 } from "@/api/base44Client";
 import { Link, useNavigate } from "react-router-dom";
 import { getTByLanguage } from "../lib/jurisdictionConfig";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { ChevronRight, AlertTriangle, TrendingUp, Scale, Clock, Search, CheckCircle2, Circle } from "lucide-react";
+import { ChevronRight, AlertTriangle, TrendingUp, Scale, Clock, Search, CheckCircle2, Circle, Briefcase } from "lucide-react";
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, PieChart, Pie } from "recharts";
 
-const RISK_COLORS = { niedrig: "#16a34a", mittel: "#d97706", hoch: "#dc2626" };
+const SF = { fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" };
 
-function RisikoAmpel({ level }) {
-  const colors = { niedrig: "bg-green-500", mittel: "bg-amber-400", hoch: "bg-red-500" };
-  return <span className={`inline-block w-2 h-2 rounded-full ${colors[level] || "bg-slate-300"}`} />;
-}
-
-function KpiCard({ icon: Icon, label, value, sub, accent }) {
+function KpiCard({ icon: Icon, label, value, sub, iconBg, iconColor }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-100 p-5">
-      <div className="flex items-center justify-between mb-3">
-        <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{label}</p>
-        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${accent || "bg-slate-50"}`}>
-          <Icon className="w-4 h-4 text-slate-600" />
+    <div style={{
+      background: "rgba(255,255,255,0.85)",
+      backdropFilter: "blur(20px)",
+      borderRadius: 20,
+      border: "1px solid rgba(0,0,0,0.06)",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+      padding: "22px 24px",
+      ...SF,
+    }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+        <div style={{
+          width: 40, height: 40, borderRadius: 12,
+          background: iconBg || "rgba(0,0,0,0.05)",
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}>
+          <Icon style={{ width: 20, height: 20, color: iconColor || "#888" }} />
         </div>
       </div>
-      <p className="text-3xl font-bold text-slate-900 tracking-tight">{value}</p>
-      {sub && <p className="text-[11px] text-slate-400 mt-1">{sub}</p>}
+      <p style={{ fontSize: 30, fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.5px", lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 11, fontWeight: 600, color: "#888", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</p>
+      {sub && <p style={{ fontSize: 11, color: "#bbb", marginTop: 3 }}>{sub}</p>}
     </div>
   );
+}
+
+function SectionCard({ title, children, action }) {
+  return (
+    <div style={{
+      background: "rgba(255,255,255,0.85)",
+      backdropFilter: "blur(20px)",
+      borderRadius: 20,
+      border: "1px solid rgba(0,0,0,0.06)",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+      overflow: "hidden",
+      ...SF,
+    }}>
+      <div style={{ padding: "20px 24px 0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+        <p style={{ fontSize: 11, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.07em" }}>{title}</p>
+        {action}
+      </div>
+      <div style={{ padding: "16px 24px 22px" }}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function getRisikoLevel(c) {
+  const p = c.prognose || 0;
+  if (p >= 65) return "niedrig";
+  if (p >= 40) return "mittel";
+  return "hoch";
 }
 
 export default function KanzleiCockpit() {
@@ -47,8 +83,8 @@ export default function KanzleiCockpit() {
   }, []);
 
   if (loading) return (
-    <div className="min-h-screen bg-[#F5F6F8] flex items-center justify-center">
-      <div className="w-6 h-6 border-2 border-slate-200 border-t-slate-700 rounded-full animate-spin" />
+    <div style={{ minHeight: "100vh", background: "#f2f2f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+      <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2.5px solid rgba(0,0,0,0.1)", borderTopColor: "#34C759", animation: "spin 0.8s linear infinite" }} />
     </div>
   );
 
@@ -56,141 +92,131 @@ export default function KanzleiCockpit() {
   const gesamtStreitwert = cases.reduce((s, c) => s + (c.streitwert || 0), 0);
   const avgPrognose = cases.length ? Math.round(cases.reduce((s, c) => s + (c.prognose || 0), 0) / cases.length) : 0;
   const today = new Date();
-  const naechsteFristen = deadlines.filter(d => d.status === "offen" && new Date(d.due_date) > today)
+  const naechsteFristen = deadlines
+    .filter(d => d.status === "offen" && new Date(d.due_date) > today)
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date)).slice(0, 6);
   const ueberfaellig = deadlines.filter(d => d.status === "offen" && new Date(d.due_date) < today);
 
   const risikoVerteilung = [
-    { name: "Niedrig", value: cases.filter(c => (c.prognose || 0) >= 65).length, color: "#16a34a" },
-    { name: "Mittel", value: cases.filter(c => (c.prognose || 0) >= 40 && (c.prognose || 0) < 65).length, color: "#d97706" },
-    { name: "Hoch", value: cases.filter(c => (c.prognose || 0) < 40).length, color: "#dc2626" },
+    { name: "Niedrig", value: cases.filter(c => (c.prognose || 0) >= 65).length, color: "#34C759" },
+    { name: "Mittel",  value: cases.filter(c => (c.prognose || 0) >= 40 && (c.prognose || 0) < 65).length, color: "#FF9500" },
+    { name: "Hoch",    value: cases.filter(c => (c.prognose || 0) < 40).length, color: "#FF3B30" },
   ];
 
   const rechtsgebietData = Object.entries(
     cases.reduce((acc, c) => { const rg = c.rechtsgebiet || "Sonstige"; acc[rg] = (acc[rg] || 0) + 1; return acc; }, {})
   ).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value).slice(0, 6);
 
-  const getRisikoLevel = (c) => {
-    const p = c.prognose || 0;
-    if (p >= 65) return "niedrig";
-    if (p >= 40) return "mittel";
-    return "hoch";
-  };
-
   const hochrisikoFaelle = cases.filter(c => (c.prognose || 0) < 40 && c.status === "Aktiv").slice(0, 5);
   const topChancen = cases.filter(c => (c.prognose || 0) >= 70 && c.status === "Aktiv").slice(0, 5);
 
-  // Next deadline per case
-  const today2 = new Date();
   const nextDeadlineMap = {};
-  deadlines.filter(d => d.status === "offen" && new Date(d.due_date) >= today2)
+  deadlines.filter(d => d.status === "offen" && new Date(d.due_date) >= today)
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
     .forEach(d => { if (!nextDeadlineMap[d.case_id]) nextDeadlineMap[d.case_id] = d; });
 
-  // Upcoming tasks (open, not done)
-  const openTasks = tasks.filter(t => t.status !== "erledigt")
+  const openTasks = tasks.filter(tk => tk.status !== "erledigt")
     .sort((a, b) => new Date(a.due_date || "9999") - new Date(b.due_date || "9999"))
     .slice(0, 6);
 
-  // Filtered cases for table
   const filteredCases = cases.filter(c => {
     if (!tableSearch) return true;
     const q = tableSearch.toLowerCase();
-    return c.fallname?.toLowerCase().includes(q) ||
-      c.aktenzeichen?.toLowerCase().includes(q) ||
-      c.rechtsgebiet?.toLowerCase().includes(q);
+    return c.fallname?.toLowerCase().includes(q) || c.aktenzeichen?.toLowerCase().includes(q) || c.rechtsgebiet?.toLowerCase().includes(q);
   });
 
-  const tasksTitleLabel = language === "EN" ? "Upcoming Tasks" : language === "FR" ? "Tâches à venir" : "Anstehende Aufgaben";
-  const tasksViewAll = language === "EN" ? "View all →" : language === "FR" ? "Tout voir →" : "Alle anzeigen →";
-  const noTasksLabel = language === "EN" ? "No open tasks ✓" : language === "FR" ? "Aucune tâche ouverte ✓" : "Keine offenen Aufgaben ✓";
-  const searchPlaceholder = language === "EN" ? "Search cases…" : language === "FR" ? "Rechercher…" : "Fälle suchen…";
-  const updatedLabel = language === "EN" ? "Updated" : language === "FR" ? "Modifié" : "Aktualisiert";
-  const nextDeadlineLabel = language === "EN" ? "Next Deadline" : language === "FR" ? "Prochain délai" : "Nächste Frist";
-  const PRIORITY_COLORS = { hoch: "bg-red-100 text-red-700", mittel: "bg-amber-100 text-amber-700", niedrig: "bg-green-100 text-green-700" };
-  const PRIORITY_LABELS = { hoch: { DE: "Hoch", EN: "High", FR: "Élevée" }, mittel: { DE: "Mittel", EN: "Medium", FR: "Moyenne" }, niedrig: { DE: "Niedrig", EN: "Low", FR: "Faible" } };
+  const loc = language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE";
 
   return (
-    <div className="min-h-screen bg-[#fafafa] font-sans">
-      <div className="border-b border-[#f0f0f0] bg-white sticky top-0 z-30">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <div style={{ minHeight: "100vh", background: "#f2f2f7", ...SF }}>
+      {/* Top bar */}
+      <div style={{ background: "rgba(242,242,247,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(0,0,0,0.07)", position: "sticky", top: 0, zIndex: 30 }}>
+        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <h1 className="text-sm font-bold text-[#1a1a1a]">{t.cockpitTitle}</h1>
-            <p className="text-[11px] text-[#666]">{t.portfolioSub(cases.length)}</p>
+            <p style={{ fontSize: 17, fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.2px" }}>{t.cockpitTitle}</p>
+            <p style={{ fontSize: 12, color: "#888", marginTop: 1 }}>{t.portfolioSub(cases.length)}</p>
           </div>
-          <Link to="/lexara"
-            className="flex items-center gap-1.5 bg-[#1a3560] text-white text-xs font-semibold px-3 py-2 rounded-lg hover:bg-[#142a4d] transition-colors">
-            {t.newCaseLinkLabel}
+          <Link to="/lexara" style={{
+            background: "#34C759", color: "#fff", fontSize: 13, fontWeight: 600,
+            padding: "9px 18px", borderRadius: 12, border: "none", cursor: "pointer",
+            textDecoration: "none", display: "flex", alignItems: "center", gap: 6,
+            boxShadow: "0 2px 8px rgba(52,199,89,0.3)",
+          }}>
+            + {t.newCaseLinkLabel}
           </Link>
         </div>
       </div>
 
-      <div className="max-w-6xl mx-auto px-6 py-8 space-y-6">
+      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+
         {/* KPIs */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-          <KpiCard icon={Scale} label={t.aktiveFaelleLabel} value={aktiv.length} sub={`${cases.length} ${t.allMandatesSub}`} accent="bg-blue-50" />
-          <KpiCard icon={TrendingUp} label={t.totalClaimLabel} value={`${(gesamtStreitwert / 1000000).toFixed(1)}M€`} sub={t.allMandatesSub} accent="bg-emerald-50" />
-          <KpiCard icon={TrendingUp} label={t.avgPrognosisLabel} value={`${avgPrognose}%`} sub={t.weightedAvgSub} accent="bg-amber-50" />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 16 }}>
+          <KpiCard icon={Briefcase} label={t.aktiveFaelleLabel} value={aktiv.length} sub={`${cases.length} ${t.allMandatesSub}`} iconBg="rgba(0,122,255,0.12)" iconColor="#007AFF" />
+          <KpiCard icon={Scale} label={t.totalClaimLabel} value={`${(gesamtStreitwert/1000000).toFixed(1)}M€`} sub={t.allMandatesSub} iconBg="rgba(52,199,89,0.12)" iconColor="#34C759" />
+          <KpiCard icon={TrendingUp} label={t.avgPrognosisLabel} value={`${avgPrognose}%`} sub={t.weightedAvgSub} iconBg="rgba(255,149,0,0.12)" iconColor="#FF9500" />
           <KpiCard icon={AlertTriangle} label={t.overdueDeadlinesLabel} value={ueberfaellig.length}
-            sub={ueberfaellig.length > 0 ? t.actNow : t.allOnTrack} accent={ueberfaellig.length > 0 ? "bg-red-50" : "bg-green-50"} />
+            sub={ueberfaellig.length > 0 ? t.actNow : t.allOnTrack}
+            iconBg={ueberfaellig.length > 0 ? "rgba(255,59,48,0.12)" : "rgba(52,199,89,0.12)"}
+            iconColor={ueberfaellig.length > 0 ? "#FF3B30" : "#34C759"} />
         </div>
 
-        {/* Charts row */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="bg-white rounded-xl border border-slate-100 p-5">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.risikoverteilung}</p>
-            <ResponsiveContainer width="100%" height={140}>
+        {/* Charts */}
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 2fr", gap: 16 }}>
+          <SectionCard title={t.risikoverteilung}>
+            <ResponsiveContainer width="100%" height={150}>
               <PieChart>
-                <Pie data={risikoVerteilung} cx="50%" cy="50%" innerRadius={38} outerRadius={58} dataKey="value" paddingAngle={3}>
-                  {risikoVerteilung.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                <Pie data={risikoVerteilung} cx="50%" cy="50%" innerRadius={40} outerRadius={62} dataKey="value" paddingAngle={4}>
+                  {risikoVerteilung.map((e, i) => <Cell key={i} fill={e.color} />)}
                 </Pie>
-                <Tooltip formatter={(v, n) => [v + ` ${t.casesLabelShort}`, n]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
+                <Tooltip formatter={(v, n) => [v + ` Fälle`, n]} contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", fontSize: 12 }} />
               </PieChart>
             </ResponsiveContainer>
-            <div className="flex justify-center gap-4 mt-2">
+            <div style={{ display: "flex", justifyContent: "center", gap: 16, marginTop: 4 }}>
               {risikoVerteilung.map(r => (
-                <div key={r.name} className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color }} />
-                  <span className="text-[10px] text-slate-500">{r.name} <span className="font-semibold text-slate-700">({r.value})</span></span>
+                <div key={r.name} style={{ display: "flex", alignItems: "center", gap: 5 }}>
+                  <div style={{ width: 7, height: 7, borderRadius: "50%", background: r.color }} />
+                  <span style={{ fontSize: 11, color: "#888" }}>{r.name} <strong style={{ color: "#444" }}>({r.value})</strong></span>
                 </div>
               ))}
             </div>
-          </div>
+          </SectionCard>
 
-          <div className="md:col-span-2 bg-white rounded-xl border border-slate-100 p-5">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest mb-4">{t.faelleNachRechtsgebiet}</p>
-            <ResponsiveContainer width="100%" height={160}>
-              <BarChart data={rechtsgebietData} layout="vertical" margin={{ left: 8 }}>
+          <SectionCard title={t.faelleNachRechtsgebiet}>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart data={rechtsgebietData} layout="vertical" margin={{ left: 4 }}>
                 <XAxis type="number" hide />
-                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#94a3b8" }} width={110} />
-                <Tooltip formatter={v => [v + ` ${t.casesLabelShort}`]} contentStyle={{ borderRadius: 8, border: "1px solid #e2e8f0", fontSize: 12 }} />
-                <Bar dataKey="value" fill="#1a3560" radius={[0, 4, 4, 0]} />
+                <YAxis type="category" dataKey="name" tick={{ fontSize: 11, fill: "#aaa" }} width={120} />
+                <Tooltip formatter={v => [v + " Fälle"]} contentStyle={{ borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", fontSize: 12 }} />
+                <Bar dataKey="value" fill="#007AFF" radius={[0, 8, 8, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </SectionCard>
         </div>
 
         {/* Risk + Chancen */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="bg-white rounded-xl border border-red-100 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <AlertTriangle className="w-4 h-4 text-red-500" />
-              <p className="text-[11px] font-semibold text-red-600 uppercase tracking-widest">{t.highRiskLabel}</p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          {/* Hochrisiko */}
+          <div style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(20px)", borderRadius: 20, border: "1px solid rgba(255,59,48,0.12)", boxShadow: "0 2px 12px rgba(0,0,0,0.05)", padding: "22px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(255,59,48,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <AlertTriangle style={{ width: 16, height: 16, color: "#FF3B30" }} />
+              </div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#FF3B30", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.highRiskLabel}</p>
             </div>
             {hochrisikoFaelle.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">{t.noHighRisk}</p>
+              <p style={{ fontSize: 12, color: "#bbb", textAlign: "center", padding: "20px 0" }}>{t.noHighRisk}</p>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {hochrisikoFaelle.map(c => (
                   <button key={c.id} onClick={() => navigate(`/lexara/case?id=${c.id}`)}
-                    className="w-full flex items-center justify-between bg-red-50 rounded-lg border border-red-100 px-3 py-2.5 text-left hover:border-red-300 transition-colors group">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{c.fallname}</p>
-                      <p className="text-[10px] text-slate-400">{c.rechtsgebiet}{c.gericht ? ` · ${c.gericht}` : ""}</p>
+                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(255,59,48,0.05)", border: "1px solid rgba(255,59,48,0.1)", borderRadius: 12, padding: "10px 14px", cursor: "pointer", textAlign: "left" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.fallname}</p>
+                      <p style={{ fontSize: 11, color: "#aaa" }}>{c.rechtsgebiet || "—"}</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm font-bold text-red-600">{c.prognose || 0}%</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500" />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#FF3B30" }}>{c.prognose || 0}%</span>
+                      <ChevronRight style={{ width: 14, height: 14, color: "#ccc" }} />
                     </div>
                   </button>
                 ))}
@@ -198,25 +224,28 @@ export default function KanzleiCockpit() {
             )}
           </div>
 
-          <div className="bg-white rounded-xl border border-green-100 p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <TrendingUp className="w-4 h-4 text-green-600" />
-              <p className="text-[11px] font-semibold text-green-700 uppercase tracking-widest">{t.topChancesLabel}</p>
+          {/* Top Chancen */}
+          <div style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(20px)", borderRadius: 20, border: "1px solid rgba(52,199,89,0.12)", boxShadow: "0 2px 12px rgba(0,0,0,0.05)", padding: "22px 24px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 18 }}>
+              <div style={{ width: 32, height: 32, borderRadius: 10, background: "rgba(52,199,89,0.1)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <TrendingUp style={{ width: 16, height: 16, color: "#34C759" }} />
+              </div>
+              <p style={{ fontSize: 11, fontWeight: 700, color: "#34C759", textTransform: "uppercase", letterSpacing: "0.06em" }}>{t.topChancesLabel}</p>
             </div>
             {topChancen.length === 0 ? (
-              <p className="text-xs text-slate-400 py-4 text-center">{t.noTopChancesText}</p>
+              <p style={{ fontSize: 12, color: "#bbb", textAlign: "center", padding: "20px 0" }}>{t.noTopChancesText}</p>
             ) : (
-              <div className="space-y-2">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 {topChancen.map(c => (
                   <button key={c.id} onClick={() => navigate(`/lexara/case?id=${c.id}`)}
-                    className="w-full flex items-center justify-between bg-green-50 rounded-lg border border-green-100 px-3 py-2.5 text-left hover:border-green-300 transition-colors group">
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-slate-800 truncate">{c.fallname}</p>
-                      <p className="text-[10px] text-slate-400">{c.rechtsgebiet}{c.streitwert ? ` · ${(c.streitwert / 1000).toFixed(0)}k€` : ""}</p>
+                    style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "space-between", background: "rgba(52,199,89,0.05)", border: "1px solid rgba(52,199,89,0.1)", borderRadius: 12, padding: "10px 14px", cursor: "pointer", textAlign: "left" }}>
+                    <div style={{ minWidth: 0 }}>
+                      <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.fallname}</p>
+                      <p style={{ fontSize: 11, color: "#aaa" }}>{c.rechtsgebiet || "—"}{c.streitwert ? ` · ${(c.streitwert/1000).toFixed(0)}k€` : ""}</p>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-sm font-bold text-green-600">{c.prognose || 0}%</span>
-                      <ChevronRight className="w-3.5 h-3.5 text-slate-300 group-hover:text-slate-500" />
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, flexShrink: 0 }}>
+                      <span style={{ fontSize: 15, fontWeight: 700, color: "#34C759" }}>{c.prognose || 0}%</span>
+                      <ChevronRight style={{ width: 14, height: 14, color: "#ccc" }} />
                     </div>
                   </button>
                 ))}
@@ -226,73 +255,72 @@ export default function KanzleiCockpit() {
         </div>
 
         {/* Fristen */}
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <Clock className="w-4 h-4 text-slate-400" />
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{t.nextDeadlinesLabel}</p>
-            </div>
-            <Link to="/zeitleiste" className="text-[11px] text-[#1a3560] font-semibold hover:opacity-70 transition-opacity">{t.showAllLink}</Link>
-          </div>
+        <SectionCard
+          title={t.nextDeadlinesLabel}
+          action={<Link to="/zeitleiste" style={{ fontSize: 13, color: "#007AFF", fontWeight: 600, textDecoration: "none" }}>{t.showAllLink}</Link>}
+        >
           {naechsteFristen.length === 0 ? (
-            <p className="text-xs text-slate-400 py-4 text-center">{t.noOpenDeadlinesText}</p>
+            <p style={{ fontSize: 12, color: "#bbb", textAlign: "center", padding: "16px 0" }}>{t.noOpenDeadlinesText}</p>
           ) : (
-            <div className="divide-y divide-slate-50">
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               {naechsteFristen.map((d, i) => {
                 const days = Math.ceil((new Date(d.due_date) - today) / 86400000);
                 const c = cases.find(ca => ca.id === d.case_id);
-                const urgency = days <= 3 ? "bg-red-100 text-red-700" : days <= 7 ? "bg-amber-100 text-amber-700" : "bg-slate-100 text-slate-600";
+                const urgColor = days <= 3 ? "#FF3B30" : days <= 7 ? "#FF9500" : "#007AFF";
+                const urgBg = days <= 3 ? "rgba(255,59,48,0.08)" : days <= 7 ? "rgba(255,149,0,0.08)" : "rgba(0,122,255,0.08)";
                 return (
-                  <div key={i} className="flex items-center justify-between py-2.5">
-                    <div className="flex items-center gap-3">
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md min-w-[32px] text-center ${urgency}`}>{days}{language === "EN" ? "d" : language === "FR" ? "j" : "T"}</span>
+                  <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: i < naechsteFristen.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 9px", borderRadius: 8, background: urgBg, color: urgColor, minWidth: 36, textAlign: "center" }}>
+                        {days}T
+                      </span>
                       <div>
-                        <p className="text-xs font-medium text-slate-800">{d.title}</p>
-                        <p className="text-[10px] text-slate-400">{c?.fallname || "—"}{d.frist_type ? ` · ${d.frist_type}` : ""}</p>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a" }}>{d.title}</p>
+                        <p style={{ fontSize: 11, color: "#aaa" }}>{c?.fallname || "—"}{d.frist_type ? ` · ${d.frist_type}` : ""}</p>
                       </div>
                     </div>
-                    <span className="text-[11px] text-slate-400 tabular-nums">{new Date(d.due_date).toLocaleDateString(language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE")}</span>
+                    <span style={{ fontSize: 12, color: "#aaa" }}>{new Date(d.due_date).toLocaleDateString(loc)}</span>
                   </div>
                 );
               })}
             </div>
           )}
-        </div>
+        </SectionCard>
 
-        {/* Upcoming Tasks */}
-        <div className="bg-white rounded-xl border border-slate-100 p-5">
-          <div className="flex items-center justify-between mb-4">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="w-4 h-4 text-slate-400" />
-              <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{tasksTitleLabel}</p>
-            </div>
-            <Link to="/aufgaben" className="text-[11px] text-[#1a3560] font-semibold hover:opacity-70 transition-opacity">{tasksViewAll}</Link>
-          </div>
+        {/* Aufgaben */}
+        <SectionCard
+          title={language === "EN" ? "Upcoming Tasks" : "Anstehende Aufgaben"}
+          action={<Link to="/aufgaben" style={{ fontSize: 13, color: "#007AFF", fontWeight: 600, textDecoration: "none" }}>{language === "EN" ? "View all →" : "Alle anzeigen →"}</Link>}
+        >
           {openTasks.length === 0 ? (
-            <p className="text-xs text-slate-400 py-4 text-center">{noTasksLabel}</p>
+            <p style={{ fontSize: 12, color: "#bbb", textAlign: "center", padding: "16px 0" }}>{language === "EN" ? "No open tasks ✓" : "Keine offenen Aufgaben ✓"}</p>
           ) : (
-            <div className="divide-y divide-slate-50">
-              {openTasks.map(task => {
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              {openTasks.map((task, i) => {
                 const daysLeft = task.due_date ? Math.ceil((new Date(task.due_date) - new Date()) / 86400000) : null;
-                const urgency = daysLeft !== null && daysLeft <= 0 ? "text-red-600" : daysLeft !== null && daysLeft <= 3 ? "text-amber-600" : "text-slate-400";
+                const urgColor = daysLeft !== null && daysLeft <= 0 ? "#FF3B30" : daysLeft !== null && daysLeft <= 3 ? "#FF9500" : "#aaa";
+                const pColors = { hoch: { bg: "rgba(255,59,48,0.1)", c: "#FF3B30" }, mittel: { bg: "rgba(255,149,0,0.1)", c: "#FF9500" }, niedrig: { bg: "rgba(52,199,89,0.1)", c: "#34C759" } };
+                const pc = pColors[task.priority] || { bg: "rgba(0,0,0,0.05)", c: "#888" };
                 return (
-                  <div key={task.id} className="flex items-center justify-between py-2.5 gap-3">
-                    <div className="flex items-center gap-2 min-w-0">
-                      {task.status === "in_bearbeitung" ? <Clock className="w-3.5 h-3.5 text-blue-400 flex-shrink-0" /> : <Circle className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" />}
-                      <div className="min-w-0">
-                        <p className="text-xs font-medium text-slate-800 truncate">{task.title}</p>
-                        {task.case_name && <p className="text-[10px] text-slate-400 truncate">{task.case_name}</p>}
+                  <div key={task.id} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 0", borderBottom: i < openTasks.length - 1 ? "1px solid rgba(0,0,0,0.05)" : "none" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, minWidth: 0 }}>
+                      {task.status === "in_bearbeitung"
+                        ? <Clock style={{ width: 15, height: 15, color: "#007AFF", flexShrink: 0 }} />
+                        : <Circle style={{ width: 15, height: 15, color: "#ccc", flexShrink: 0 }} />}
+                      <div style={{ minWidth: 0 }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{task.title}</p>
+                        {task.case_name && <p style={{ fontSize: 11, color: "#aaa" }}>{task.case_name}</p>}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
+                    <div style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0 }}>
                       {task.priority && (
-                        <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-medium ${PRIORITY_COLORS[task.priority]}`}>
-                          {PRIORITY_LABELS[task.priority]?.[language] || task.priority}
+                        <span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 7, fontWeight: 600, background: pc.bg, color: pc.c }}>
+                          {task.priority}
                         </span>
                       )}
                       {daysLeft !== null && (
-                        <span className={`text-[11px] tabular-nums ${urgency}`}>
-                          {daysLeft < 0 ? (language === "EN" ? `${Math.abs(daysLeft)}d late` : `${Math.abs(daysLeft)}T überf.`) : daysLeft === 0 ? (language === "EN" ? "Today" : "Heute") : `${daysLeft}d`}
+                        <span style={{ fontSize: 12, color: urgColor, fontWeight: 500 }}>
+                          {daysLeft < 0 ? `${Math.abs(daysLeft)}T überf.` : daysLeft === 0 ? "Heute" : `${daysLeft}T`}
                         </span>
                       )}
                     </div>
@@ -301,71 +329,78 @@ export default function KanzleiCockpit() {
               })}
             </div>
           )}
-        </div>
+        </SectionCard>
 
         {/* Mandats-Tabelle */}
-        <div className="bg-white rounded-xl border border-slate-100 overflow-hidden">
-          <div className="px-6 py-4 border-b border-slate-50 flex items-center justify-between gap-3">
-            <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-widest">{t.allMandatesLabel}</p>
-            <div className="flex items-center gap-2 flex-1 justify-end">
-              <div className="relative">
-                <Search className="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400" />
-                <input value={tableSearch} onChange={e => setTableSearch(e.target.value)} placeholder={searchPlaceholder}
-                  className="pl-7 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:border-slate-400 w-48" />
+        <div style={{ background: "rgba(255,255,255,0.85)", backdropFilter: "blur(20px)", borderRadius: 20, border: "1px solid rgba(0,0,0,0.06)", boxShadow: "0 2px 12px rgba(0,0,0,0.06)", overflow: "hidden" }}>
+          <div style={{ padding: "20px 24px", borderBottom: "1px solid rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
+            <p style={{ fontSize: 11, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.07em" }}>{t.allMandatesLabel}</p>
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <div style={{ position: "relative" }}>
+                <Search style={{ width: 13, height: 13, position: "absolute", left: 10, top: "50%", transform: "translateY(-50%)", color: "#bbb" }} />
+                <input value={tableSearch} onChange={e => setTableSearch(e.target.value)}
+                  placeholder={language === "EN" ? "Search…" : "Suchen…"}
+                  style={{ paddingLeft: 28, paddingRight: 12, height: 32, fontSize: 12, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, outline: "none", width: 180, color: "#333" }} />
               </div>
-              <span className="text-[11px] text-slate-400 flex-shrink-0">{t.entriesLabel(filteredCases.length)}</span>
+              <span style={{ fontSize: 11, color: "#bbb" }}>{t.entriesLabel(filteredCases.length)}</span>
             </div>
           </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
+          <div style={{ overflowX: "auto" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
               <thead>
-                <tr className="border-b border-slate-50">
-                  {["", t.tableHeaderCase, t.rechtsgebiet, t.tableHeaderCourt, t.tableHeaderClaimValue, t.prognose, t.tableHeaderStatus, updatedLabel, nextDeadlineLabel, ""].map((h, i) => (
-                    <th key={i} className="px-4 py-3 text-left text-[10px] font-semibold text-slate-400 uppercase tracking-wider whitespace-nowrap">{h}</th>
+                <tr style={{ borderBottom: "1px solid rgba(0,0,0,0.05)" }}>
+                  {["", t.tableHeaderCase, t.rechtsgebiet, t.tableHeaderCourt, t.tableHeaderClaimValue, t.prognose, t.tableHeaderStatus, "Aktualisiert", "Nächste Frist", ""].map((h, i) => (
+                    <th key={i} style={{ padding: "12px 16px", textAlign: "left", fontSize: 10, fontWeight: 700, color: "#bbb", textTransform: "uppercase", letterSpacing: "0.06em", whiteSpace: "nowrap" }}>{h}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {filteredCases.map(c => {
+                {filteredCases.map((c, ri) => {
                   const nextDl = nextDeadlineMap[c.id];
                   const dlDays = nextDl ? Math.ceil((new Date(nextDl.due_date) - new Date()) / 86400000) : null;
+                  const rl = getRisikoLevel(c);
+                  const dotColor = rl === "niedrig" ? "#34C759" : rl === "mittel" ? "#FF9500" : "#FF3B30";
                   return (
-                    <tr key={c.id} className="border-b border-slate-50 hover:bg-slate-50/50 cursor-pointer transition-colors"
+                    <tr key={c.id}
+                      style={{ borderBottom: "1px solid rgba(0,0,0,0.04)", cursor: "pointer", transition: "background 0.1s" }}
+                      onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.02)"}
+                      onMouseLeave={e => e.currentTarget.style.background = "transparent"}
                       onClick={() => navigate(`/lexara/case?id=${c.id}`)}>
-                      <td className="pl-5 py-3"><RisikoAmpel level={getRisikoLevel(c)} /></td>
-                      <td className="px-4 py-3">
-                        <p className="text-xs font-semibold text-slate-800 max-w-[160px] truncate">{c.fallname}</p>
-                        {c.aktenzeichen && <p className="text-[10px] text-slate-400 font-mono">{c.aktenzeichen}</p>}
+                      <td style={{ paddingLeft: 20, paddingTop: 14, paddingBottom: 14 }}>
+                        <div style={{ width: 8, height: 8, borderRadius: "50%", background: dotColor }} />
                       </td>
-                      <td className="px-4 py-3 text-xs text-slate-500 max-w-[100px] truncate">{c.rechtsgebiet || "—"}</td>
-                      <td className="px-4 py-3 text-xs text-slate-500">{c.gericht || "—"}</td>
-                      <td className="px-4 py-3 text-xs font-medium text-slate-700 tabular-nums">{c.streitwert ? `${(c.streitwert / 1000).toFixed(0)}k€` : "—"}</td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <div className="w-12 h-1.5 bg-slate-100 rounded-full overflow-hidden">
-                            <div className={`h-full rounded-full ${(c.prognose || 0) >= 65 ? "bg-green-500" : (c.prognose || 0) >= 40 ? "bg-amber-400" : "bg-red-500"}`} style={{ width: `${c.prognose || 0}%` }} />
+                      <td style={{ padding: "14px 16px" }}>
+                        <p style={{ fontSize: 13, fontWeight: 600, color: "#1a1a1a", maxWidth: 160, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.fallname}</p>
+                        {c.aktenzeichen && <p style={{ fontSize: 10, color: "#bbb", fontFamily: "monospace", marginTop: 1 }}>{c.aktenzeichen}</p>}
+                      </td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, color: "#888", maxWidth: 100, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.rechtsgebiet || "—"}</td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, color: "#888" }}>{c.gericht || "—"}</td>
+                      <td style={{ padding: "14px 16px", fontSize: 12, fontWeight: 500, color: "#555" }}>{c.streitwert ? `${(c.streitwert/1000).toFixed(0)}k€` : "—"}</td>
+                      <td style={{ padding: "14px 16px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                          <div style={{ width: 40, height: 5, background: "rgba(0,0,0,0.07)", borderRadius: 3, overflow: "hidden" }}>
+                            <div style={{ height: "100%", borderRadius: 3, width: `${c.prognose || 0}%`, background: (c.prognose||0) >= 65 ? "#34C759" : (c.prognose||0) >= 40 ? "#FF9500" : "#FF3B30" }} />
                           </div>
-                          <span className="text-xs font-medium text-slate-700 tabular-nums">{c.prognose || 0}%</span>
+                          <span style={{ fontSize: 12, fontWeight: 600, color: "#555" }}>{c.prognose || 0}%</span>
                         </div>
                       </td>
-                      <td className="px-4 py-3">
-                        <span className={`text-[10px] px-2 py-0.5 rounded-md font-semibold ${
-                          c.status === "Aktiv" ? "bg-blue-50 text-blue-700" :
-                          c.status === "Abgeschlossen" ? "bg-green-50 text-green-700" :
-                          c.status === "Vorbereitung" ? "bg-amber-50 text-amber-700" :
-                          "bg-slate-100 text-slate-500"}`}>{c.status || "—"}</span>
+                      <td style={{ padding: "14px 16px" }}>
+                        <span style={{ fontSize: 11, padding: "3px 9px", borderRadius: 8, fontWeight: 600,
+                          background: c.status === "Aktiv" ? "rgba(0,122,255,0.1)" : c.status === "Abgeschlossen" ? "rgba(52,199,89,0.1)" : c.status === "Vorbereitung" ? "rgba(255,149,0,0.1)" : "rgba(0,0,0,0.05)",
+                          color: c.status === "Aktiv" ? "#007AFF" : c.status === "Abgeschlossen" ? "#34C759" : c.status === "Vorbereitung" ? "#FF9500" : "#888",
+                        }}>{c.status || "—"}</span>
                       </td>
-                      <td className="px-4 py-3 text-[10px] text-slate-400 tabular-nums whitespace-nowrap">
-                        {c.updated_date ? new Date(c.updated_date).toLocaleDateString(language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE") : "—"}
+                      <td style={{ padding: "14px 16px", fontSize: 11, color: "#bbb" }}>
+                        {c.updated_date ? new Date(c.updated_date).toLocaleDateString(loc) : "—"}
                       </td>
-                      <td className="px-4 py-3">
+                      <td style={{ padding: "14px 16px" }}>
                         {nextDl ? (
-                          <span className={`text-[10px] font-medium tabular-nums ${dlDays !== null && dlDays <= 7 ? "text-red-600" : dlDays !== null && dlDays <= 14 ? "text-amber-600" : "text-slate-500"}`}>
-                            {new Date(nextDl.due_date).toLocaleDateString(language === "EN" ? "en-US" : language === "FR" ? "fr-FR" : "de-DE")}
+                          <span style={{ fontSize: 11, fontWeight: 600, color: dlDays !== null && dlDays <= 7 ? "#FF3B30" : dlDays !== null && dlDays <= 14 ? "#FF9500" : "#aaa" }}>
+                            {new Date(nextDl.due_date).toLocaleDateString(loc)}
                           </span>
-                        ) : <span className="text-[10px] text-slate-300">—</span>}
+                        ) : <span style={{ fontSize: 11, color: "#ddd" }}>—</span>}
                       </td>
-                      <td className="px-4 py-3"><ChevronRight className="w-3.5 h-3.5 text-slate-300" /></td>
+                      <td style={{ padding: "14px 16px" }}><ChevronRight style={{ width: 14, height: 14, color: "#ddd" }} /></td>
                     </tr>
                   );
                 })}
