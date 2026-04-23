@@ -3,32 +3,28 @@ import { base44 } from "@/api/base44Client";
 import { ArrowLeft, ArrowRight, Check, Download } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import Tab1Fallerfassung from "../components/lexara/Tab1Fallerfassung";
-import Tab2Fallsubstanz from "../components/lexara/Tab2Fallsubstanz";
+import Tab2SubstanzCore from "../components/lexara/Tab2SubstanzCore";
+import Tab3AkteureFristen from "../components/lexara/Tab3AkteureFristen";
 import Tab3Gegneranalyse from "../components/lexara/Tab3Gegneranalyse";
 import Tab4RechtlicheAnalyse from "../components/lexara/Tab4RechtlicheAnalyse";
-import TabStrategie from "../components/lexara/TabStrategie";
-import Tab6Risiko from "../components/lexara/Tab6Risiko";
-import Tab7Simulation from "../components/lexara/Tab7Simulation";
+import TabStrategiePrognose from "../components/lexara/TabStrategiePrognose";
+import TabSimulationCockpit from "../components/lexara/TabSimulationCockpit";
 import Tab8Aktion from "../components/lexara/Tab8Aktion";
-import Tab9Cockpit from "../components/lexara/Tab9Cockpit";
-import Tab10Abschluss from "../components/lexara/Tab10Abschluss";
-import TabHistory from "../components/lexara/TabHistory";
-import TabKIProtokoll from "../components/lexara/TabKIProtokoll";
+import TabAbschlussProtokoll from "../components/lexara/TabAbschlussProtokoll";
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
+// LEXARA — Anwalts-optimierte 9-Reiter-Struktur
+// Arbeitslogik: Erfassen → Verstehen → Delegieren → Analysieren → Entscheiden → Handeln → Abschließen
 const TABS = [
-  {id:1, label:"Fallerfassung",  subs:["Basisdaten","Dokumente & KI-Analyse"]},
-  {id:2, label:"Fallsubstanz",   subs:["Argumente & Beweise","Personen","Fristen","Dokumentenanalyse / Zeitstrahl"]},
-  {id:3, label:"Gegneranalyse",  subs:["Profil & Simulation","KI-Berater","Verhaltenstracking","Risikomatrix"]},
-  {id:4, label:"Rechtl. Analyse",subs:["Compliance-Prüfung","Kostenanalyse","Präzedenzfälle"]},
-  {id:5, label:"Strategie",      subs:["Strategie & Graph","Was-wäre-wenn"]},
-  {id:6, label:"Risiko",         subs:["Risikoformeln & Monte Carlo","KI-Risikomatrix"]},
-  {id:7, label:"Simulation",     subs:["Verhandlungssimulation","Gesamtbewertung & Prognose"]},
-  {id:8, label:"Aktion",         subs:["Verhandlungsführung","Schriftsatz-Generator"]},
-  {id:9, label:"Cockpit",        subs:["Fall-Cockpit","Fallanalyse-Netzwerk"]},
-  {id:10,label:"Abschluss",      subs:[]},
-  {id:11,label:"KI-Protokoll",   subs:[]},
-  {id:12,label:"Zeitstrahl",     subs:[]},
+  {id:1, label:"Fallakte",          subs:["Basisdaten","Dokumente & KI-Analyse"]},
+  {id:2, label:"Substanz",          subs:["Argumente & Beweise","Dokumentenanalyse / Zeitstrahl"]},
+  {id:3, label:"Akteure & Fristen", subs:["Personen & Beteiligte","Fristen & Termine"]},
+  {id:4, label:"Gegner",            subs:["Profil & Simulation","KI-Berater","Verhaltenstracking","Risikomatrix"]},
+  {id:5, label:"Recht & Compliance",subs:["Compliance-Prüfung","Kostenanalyse","Präzedenzfälle"]},
+  {id:6, label:"Strategie & Prognose", subs:["Strategie & KI-Prognose","Was-wäre-wenn","Monte Carlo","KI-Risikomatrix"]},
+  {id:7, label:"Simulation & Cockpit", subs:["Verhandlungssimulation","Gesamtbewertung","Fall-Cockpit","Fallanalyse-Netzwerk"]},
+  {id:8, label:"Aktion",            subs:["Verhandlungsführung","Schriftsatz-Generator"]},
+  {id:9, label:"Abschluss",         subs:["Abschluss & Monte Carlo","KI-Protokoll","Zeitstrahl (Gesamt)"]},
 ];
 
 function PrognoseCircle({ value = 0 }) {
@@ -167,18 +163,15 @@ export default function CaseDetail() {
   if (!caseData) return <div className="min-h-screen flex items-center justify-center"><p className="text-gray-500">Fall nicht gefunden.</p></div>;
 
   const completedTabs = [
-    !!caseData.fallname,
-    counts.args > 0 && counts.evidence > 0,
-    !!caseData.ki_berater_result,
-    !!caseData.streitwert,
-    !!caseData.prognose,
-    !!(caseData.ki_berater_result?.risiko_analyse),
-    false,
-    !!caseData.notes,
-    false,
-    false,
-    false,
-    false,
+    !!caseData.fallname,                            // 1 Fallakte
+    counts.args > 0 && counts.evidence > 0,         // 2 Substanz
+    counts.persons > 0 || counts.deadlines > 0,     // 3 Akteure & Fristen
+    !!caseData.ki_berater_result,                   // 4 Gegner
+    !!caseData.streitwert,                          // 5 Recht & Compliance
+    !!caseData.prognose,                            // 6 Strategie & Prognose
+    !!(caseData.ki_berater_result?.risiko_analyse), // 7 Simulation & Cockpit
+    !!caseData.notes,                               // 8 Aktion
+    false,                                          // 9 Abschluss
   ];
 
   return (
@@ -295,18 +288,16 @@ export default function CaseDetail() {
       </div>
 
       <div className="max-w-5xl mx-auto px-5 py-5">
-        <p className="text-[10px] font-medium uppercase tracking-widest mb-4" style={{ color: "#bbb", letterSpacing: "0.08em" }}>Schritt {activeTab} von 11</p>
+        <p className="text-[10px] font-medium uppercase tracking-widest mb-4" style={{ color: "#bbb", letterSpacing: "0.08em" }}>Schritt {activeTab} von 9</p>
         {activeTab===1 && <Tab1Fallerfassung caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} onDataImport={loadCase} kiMode={kiMode} activeSub={activeSub} />}
-        {activeTab===2 && <Tab2Fallsubstanz caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
-        {activeTab===3 && <Tab3Gegneranalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
-        {activeTab===4 && <Tab4RechtlicheAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
-        {activeTab===5 && <TabStrategie caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
-        {activeTab===6 && <Tab6Risiko caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
-        {activeTab===7 && <Tab7Simulation caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===2 && <Tab2SubstanzCore caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===3 && <Tab3AkteureFristen caseId={caseId} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===4 && <Tab3Gegneranalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===5 && <Tab4RechtlicheAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===6 && <TabStrategiePrognose caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
+        <div className={activeTab===7 ? "" : "hidden"}><TabSimulationCockpit caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} /></div>
         {activeTab===8 && <Tab8Aktion caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} />}
-        <div className={activeTab===9 ? "" : "hidden"}><Tab9Cockpit caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} /></div>
-        <div className={activeTab===10 ? "" : "hidden"}><Tab10Abschluss caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
-        {activeTab===11 && <TabKIProtokoll caseId={caseId} caseData={caseData} />}
+        <div className={activeTab===9 ? "" : "hidden"}><TabAbschlussProtokoll caseId={caseId} caseData={caseData} kiMode={kiMode} activeSub={activeSub} /></div>
         <div className="flex items-center justify-between mt-8 pt-4" style={{ borderTop: "1px solid rgba(0,0,0,0.07)" }}>
           <button onClick={() => setActiveTab(t=>Math.max(1,t-1))} disabled={activeTab===1}
             className="flex items-center gap-1 text-[12px] font-medium disabled:opacity-30 transition-colors"
@@ -321,7 +312,7 @@ export default function CaseDetail() {
               }}/>
             ))}
           </div>
-          <button onClick={() => setActiveTab(t=>Math.min(11,t+1))} disabled={activeTab===11}
+          <button onClick={() => setActiveTab(t=>Math.min(9,t+1))} disabled={activeTab===9}
             className="flex items-center gap-1 text-[12px] font-semibold disabled:opacity-30 transition-colors"
             style={{ color: "#1a1a1a" }}>
             Weiter <ArrowRight className="w-3.5 h-3.5"/>
