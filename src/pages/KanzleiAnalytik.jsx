@@ -405,6 +405,57 @@ export default function KanzleiAnalytik() {
           </AppleCard>
         )}
 
+        {/* ══ Tortendiagramm: Strategieerfolg nach Rechtsgebiet ═══════════════ */}
+        {erfolgsNachRG.length > 0 && (
+          <AppleCard title="Strategieerfolg nach Rechtsgebiet">
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
+              <ResponsiveContainer width="100%" height={240}>
+                <PieChart>
+                  <Pie
+                    data={erfolgsNachRG}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={58}
+                    outerRadius={100}
+                    dataKey="rate"
+                    nameKey="name"
+                    paddingAngle={3}
+                    label={({ name, rate }) => `${rate}%`}
+                    labelLine={false}
+                  >
+                    {erfolgsNachRG.map((d, i) => (
+                      <Cell key={i} fill={d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30"} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={tooltipStyle}
+                    formatter={(v, name, props) => [`${v}% Erfolgsrate (${props.payload.total} Fälle)`, props.payload.name]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Legende</p>
+                {erfolgsNachRG.map((d, i) => (
+                  <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <div style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30" }} />
+                    <span style={{ fontSize: 12, color: "#333", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30" }}>{d.rate}%</span>
+                    <span style={{ fontSize: 10, color: "#ccc" }}>({d.total})</span>
+                  </div>
+                ))}
+                <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", gap: 14 }}>
+                  {[["≥65% Hoch","#34C759"],["≥40% Mittel","#FF9500"],["<40% Niedrig","#FF3B30"]].map(([l,c]) => (
+                    <div key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      <div style={{ width: 7, height: 7, borderRadius: "50%", background: c }} />
+                      <span style={{ fontSize: 10, color: "#aaa" }}>{l}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </AppleCard>
+        )}
+
         {/* ══ Standard Charts ════════════════════════════════════════════════ */}
         <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
           <AppleCard title={t.faelleNachRechtsgebiet}>
