@@ -10,6 +10,7 @@ import {
 } from "recharts";
 import FallAnalyseModal from "../components/dashboard/FallAnalyseModal";
 import AkteureAnalytik from "../components/lexara/AkteureAnalytik";
+import KonzernRechtsgebietDashboard from "../components/lexara/KonzernRechtsgebietDashboard";
 
 const SF = { fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" };
 const APPLE_COLORS = ["#007AFF", "#34C759", "#FF9500", "#FF3B30", "#5856D6", "#AF52DE", "#FF2D55", "#00C7BE"];
@@ -522,6 +523,10 @@ export default function KanzleiAnalytik() {
         </div>
 
         <AkteureAnalytik />
+
+        {/* ══ KONZERN-BENCHMARKS ══════════════════════════════════════════ */}
+        <KonzernRechtsgebietDashboard cases={cases} questionnaires={questionnaires} />
+
       </div>
 
       {showModal && (
