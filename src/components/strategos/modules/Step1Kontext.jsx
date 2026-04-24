@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { Upload, FileUp, Check, Sparkles, Trash2 } from "lucide-react";
 import { AppleCard, AppleField, AppleInput, AppleTextarea, AppleSelect, AppleButton, ApplePill, SF } from "../AppleCard";
+import { RECHTSGEBIETE_VOLLSTAENDIG } from "@/lib/strategosRechtsgebiete";
 
 const RECHTSFORMEN = ["GmbH","AG","GmbH & Co. KG","SE","Ltd.","Inc.","OHG","KG","Einzelunternehmen","Sonstige"];
-const BRANCHEN = ["Technologie","Pharma","Automobil","Energie","Finanzdienstleistungen","Handel","Immobilien","Maschinenbau","Chemie","Telekommunikation","Medien","Sonstige"];
-const LAENDER = ["Deutschland","Österreich","Schweiz","Niederlande","Frankreich","Italien","Spanien","UK","USA","Sonstige"];
-const MAERKTE = ["DE","AT","CH","UK","US","EU","Asien-Pazifik","MENA","LATAM","Global"];
+const BRANCHEN = ["Technologie","Pharma","Automobil","Energie","Finanzdienstleistungen","Handel","Immobilien","Maschinenbau","Chemie","Telekommunikation","Medien","Rüstung / Verteidigung","Agrar / Lebensmittel","Sonstige"];
+const LAENDER = ["Deutschland","Österreich","Schweiz","Niederlande","Frankreich","Italien","Spanien","UK","USA","China","Sonstige"];
+const MAERKTE = ["DE","AT","CH","UK","US","EU","CN","Asien-Pazifik","MENA","LATAM","Global"];
 const SITUATIONSTYPEN = [
   { value: "geplante_handlung", label: "Geplante Handlung", icon: "🎯" },
   { value: "bestehende_situation", label: "Bestehende Situation", icon: "🔍" },
@@ -14,17 +15,8 @@ const SITUATIONSTYPEN = [
   { value: "vertrag_analyse", label: "Vertrag / Dokument", icon: "📄" },
   { value: "risikovorsorge", label: "Compliance-Check", icon: "🛡️" },
 ];
-const RECHTSGEBIETE = [
-  { key: "vertragsrecht", label: "Vertragsrecht", icon: "📝", color: "#007AFF" },
-  { key: "gesellschaftsrecht", label: "Gesellschaftsrecht", icon: "🏢", color: "#5856D6" },
-  { key: "kartellrecht", label: "Kartellrecht", icon: "⚖️", color: "#AF52DE" },
-  { key: "steuerrecht", label: "Steuerrecht", icon: "💰", color: "#34C759" },
-  { key: "arbeitsrecht", label: "Arbeitsrecht", icon: "👥", color: "#FF9500" },
-  { key: "datenschutz", label: "Datenschutz / DSGVO", icon: "🔒", color: "#00BCD4" },
-  { key: "ip_recht", label: "IP / Patent / Marken", icon: "®️", color: "#FF2D55" },
-  { key: "compliance", label: "Compliance / CSRD", icon: "✅", color: "#4CAF50" },
-  { key: "strafrecht", label: "Wirtschaftsstrafrecht", icon: "🚨", color: "#FF3B30" },
-];
+// Alle 19 Rechtsgebiete aus der zentralen Wissensbasis
+const RECHTSGEBIETE = RECHTSGEBIETE_VOLLSTAENDIG;
 
 export default function Step1Kontext({ scenario, onSave }) {
   const [ctx, setCtx] = useState(scenario.unternehmenskontext || {});

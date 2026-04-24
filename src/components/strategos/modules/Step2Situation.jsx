@@ -2,17 +2,23 @@ import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { AlertTriangle, Clock, Sparkles, Calculator, Link2 } from "lucide-react";
 import { AppleCard, AppleButton, ApplePill, SF } from "../AppleCard";
+import { RG_BY_KEY, RECHTSGEBIETE_VOLLSTAENDIG, JURISDIKTIONEN, SYSTEM_FORMELN } from "@/lib/strategosRechtsgebiete";
 
-const RG_META = {
-  vertragsrecht: { label: "Vertragsrecht", color: "#007AFF", icon: "📝" },
-  gesellschaftsrecht: { label: "Gesellschaftsrecht", color: "#5856D6", icon: "🏢" },
-  kartellrecht: { label: "Kartellrecht", color: "#AF52DE", icon: "⚖️" },
-  steuerrecht: { label: "Steuerrecht", color: "#34C759", icon: "💰" },
-  arbeitsrecht: { label: "Arbeitsrecht", color: "#FF9500", icon: "👥" },
-  datenschutz: { label: "Datenschutz", color: "#00BCD4", icon: "🔒" },
-  ip_recht: { label: "IP / Patent", color: "#FF2D55", icon: "®️" },
-  compliance: { label: "Compliance", color: "#4CAF50", icon: "✅" },
-  strafrecht: { label: "Wirtschaftsstrafrecht", color: "#FF3B30", icon: "🚨" },
+// RG_META aus vollständiger Wissensbasis + Fallback für unbekannte Schlüssel
+const RG_META = new Proxy(
+  Object.fromEntries(RECHTSGEBIETE_VOLLSTAENDIG.map(rg => [rg.key, { label: rg.label, color: rg.color, icon: rg.icon }])),
+  { get: (target, key) => target[key] || { label: key, color: "#888", icon: "📋" } }
+);
+
+// Formel-Kontext für KI-Prompt (komprimiert)
+const buildFormelContext = (rechtsgebiete) => {
+  return rechtsgebiete.map(key => {
+    const rg = RG_BY_KEY[key];
+    if (!rg) return "";
+    const formeln = (rg.formeln || []).map(f => `  • ${f.name}: ${f.formel}`).join("\n");
+    const felder = (rg.pflichtfelder || []).slice(0, 5).join("; ");
+    return `[${rg.label}]\nPflichtfelder: ${felder}\nFormeln:\n${formeln}`;
+  }).filter(Boolean).join("\n\n");
 };
 
 function RiskRing({ score }) {
@@ -104,6 +110,19 @@ function ModulPanel({ m, onQuantify, loading }) {
         </div>
       )}
 
+      {m.formel_ergebnisse?.length > 0 && (
+        <div style={{ marginBottom: 10 }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#5856D6", textTransform: "uppercase", marginBottom: 5 }}>📐 Formel-Ergebnisse</p>
+          {m.formel_ergebnisse.map((f, i) => (
+            <div key={i} style={{ padding: "7px 10px", background: "rgba(88,86,214,0.06)", borderRadius: 8, marginBottom: 4, borderLeft: `3px solid ${meta.color}` }}>
+              <p style={{ fontSize: 11, fontWeight: 700, color: meta.color }}>{f.formel_name}</p>
+              <p style={{ fontSize: 12, color: "#1a1a1a", marginTop: 2, fontFamily: "monospace" }}>{f.ergebnis}</p>
+              {f.interpretation && <p style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{f.interpretation}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
       {m.quantifizierung ? (
         <div style={{ padding: "10px 12px", background: "linear-gradient(135deg,rgba(88,86,214,0.08),rgba(0,122,255,0.08))", borderRadius: 10, display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 10 }}>
           {[["Eintritt", `${m.quantifizierung.eintritt_pct}%`], ["Schaden", `${(m.quantifizierung.schaden_eur || 0).toLocaleString()}€`], ["Reputation", m.quantifizierung.reputation], ["Präzedenz", m.quantifizierung.praezedenz]].map(([l, v]) => (
@@ -131,16 +150,49 @@ export default function Step2Situation({ scenario, onSave }) {
 
   const run = async () => {
     setAnalyzing(true);
+    const formelContext = buildFormelContext(rechtsgebiete);
+    const jurisdiktionsHinweise = (ctx.operative_maerkte || [])
+      .filter(m => JURISDIKTIONEN[m])
+      .map(m => `${m}: ${(JURISDIKTIONEN[m]?.besonderheiten || []).slice(0, 3).join(" | ")}`)
+      .join("\n");
+
     const r = await base44.integrations.Core.InvokeLLM({
-      prompt: `Senior-Partner Großkanzlei. Analysiere den Sachverhalt pro Rechtsgebiet detailliert.
-UNTERNEHMEN: ${ctx.unternehmen_name} (${ctx.rechtsform}, ${ctx.branche}), Umsatz ${ctx.umsatz}€, MA ${ctx.mitarbeiter}
-HAUPTSITZ: ${ctx.hauptsitz_land}, MÄRKTE: ${(ctx.operative_maerkte || []).join(",")}
-SITUATION: ${ctx.situationstyp}, ZEITKRITIKALITÄT: ${ctx.zeitkritikalitaet}/10
-SACHVERHALT: ${ctx.sachverhalt_lang}
-GEGNER: ${ctx.gegner_name} (${ctx.gegner_rolle})
-ZU ANALYSIERENDE RECHTSGEBIETE: ${rechtsgebiete.join(", ")}
-Pro Rechtsgebiet: risiko_score(0-10), findings(3-5), fristen(mit Datum), normen(konkret mit §§), querverbindungen.
-Plus: gesamt_risiko(0-10), kritische_punkte(Top-3), gesamt_exposure_eur, zeitachse(Entscheidungspunkte).`,
+      prompt: `Du bist Senior-Partner einer internationalen Großkanzlei mit Expertise in allen 17+ Rechtsgebieten. Führe eine vollständige, mehrdimensionale Risikoanalyse durch.
+
+═══ MANDANT ═══
+Unternehmen: ${ctx.unternehmen_name} (${ctx.rechtsform}, ${ctx.branche}${ctx.branche_freitext ? " / " + ctx.branche_freitext : ""})
+Umsatz: ${ctx.umsatz ? (ctx.umsatz/1000000).toFixed(1) + " Mio." : "—"}€ | Mitarbeiter: ${ctx.mitarbeiter || "—"}
+Hauptsitz: ${ctx.hauptsitz_land}, ${ctx.hauptsitz_stadt || ""}
+Operative Märkte: ${(ctx.operative_maerkte || []).join(", ") || "—"}
+Gegner: ${ctx.gegner_name || "—"} (${ctx.gegner_rolle || "—"})
+Gegner-Info: ${ctx.gegner_info || "—"}
+
+═══ SITUATION ═══
+Typ: ${ctx.situationstyp || "—"} | Zeitkritikalität: ${ctx.zeitkritikalitaet || 5}/10
+Sachverhalt: ${ctx.sachverhalt_lang || "—"}
+
+═══ ZU ANALYSIERENDE RECHTSGEBIETE ═══
+${rechtsgebiete.join(", ")}
+
+═══ RECHTSGEBIETS-WISSENSBASIS (Pflichtfelder & Formeln) ═══
+${formelContext}
+
+${jurisdiktionsHinweise ? `═══ JURISDIKTIONS-BESONDERHEITEN ═══\n${jurisdiktionsHinweise}` : ""}
+
+═══ SYSTEMFORMELN (übergreifend) ═══
+Gesamtrisiko-Erwartungswert: ${SYSTEM_FORMELN.gesamtrisiko}
+Wechselwirkungen: ${SYSTEM_FORMELN.wechselwirkung}
+
+═══ ANALYSEAUFTRAG ═══
+Für JEDES Rechtsgebiet:
+1. risiko_score (0–10): präzise Bewertung unter Verwendung der Pflichtfelder und Formeln des jeweiligen Gebiets
+2. findings (4–6 Punkte): konkret, mit §§ und Normen — NICHT allgemein. Verwende die Pflichtfelder als Checkliste.
+3. fristen: exakte Datum/Zeitangaben mit gesetzlicher Grundlage
+4. normen: konkrete §§, Richtlinien, Verordnungen (z.B. § 4h EStG, Art. 101 AEUV, § 87 BetrVG)
+5. querverbindungen: Wechselwirkungen mit anderen aktiven Rechtsgebieten (z.B. "Kartellrecht-Aspekte der M&A-Transaktion")
+6. formel_ergebnisse: Wende ALLE relevanten Formeln des Rechtsgebiets rechnerisch an — mit konkreten Zahlenergebnissen wenn Input-Daten verfügbar
+
+Gesamtbewertung: gesamt_risiko, kritische_punkte (Top-3 mit konkreter Handlungsempfehlung), gesamt_exposure_eur (berechnet), zeitachse (Entscheidungspunkte mit Datum/Zeitraum).`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -150,12 +202,18 @@ Plus: gesamt_risiko(0-10), kritische_punkte(Top-3), gesamt_exposure_eur, zeitach
             findings: { type: "array", items: { type: "string" } },
             fristen: { type: "array", items: { type: "object", properties: { datum: { type: "string" }, beschreibung: { type: "string" } } } },
             normen: { type: "array", items: { type: "string" } },
-            querverbindungen: { type: "array", items: { type: "string" } }
+            querverbindungen: { type: "array", items: { type: "string" } },
+            formel_ergebnisse: { type: "array", items: { type: "object", properties: {
+              formel_name: { type: "string" },
+              ergebnis: { type: "string" },
+              interpretation: { type: "string" }
+            }}}
           }}},
           gesamt_risiko: { type: "number" },
           kritische_punkte: { type: "array", items: { type: "string" } },
           gesamt_exposure_eur: { type: "number" },
-          zeitachse: { type: "array", items: { type: "object", properties: { wann: { type: "string" }, was_muss_entschieden_sein: { type: "string" } } } }
+          zeitachse: { type: "array", items: { type: "object", properties: { wann: { type: "string" }, was_muss_entschieden_sein: { type: "string" } } } },
+          jurisdiktions_warnungen: { type: "array", items: { type: "string" } }
         }
       },
       model: "claude_sonnet_4_6"
@@ -229,6 +287,16 @@ Berechne: eintritt_pct(%), schaden_eur(€), reputation(gering/mittel/hoch/exist
                 <div key={i} style={{ display: "flex", gap: 10, padding: "5px 10px", background: "rgba(0,0,0,0.025)", borderRadius: 8, marginBottom: 3 }}>
                   <span style={{ fontSize: 11, fontWeight: 700, color: "#FF9500", minWidth: 80 }}>{z.wann}</span>
                   <span style={{ fontSize: 11, color: "#333" }}>{z.was_muss_entschieden_sein}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {sit.jurisdiktions_warnungen?.length > 0 && (
+            <div style={{ marginTop: 12, paddingTop: 12, borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#5856D6", textTransform: "uppercase", marginBottom: 7 }}>🌍 Jurisdiktions-Besonderheiten</p>
+              {sit.jurisdiktions_warnungen.map((w, i) => (
+                <div key={i} style={{ fontSize: 11, color: "#555", padding: "4px 10px", background: "rgba(88,86,214,0.06)", borderRadius: 7, marginBottom: 3 }}>
+                  {w}
                 </div>
               ))}
             </div>
