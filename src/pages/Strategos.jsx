@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, ArrowLeft, ArrowRight, Check, Target, BookOpen, ChevronDown, ChevronUp, Sparkles, Wand2, GitCompare } from "lucide-react";
+import { Plus, Trash2, ArrowLeft, ArrowRight, Check, Target, BookOpen, ChevronDown, ChevronUp, Sparkles, Wand2, GitCompare, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import EnterpriseShell from "@/components/strategos/EnterpriseShell";
 
 const SZENARIO_TYPEN = {
   fusion_uebernahme: { label: "Fusion / Übernahme", icon: "🏢", color: "#007AFF" },
@@ -94,6 +95,7 @@ export default function Strategos() {
   const [newScenario, setNewScenario] = useState({ title: "", szenario_typ: "sonstiges", rechtsgebiet: "" });
   const [view, setView] = useState("scenarios");
   const [compareIds, setCompareIds] = useState([]);
+  const [mode, setMode] = useState("classic"); // "classic" | "enterprise"
 
   useEffect(() => { loadData(); }, []);
 
@@ -136,6 +138,36 @@ export default function Strategos() {
     setActiveStep(s => Math.min(7, s + 1));
   };
 
+  if (activeScenario && mode === "enterprise") {
+    return (
+      <div className="min-h-screen" style={{ background: "#f0f0f0", fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
+        <div className="sticky top-0 z-20" style={{ background: "rgba(246,246,246,0.97)", borderBottom: "1px solid rgba(0,0,0,0.1)", backdropFilter: "blur(20px)" }}>
+          <div className="max-w-6xl mx-auto px-5 py-2.5 flex items-center gap-3">
+            <button onClick={() => setActiveScenario(null)} className="flex items-center gap-1 text-[11px] font-medium text-gray-500 hover:text-gray-800">
+              <ArrowLeft className="w-3 h-3" /> Zurück
+            </button>
+            <span className="text-gray-300">›</span>
+            <span className="text-[11px] text-gray-600 font-semibold">{activeScenario.title}</span>
+            <div style={{ marginLeft: "auto", display: "flex", gap: 4, background: "rgba(0,0,0,0.04)", padding: 2, borderRadius: 10 }}>
+              <button onClick={() => setMode("classic")} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 600, background: mode === "classic" ? "#fff" : "transparent", color: mode === "classic" ? "#1a1a1a" : "#888", border: "none", borderRadius: 8, cursor: "pointer", boxShadow: mode === "classic" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Classic</button>
+              <button onClick={() => setMode("enterprise")} style={{ padding: "5px 12px", fontSize: 11, fontWeight: 700, background: mode === "enterprise" ? "#007AFF" : "transparent", color: mode === "enterprise" ? "#fff" : "#888", border: "none", borderRadius: 8, cursor: "pointer", boxShadow: mode === "enterprise" ? "0 2px 8px rgba(0,122,255,0.3)" : "none", display: "flex", alignItems: "center", gap: 5 }}><Building2 style={{ width: 11, height: 11 }} /> Enterprise</button>
+            </div>
+          </div>
+        </div>
+        <div className="max-w-6xl mx-auto px-5 py-5">
+          <EnterpriseShell
+            scenario={activeScenario}
+            onSave={async (updates) => {
+              const updated = await base44.entities.StrategosScenario.update(activeScenario.id, updates);
+              setActiveScenario(prev => ({ ...prev, ...updates, ...updated }));
+              return updated;
+            }}
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (activeScenario) {
     return (
       <div className="min-h-screen" style={{ background: "#f0f0f0", fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" }}>
@@ -150,9 +182,15 @@ export default function Strategos() {
             </div>
             <div className="flex items-center justify-between py-2">
               <h1 className="text-[14px] font-semibold text-gray-900">{activeScenario.title}</h1>
-              <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: (SZENARIO_TYPEN[activeScenario.szenario_typ]?.color || "#999") + "15", color: SZENARIO_TYPEN[activeScenario.szenario_typ]?.color || "#999" }}>
-                {SZENARIO_TYPEN[activeScenario.szenario_typ]?.label}
-              </span>
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span className="text-[10px] px-2 py-0.5 rounded" style={{ background: (SZENARIO_TYPEN[activeScenario.szenario_typ]?.color || "#999") + "15", color: SZENARIO_TYPEN[activeScenario.szenario_typ]?.color || "#999" }}>
+                  {SZENARIO_TYPEN[activeScenario.szenario_typ]?.label}
+                </span>
+                <div style={{ display: "flex", gap: 3, background: "rgba(0,0,0,0.04)", padding: 2, borderRadius: 9 }}>
+                  <button onClick={() => setMode("classic")} style={{ padding: "4px 10px", fontSize: 10, fontWeight: 600, background: mode === "classic" ? "#fff" : "transparent", color: mode === "classic" ? "#1a1a1a" : "#888", border: "none", borderRadius: 7, cursor: "pointer", boxShadow: mode === "classic" ? "0 1px 3px rgba(0,0,0,0.1)" : "none" }}>Classic</button>
+                  <button onClick={() => setMode("enterprise")} style={{ padding: "4px 10px", fontSize: 10, fontWeight: 700, background: mode === "enterprise" ? "#007AFF" : "transparent", color: mode === "enterprise" ? "#fff" : "#888", border: "none", borderRadius: 7, cursor: "pointer", display: "flex", alignItems: "center", gap: 4 }}><Building2 style={{ width: 10, height: 10 }} /> Enterprise</button>
+                </div>
+              </div>
             </div>
             <div className="flex gap-0 overflow-x-auto" style={{ marginBottom: "-1px" }}>
               {STEPS.map(s => (
@@ -203,7 +241,7 @@ export default function Strategos() {
         <div className="max-w-5xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="mr-auto">
             <p className="text-[14px] font-semibold text-gray-900">Strategos</p>
-            <p className="text-[10px] text-gray-500">Szenario-Prognose & Gesetzeslücken-Analyse</p>
+            <p className="text-[10px] text-gray-500">Szenario-Prognose · Gesetzeslücken · Enterprise-Analyse</p>
           </div>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setView("scenarios")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "scenarios" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>Szenarien</button>
@@ -231,13 +269,19 @@ export default function Strategos() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               {scenarios.map(sc => (
                 <div key={sc.id} className="relative group">
-                  <ScenarioCard scenario={sc} onClick={() => openScenario(sc)} />
-                  <button
-                    onClick={e => { e.stopPropagation(); setCompareIds(ids => ids.includes(sc.id) ? ids.filter(i => i !== sc.id) : ids.length < 2 ? [...ids, sc.id] : [ids[1], sc.id]); setView("compare"); }}
-                    className={`absolute top-2 right-2 text-[10px] px-2 py-1 rounded-lg border transition-all ${compareIds.includes(sc.id) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-400 border-gray-200 opacity-0 group-hover:opacity-100"}`}
-                    title="Zum Vergleich hinzufügen">
-                    <GitCompare className="w-3 h-3" />
-                  </button>
+                  <ScenarioCard scenario={sc} onClick={() => { openScenario(sc); setMode("classic"); }} />
+                  <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
+                    <button onClick={e => { e.stopPropagation(); openScenario(sc); setMode("enterprise"); }}
+                      style={{ fontSize: 10, padding: "3px 8px", background: "#007AFF", color: "#fff", border: "none", borderRadius: 7, cursor: "pointer", fontWeight: 700, display: "flex", alignItems: "center", gap: 4 }}
+                      title="Enterprise-Modus öffnen">
+                      <Building2 style={{ width: 10, height: 10 }} /> Enterprise
+                    </button>
+                    <button onClick={e => { e.stopPropagation(); setCompareIds(ids => ids.includes(sc.id) ? ids.filter(i => i !== sc.id) : ids.length < 2 ? [...ids, sc.id] : [ids[1], sc.id]); setView("compare"); }}
+                      className={`text-[10px] px-2 py-1 rounded-lg border transition-all ${compareIds.includes(sc.id) ? "bg-blue-600 text-white border-blue-600" : "bg-white text-gray-400 border-gray-200"}`}
+                      title="Zum Vergleich hinzufügen">
+                      <GitCompare className="w-3 h-3" />
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
