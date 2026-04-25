@@ -183,6 +183,7 @@ ${jurisdiktionsHinweise ? `═══ JURISDIKTIONS-BESONDERHEITEN ═══\n${j
 Gesamtrisiko-Erwartungswert: ${SYSTEM_FORMELN.gesamtrisiko}
 Wechselwirkungen: ${SYSTEM_FORMELN.wechselwirkung}
 
+${scenario.ki_kontext?.ki_briefing ? `═══ KI-BASIS-BRIEFING (aus Dokumenten-Analyse — zwingend berücksichtigen) ═══\n${scenario.ki_kontext.ki_briefing}\n` : ""}
 ═══ ANALYSEAUFTRAG ═══
 Für JEDES Rechtsgebiet:
 1. risiko_score (0–10): präzise Bewertung unter Verwendung der Pflichtfelder und Formeln des jeweiligen Gebiets

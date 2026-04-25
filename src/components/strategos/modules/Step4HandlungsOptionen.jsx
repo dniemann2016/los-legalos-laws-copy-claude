@@ -220,6 +220,7 @@ ZIELZUSTAND: ${zielZustand || "nicht definiert"}
 Zeitrahmen: ${zeitraum}
 RISIKO: ${sit.gesamt_risiko || "—"}/10, Exposure: ${sit.gesamt_exposure_eur ? (sit.gesamt_exposure_eur/1e6).toFixed(1)+"Mio.€" : "—"}
 
+${scenario.ki_kontext?.ki_briefing ? `════ KI-BASIS-BRIEFING (aus Dokumenten-Analyse) ════\n${scenario.ki_kontext.ki_briefing}\n` : ""}
 ════ AUFTRAG ════
 
 Erstelle ALLE sinnvollen Handlungsoptionen (3 bis 7, je nach Komplexität). 

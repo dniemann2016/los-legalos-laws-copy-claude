@@ -94,6 +94,7 @@ Umsatz: ${ctx.umsatz || "—"}€, MA: ${ctx.mitarbeiter || "—"}
 Situation: ${ctx.situationstyp || "—"}
 Sachverhalt: ${ctx.sachverhalt_lang || "—"}
 Gegner: ${ctx.gegner_name || "—"} (${ctx.gegner_rolle || "—"})
+${scenario.ki_kontext?.ki_briefing ? `KI-Basis-Briefing (aus Dokumenten-Analyse):\n${scenario.ki_kontext.ki_briefing}\n` : ""}
 Verfügbar: ${RECHTSGEBIETE.map(r => r.key).join(", ")}`,
       response_json_schema: {
         type: "object",

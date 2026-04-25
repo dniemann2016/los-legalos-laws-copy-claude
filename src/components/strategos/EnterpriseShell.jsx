@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { SF } from "./AppleCard";
+import Step0DocIntelligenz from "./Step0DocIntelligenz";
 import Step1Kontext from "./modules/Step1Kontext";
 import Step2Situation from "./modules/Step2Situation";
 import Step2VertragsAnalyse from "./modules/Step2VertragsAnalyse";
@@ -7,24 +8,17 @@ import Step3PatentAnalyse from "./modules/Step3PatentAnalyse";
 import Step4HandlungsOptionen from "./modules/Step4HandlungsOptionen";
 import Step5QuantitativeAnalyse from "./modules/Step5QuantitativeAnalyse";
 import Step6UmsetzungsPlan from "./modules/Step6UmsetzungsPlan";
-
-// Enterprise Shell — Strategos 6-Schritte-Workflow
-// Schritt 1: Kontext & Situationserfassung (bestehend + erweitert)
-// Schritt 2a: Risikoanalyse pro Rechtsgebiet (Step2Situation — bestehend)
-// Schritt 2b: Vertrags- & Dokumentenanalyse (NEU)
-// Schritt 3: Patent- & Technologieanalyse (NEU)
-// Schritt 4: Handlungsoptionen & Gegner-Szenarien (NEU)
-// Schritt 5: Quantitative Risiko- & Kostenanalyse (NEU)
-// Schritt 6: Umsetzungsplan & LEXARA-Export (NEU)
+import { Brain } from "lucide-react";
 
 const STEPS = [
-  { num: 1,  label: "Kontext & Situation",      sub: "Unternehmen · Sachverhalt · Rechtsgebiete",      color: "#0A84FF" },
-  { num: 2,  label: "Rechtsgebiet-Analyse",      sub: "KI-Tiefenanalyse pro Rechtsgebiet",              color: "#FF9500" },
-  { num: 3,  label: "Vertragsanalyse",            sub: "Klausel-Risiko · Szenarioprojektion",            color: "#0A84FF" },
-  { num: 4,  label: "Patentanalyse",              sub: "Schutzbereich · FTO · Strategische Optionen",    color: "#FF9500" },
-  { num: 5,  label: "Handlungsoptionen",          sub: "Von A nach C · Gegner-Antizipation",             color: "#1DB954" },
-  { num: 6,  label: "Quantitative Analyse",       sub: "EV · Monte Carlo · Bußgeld-Worst-Case",          color: "#5856D6" },
-  { num: 7,  label: "Umsetzungsplan",             sub: "Roadmap · Monitoring · LEXARA-Export",           color: "#AF52DE" },
+  { num: 0,  label: "Dokumente & KI-Briefing", sub: "Upload · Extraktion · Automatisch befüllen",    color: "#5856D6" },
+  { num: 1,  label: "Kontext & Situation",      sub: "Unternehmen · Sachverhalt · Rechtsgebiete",    color: "#0A84FF" },
+  { num: 2,  label: "Rechtsgebiet-Analyse",     sub: "KI-Tiefenanalyse pro Rechtsgebiet",            color: "#FF9500" },
+  { num: 3,  label: "Vertragsanalyse",          sub: "Klausel-Risiko · Szenarioprojektion",          color: "#0A84FF" },
+  { num: 4,  label: "Patentanalyse",            sub: "Schutzbereich · FTO · Strategische Optionen",  color: "#FF9500" },
+  { num: 5,  label: "Handlungsoptionen",        sub: "Von A nach C · Gegner-Antizipation",           color: "#1DB954" },
+  { num: 6,  label: "Quantitative Analyse",     sub: "EV · Monte Carlo · Bußgeld-Worst-Case",        color: "#5856D6" },
+  { num: 7,  label: "Umsetzungsplan",           sub: "Roadmap · Monitoring · LEXARA-Export",         color: "#AF52DE" },
 ];
 
 function Stepper({ current, onSelect, scenario }) {
@@ -33,6 +27,7 @@ function Stepper({ current, onSelect, scenario }) {
   const ki  = scenario.ki_analyse || {};
 
   const doneMap = {
+    0: !!(scenario.ki_kontext?.analyse),
     1: Object.keys(ctx).length > 3,
     2: (sit.module?.length || 0) > 0,
     3: !!ki.vertrags_analyse,
@@ -83,7 +78,7 @@ function Stepper({ current, onSelect, scenario }) {
 }
 
 export default function EnterpriseShell({ scenario, onSave }) {
-  const [step, setStep] = useState(scenario.enterprise_step || 1);
+  const [step, setStep] = useState(scenario.enterprise_step ?? 0);
 
   const handleSave = async (patch) => {
     const updated = { ...scenario, ...patch };
@@ -114,7 +109,7 @@ export default function EnterpriseShell({ scenario, onSave }) {
 
         {/* Navigation */}
         <div style={{ display: "flex", gap: 5, padding: "0 2px" }}>
-          {step > 1 && (
+          {step > 0 && (
             <button onClick={() => { const n = step - 1; setStep(n); handleSave({ enterprise_step: n }); }}
               style={{ flex: 1, padding: "8px 0", fontSize: 11, fontWeight: 600, background: "rgba(0,0,0,0.05)", color: "#555", border: "none", borderRadius: 9, cursor: "pointer" }}>
               ← Zurück
@@ -144,6 +139,7 @@ export default function EnterpriseShell({ scenario, onSave }) {
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
+        {step === 0 && <Step0DocIntelligenz scenario={scenario} onSave={handleStepSave} onProceed={() => { setStep(1); handleSave({ enterprise_step: 1 }); }} />}
         {step === 1 && <Step1Kontext scenario={scenario} onSave={handleStepSave} />}
         {step === 2 && <Step2Situation scenario={scenario} onSave={handleStepSave} />}
         {step === 3 && <Step2VertragsAnalyse scenario={scenario} onSave={handleStepSave} />}
