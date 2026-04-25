@@ -11,296 +11,248 @@ import {
 } from "lucide-react";
 import JurisdictionToggle from "./JurisdictionToggle";
 
-// ── TOP NAV ──────────────────────────────────────────────
+const C = {
+  bg:         "#F2F2F7",   // systemGroupedBackground
+  toolbar:    "rgba(248,248,248,0.96)",
+  sidebar:    "rgba(245,245,245,0.98)",
+  separator:  "rgba(0,0,0,0.08)",
+  label:      "#1C1C1E",
+  label2:     "#636366",
+  label3:     "#AEAEB2",
+  emerald:    "#1DB954",
+  emeraldDim: "rgba(29,185,84,0.11)",
+  emeraldText:"#166F38",
+  content:    "#EBEBF0",
+};
+
 const NAV_ITEMS = [
-  { path: "/", label: "Übersicht", icon: LayoutDashboard, exact: true },
-  { path: "/lexara", label: "Lexara", icon: Scale },
-  { path: "/richterprofile", label: "Beteiligte", icon: Users },
-  { path: "/aufgaben", label: "Aufgaben", icon: CheckSquare },
-  { path: "/zeitleiste", label: "Fristen", icon: Calendar },
-  { path: "/cockpit", label: "Cockpit", icon: Activity },
-  { path: "/analytik", label: "Analytik", icon: BarChart2 },
-  { path: "/strategic-analysis", label: "Strategie", icon: Sword },
-  { path: "/chat/fall-assistent", label: "KI-Assistent", icon: MessageSquare },
-  { path: "/plattform-agent", label: "Agent", icon: Bot },
+  { path: "/",                     label: "Übersicht",    icon: LayoutDashboard, exact: true },
+  { path: "/lexara",               label: "Lexara",       icon: Scale },
+  { path: "/richterprofile",       label: "Beteiligte",   icon: Users },
+  { path: "/aufgaben",             label: "Aufgaben",     icon: CheckSquare },
+  { path: "/zeitleiste",           label: "Fristen",      icon: Calendar },
+  { path: "/cockpit",              label: "Cockpit",      icon: Activity },
+  { path: "/analytik",             label: "Analytik",     icon: BarChart2 },
+  { path: "/strategic-analysis",   label: "Strategie",    icon: Sword },
+  { path: "/chat/fall-assistent",  label: "KI-Assistent", icon: MessageSquare },
+  { path: "/plattform-agent",      label: "Agent",        icon: Bot },
 ];
 
-// ── SIDEBAR CONTEXT per main section ────────────────────
 const SIDEBAR_MAP = {
   "/lexara": {
     title: "Fallverwaltung",
     sections: [
-      {
-        label: "Fallübersicht",
-        items: [
-          { label: "Alle Fälle", icon: Layers, path: "/lexara" },
-          { label: "Neuer Fall", icon: FileText, path: "/lexara?new=1" },
-        ],
-      },
-      {
-        label: "Fall-Schritte",
-        items: [
-          { label: "1 · Fallerfassung", icon: ClipboardList, step: 1 },
-          { label: "2 · Fallsubstanz", icon: FileText, step: 2 },
-          { label: "3 · Gegneranalyse", icon: Search, step: 3 },
-          { label: "4 · Rechtl. Analyse", icon: BookOpen, step: 4 },
-          { label: "5 · Strategie", icon: Sword, step: 5 },
-          { label: "6 · Risiko", icon: AlertTriangle, step: 6 },
-          { label: "7 · Simulation", icon: Brain, step: 7 },
-          { label: "8 · Aktion", icon: Gavel, step: 8 },
-          { label: "9 · Cockpit", icon: Activity, step: 9 },
-          { label: "10 · Abschluss", icon: Archive, step: 10 },
-          { label: "11 · KI-Protokoll", icon: BarChart, step: 11 },
-        ],
-      },
+      { label: "Fallübersicht", items: [
+        { label: "Alle Fälle", icon: Layers, path: "/lexara" },
+        { label: "Neuer Fall", icon: FileText, path: "/lexara?new=1" },
+      ]},
+      { label: "Fall-Schritte", items: [
+        { label: "1 · Fallerfassung",   icon: ClipboardList, step: 1 },
+        { label: "2 · Fallsubstanz",    icon: FileText,      step: 2 },
+        { label: "3 · Gegneranalyse",   icon: Search,        step: 3 },
+        { label: "4 · Rechtl. Analyse", icon: BookOpen,      step: 4 },
+        { label: "5 · Strategie",       icon: Sword,         step: 5 },
+        { label: "6 · Risiko",          icon: AlertTriangle, step: 6 },
+        { label: "7 · Simulation",      icon: Brain,         step: 7 },
+        { label: "8 · Aktion",          icon: Gavel,         step: 8 },
+        { label: "9 · Cockpit",         icon: Activity,      step: 9 },
+        { label: "10 · Abschluss",      icon: Archive,       step: 10 },
+        { label: "11 · KI-Protokoll",   icon: BarChart,      step: 11 },
+      ]},
     ],
   },
   "/richterprofile": {
     title: "Prozessbeteiligte",
-    sections: [
-      {
-        label: "Kategorien",
-        items: [
-          { label: "Alle Profile", icon: Users, path: "/richterprofile" },
-          { label: "Richter", icon: Gavel, path: "/richterprofile?kat=Richter" },
-          { label: "Anwälte & Kanzleien", icon: UserCheck, path: "/richterprofile?kat=Anwalt" },
-          { label: "Sachverständige", icon: BookOpen, path: "/richterprofile?kat=Sachverständiger" },
-          { label: "Zeugen", icon: MessageSquare, path: "/richterprofile?kat=Zeuge" },
-        ],
-      },
-    ],
+    sections: [{ label: "Kategorien", items: [
+      { label: "Alle Profile",         icon: Users,       path: "/richterprofile" },
+      { label: "Richter",              icon: Gavel,       path: "/richterprofile?kat=Richter" },
+      { label: "Anwälte & Kanzleien",  icon: UserCheck,   path: "/richterprofile?kat=Anwalt" },
+      { label: "Sachverständige",      icon: BookOpen,    path: "/richterprofile?kat=Sachverständiger" },
+      { label: "Zeugen",               icon: MessageSquare,path: "/richterprofile?kat=Zeuge" },
+    ]}],
   },
   "/aufgaben": {
     title: "Aufgaben",
-    sections: [
-      {
-        label: "Filter",
-        items: [
-          { label: "Alle Aufgaben", icon: CheckSquare, path: "/aufgaben" },
-          { label: "Offen", icon: Clock, path: "/aufgaben?status=offen" },
-          { label: "In Bearbeitung", icon: Activity, path: "/aufgaben?status=in_bearbeitung" },
-          { label: "Erledigt", icon: Archive, path: "/aufgaben?status=erledigt" },
-        ],
-      },
-    ],
+    sections: [{ label: "Filter", items: [
+      { label: "Alle Aufgaben",  icon: CheckSquare, path: "/aufgaben" },
+      { label: "Offen",          icon: Clock,       path: "/aufgaben?status=offen" },
+      { label: "In Bearbeitung", icon: Activity,    path: "/aufgaben?status=in_bearbeitung" },
+      { label: "Erledigt",       icon: Archive,     path: "/aufgaben?status=erledigt" },
+    ]}],
   },
   "/zeitleiste": {
     title: "Fristenverwaltung",
-    sections: [
-      {
-        label: "Ansicht",
-        items: [
-          { label: "Alle Fristen", icon: Calendar, path: "/zeitleiste" },
-          { label: "Überfällig", icon: AlertTriangle, path: "/zeitleiste?filter=overdue" },
-          { label: "Diese Woche", icon: Clock, path: "/zeitleiste?filter=week" },
-        ],
-      },
-    ],
+    sections: [{ label: "Ansicht", items: [
+      { label: "Alle Fristen", icon: Calendar,      path: "/zeitleiste" },
+      { label: "Überfällig",   icon: AlertTriangle, path: "/zeitleiste?filter=overdue" },
+      { label: "Diese Woche",  icon: Clock,         path: "/zeitleiste?filter=week" },
+    ]}],
   },
-  "/cockpit": {
-    title: "Kanzlei-Cockpit",
-    sections: [
-      {
-        label: "Module",
-        items: [
-          { label: "Dashboard", icon: Activity, path: "/cockpit" },
-          { label: "Analytik", icon: BarChart2, path: "/analytik" },
-        ],
-      },
-    ],
-  },
-  "/analytik": {
-    title: "Analytik",
-    sections: [
-      {
-        label: "Berichte",
-        items: [
-          { label: "Überblick", icon: BarChart2, path: "/analytik" },
-          { label: "KI-Performance", icon: Brain, path: "/analytik?view=ki" },
-          { label: "Erfolgsquoten", icon: TrendingUp, path: "/analytik?view=erfolg" },
-        ],
-      },
-    ],
-  },
-  "/strategic-analysis": {
-    title: "Strategische Analyse",
-    sections: [
-      {
-        label: "Module",
-        items: [
-          { label: "Sun Tzu / Machiavelli", icon: Sword, path: "/strategic-analysis" },
-          { label: "Gegner-Profil", icon: Search, path: "/strategic-analysis?tab=gegner" },
-        ],
-      },
-    ],
-  },
-  "/chat/fall-assistent": {
-    title: "KI-Assistent",
-    sections: [
-      {
-        label: "Chats",
-        items: [
-          { label: "Fall-Assistent", icon: MessageSquare, path: "/chat/fall-assistent" },
-        ],
-      },
-    ],
-  },
-  "/plattform-agent": {
-    title: "Plattform-Agent",
-    sections: [
-      {
-        label: "Agenten",
-        items: [
-          { label: "Plattform-Optimierer", icon: Bot, path: "/plattform-agent" },
-        ],
-      },
-    ],
-  },
-  "/": {
-    title: "Übersicht",
-    sections: [
-      {
-        label: "Navigation",
-        items: [
-          { label: "Startseite", icon: LayoutDashboard, path: "/" },
-          { label: "Onboarding", icon: Settings, path: "/onboarding" },
-        ],
-      },
-    ],
-  },
+  "/cockpit":  { title: "Kanzlei-Cockpit",    sections: [{ label: "Module", items: [
+    { label: "Dashboard", icon: Activity,  path: "/cockpit" },
+    { label: "Analytik",  icon: BarChart2, path: "/analytik" },
+  ]}]},
+  "/analytik": { title: "Analytik", sections: [{ label: "Berichte", items: [
+    { label: "Überblick",      icon: BarChart2,   path: "/analytik" },
+    { label: "KI-Performance", icon: Brain,       path: "/analytik?view=ki" },
+    { label: "Erfolgsquoten",  icon: TrendingUp,  path: "/analytik?view=erfolg" },
+  ]}]},
+  "/strategic-analysis": { title: "Strategische Analyse", sections: [{ label: "Module", items: [
+    { label: "Sun Tzu / Machiavelli", icon: Sword,  path: "/strategic-analysis" },
+    { label: "Gegner-Profil",         icon: Search, path: "/strategic-analysis?tab=gegner" },
+  ]}]},
+  "/chat/fall-assistent": { title: "KI-Assistent", sections: [{ label: "Chats", items: [
+    { label: "Fall-Assistent", icon: MessageSquare, path: "/chat/fall-assistent" },
+  ]}]},
+  "/plattform-agent": { title: "Plattform-Agent", sections: [{ label: "Agenten", items: [
+    { label: "Plattform-Optimierer", icon: Bot, path: "/plattform-agent" },
+  ]}]},
+  "/": { title: "Übersicht", sections: [{ label: "Navigation", items: [
+    { label: "Startseite", icon: LayoutDashboard, path: "/" },
+    { label: "Onboarding", icon: Settings,        path: "/onboarding" },
+  ]}]},
 };
 
+const SF = { fontFamily: "-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif" };
+
 export default function AppShell() {
-  const location = useLocation();
-  const navigate = useNavigate();
+  const location  = useLocation();
+  const navigate  = useNavigate();
   const { currentUser } = useAuth();
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [userMenuOpen,      setUserMenuOpen]      = useState(false);
+  const [sidebarCollapsed,  setSidebarCollapsed]  = useState(false);
 
-  const isActive = (item) => {
-    if (item.exact) return location.pathname === item.path;
-    return location.pathname.startsWith(item.path);
-  };
+  const isActive = (item) =>
+    item.exact ? location.pathname === item.path : location.pathname.startsWith(item.path);
 
-  const activeNavItem = NAV_ITEMS.find(item => isActive(item)) || NAV_ITEMS[0];
-
-  // Determine sidebar context
-  const sidebarKey = Object.keys(SIDEBAR_MAP).find(key => {
-    if (key === "/") return location.pathname === "/";
-    return location.pathname.startsWith(key);
-  }) || "/";
-  const sidebar = SIDEBAR_MAP[sidebarKey];
-
-  // Check if we're on a case detail page
-  const isCaseDetail = location.pathname === "/lexara/case";
-  const urlParams = new URLSearchParams(location.search);
-  const caseIdInUrl = urlParams.get("id");
+  const activeNavItem = NAV_ITEMS.find(isActive) || NAV_ITEMS[0];
+  const sidebarKey    = Object.keys(SIDEBAR_MAP).find(k =>
+    k === "/" ? location.pathname === "/" : location.pathname.startsWith(k)
+  ) || "/";
+  const sidebar       = SIDEBAR_MAP[sidebarKey];
+  const isCaseDetail  = location.pathname === "/lexara/case";
+  const caseIdInUrl   = new URLSearchParams(location.search).get("id");
 
   const initials = currentUser?.full_name
-    ? currentUser.full_name.split(" ").map(w => w[0]).slice(0, 2).join("").toUpperCase()
+    ? currentUser.full_name.split(" ").map(w => w[0]).slice(0,2).join("").toUpperCase()
     : currentUser?.email?.[0]?.toUpperCase() || "?";
 
-  const sf = { fontFamily: "-apple-system, 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif" };
-
   return (
-    <div className="flex flex-col h-screen overflow-hidden" style={{ background: "#e8e8e8", ...sf }}>
+    <div style={{ display: "flex", flexDirection: "column", height: "100vh", overflow: "hidden", background: C.content, ...SF }}>
 
-      {/* ── TOP TOOLBAR ─────────────────────────────────── */}
-      <header className="flex-shrink-0" style={{
-        background: "rgba(246,246,246,0.98)",
-        borderBottom: "1px solid rgba(0,0,0,0.13)",
-        backdropFilter: "blur(20px)",
-        WebkitBackdropFilter: "blur(20px)",
-        zIndex: 60,
-        height: 44,
+      {/* ── TOOLBAR ───────────────────────────────────────────── */}
+      <header style={{
+        flexShrink: 0,
+        height: 46,
         display: "flex",
         alignItems: "center",
-        paddingLeft: 12,
-        paddingRight: 12,
-        gap: 8,
+        paddingInline: 16,
+        gap: 10,
+        background: C.toolbar,
+        borderBottom: `1px solid ${C.separator}`,
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        zIndex: 60,
+        boxShadow: "0 1px 0 rgba(0,0,0,0.06)",
       }}>
-        {/* App identity */}
-        <div className="flex items-center gap-2 flex-shrink-0" style={{ minWidth: 140 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(145deg,#34C759 0%,#28a046 100%)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-            <Scale style={{ width: 13, height: 13, color: "#fff" }} />
+        {/* Logo */}
+        <div style={{ display:"flex", alignItems:"center", gap:9, flexShrink:0, minWidth:148 }}>
+          <div style={{
+            width: 28, height: 28, borderRadius: 8,
+            background: "linear-gradient(145deg,#1DB954 0%,#14843C 100%)",
+            display: "flex", alignItems: "center", justifyContent: "center",
+            boxShadow: "0 2px 8px rgba(29,185,84,0.35)",
+          }}>
+            <Scale style={{ width:14, height:14, color:"#fff" }} />
           </div>
           <div>
-            <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", lineHeight: 1.1 }}>MachSun Law</p>
-            <p style={{ fontSize: 9.5, color: "#999", lineHeight: 1 }}>Niehoff & Partner</p>
+            <p style={{ fontSize:12.5, fontWeight:700, color:C.label, lineHeight:1.1, letterSpacing:"-0.02em" }}>MachSun Law</p>
+            <p style={{ fontSize:9.5,  color:C.label3, lineHeight:1 }}>Niehoff & Partner</p>
           </div>
         </div>
 
-        {/* Divider */}
-        <div style={{ width: 1, height: 20, background: "rgba(0,0,0,0.1)", flexShrink: 0 }} />
+        <div style={{ width:1, height:22, background:C.separator, flexShrink:0 }} />
 
-        {/* Main nav tabs */}
-        <div className="flex-1 flex items-center justify-center gap-0.5 overflow-x-auto" style={{ scrollbarWidth: "none" }}>
-          {NAV_ITEMS.map((item) => {
+        {/* Nav tabs */}
+        <div style={{ flex:1, display:"flex", alignItems:"center", justifyContent:"center", gap:2, overflowX:"auto", scrollbarWidth:"none" }}>
+          {NAV_ITEMS.map(item => {
             const active = isActive(item);
             return (
-              <button
-                key={item.path}
-                onClick={() => navigate(item.path)}
-                className="flex-shrink-0 flex items-center gap-1.5 transition-all"
+              <button key={item.path} onClick={() => navigate(item.path)}
                 style={{
-                  padding: "4px 10px",
-                  borderRadius: 6,
+                  flexShrink: 0,
+                  display: "flex", alignItems: "center", gap: 5,
+                  padding: "5px 11px",
+                  borderRadius: 8,
                   fontSize: 12,
                   fontWeight: active ? 600 : 400,
-                  background: active ? "rgba(52,199,89,0.15)" : "transparent",
-                  color: active ? "#1a7f37" : "#555",
-                  border: active ? "1px solid rgba(52,199,89,0.3)" : "1px solid transparent",
+                  background: active ? C.emeraldDim : "transparent",
+                  color: active ? C.emeraldText : C.label2,
+                  border: active ? `1px solid rgba(29,185,84,0.22)` : "1px solid transparent",
+                  cursor: "pointer",
                   whiteSpace: "nowrap",
+                  transition: "all 0.14s",
                 }}
-                onMouseEnter={e => { if (!active) { e.currentTarget.style.background = "rgba(0,0,0,0.06)"; e.currentTarget.style.color = "#222"; }}}
-                onMouseLeave={e => { if (!active) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#555"; }}}
+                onMouseEnter={e => { if (!active) { e.currentTarget.style.background="rgba(0,0,0,0.05)"; e.currentTarget.style.color=C.label; }}}
+                onMouseLeave={e => { if (!active) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.label2; }}}
               >
-                <item.icon style={{ width: 11, height: 11, flexShrink: 0 }} />
-                <span>{item.label}</span>
+                <item.icon style={{ width:11, height:11, flexShrink:0 }} />
+                {item.label}
               </button>
             );
           })}
         </div>
 
-        {/* Right: jurisdiction + user */}
-        <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Right */}
+        <div style={{ display:"flex", alignItems:"center", gap:10, flexShrink:0 }}>
           <JurisdictionToggle compact />
-          <div style={{ width: 1, height: 16, background: "rgba(0,0,0,0.1)" }} />
-          <div className="relative">
-            <button
-              onClick={() => setUserMenuOpen(!userMenuOpen)}
-              className="flex items-center gap-1.5 px-2 py-1 rounded-md transition-all"
-              style={{ background: userMenuOpen ? "rgba(0,0,0,0.08)" : "transparent" }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.06)"}
-              onMouseLeave={e => { if (!userMenuOpen) e.currentTarget.style.background = "transparent"; }}
+          <div style={{ width:1, height:18, background:C.separator }} />
+          <div style={{ position:"relative" }}>
+            <button onClick={() => setUserMenuOpen(!userMenuOpen)}
+              style={{
+                display:"flex", alignItems:"center", gap:7,
+                padding:"4px 8px", borderRadius:8, border:"none",
+                background: userMenuOpen ? "rgba(0,0,0,0.07)" : "transparent",
+                cursor:"pointer", transition:"all 0.12s",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background="rgba(0,0,0,0.05)"}
+              onMouseLeave={e => { if (!userMenuOpen) e.currentTarget.style.background="transparent"; }}
             >
-              <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#34C759", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                <span style={{ fontSize: 9, fontWeight: 700, color: "#fff" }}>{initials}</span>
+              <div style={{
+                width:24, height:24, borderRadius:"50%",
+                background: "linear-gradient(145deg,#2DC76D,#17803D)",
+                display:"flex", alignItems:"center", justifyContent:"center",
+                boxShadow:"0 1px 4px rgba(29,185,84,0.4)",
+              }}>
+                <span style={{ fontSize:9.5, fontWeight:700, color:"#fff" }}>{initials}</span>
               </div>
-              <span style={{ fontSize: 11, color: "#444", maxWidth: 70, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              <span style={{ fontSize:12, color:C.label, maxWidth:72, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
                 {currentUser?.full_name?.split(" ")[0] || "Nutzer"}
               </span>
-              <ChevronDown style={{ width: 11, height: 11, color: "#aaa" }} />
+              <ChevronDown style={{ width:11, height:11, color:C.label3 }} />
             </button>
+
             {userMenuOpen && (
-              <div className="absolute right-0 top-full mt-1 rounded-xl overflow-hidden z-[100]" style={{
-                width: 200,
-                background: "rgba(250,250,250,0.98)",
-                border: "1px solid rgba(0,0,0,0.12)",
-                boxShadow: "0 8px 32px rgba(0,0,0,0.14)",
-                backdropFilter: "blur(20px)",
+              <div className="animate-modal" style={{
+                position:"absolute", right:0, top:"calc(100% + 6px)",
+                width:210, borderRadius:14,
+                background:"rgba(250,250,250,0.98)",
+                border:`1px solid ${C.separator}`,
+                boxShadow:"0 12px 40px rgba(0,0,0,0.15)",
+                backdropFilter:"blur(24px)",
+                zIndex:100, overflow:"hidden",
               }}>
-                <div style={{ padding: "10px 14px", borderBottom: "1px solid rgba(0,0,0,0.08)" }}>
-                  <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a" }}>{currentUser?.full_name || "Nutzer"}</p>
-                  <p style={{ fontSize: 11, color: "#999" }}>{currentUser?.email || ""}</p>
+                <div style={{ padding:"12px 16px", borderBottom:`1px solid ${C.separator}` }}>
+                  <p style={{ fontSize:13, fontWeight:600, color:C.label }}>{currentUser?.full_name || "Nutzer"}</p>
+                  <p style={{ fontSize:11, color:C.label3 }}>{currentUser?.email || ""}</p>
                 </div>
                 <button onClick={() => { base44.auth.logout(); setUserMenuOpen(false); }}
-                  className="w-full flex items-center gap-2.5 px-3 py-2.5 transition-colors"
-                  style={{ color: "#e53935" }}
-                  onMouseEnter={e => e.currentTarget.style.background = "rgba(229,57,53,0.06)"}
-                  onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
-                  <LogOut style={{ width: 13, height: 13 }} />
-                  <span style={{ fontSize: 12, fontWeight: 500 }}>Abmelden</span>
+                  style={{ width:"100%", display:"flex", alignItems:"center", gap:10, padding:"10px 16px", border:"none", background:"transparent", color:"#B81C3A", cursor:"pointer", fontSize:13, fontWeight:500 }}
+                  onMouseEnter={e => e.currentTarget.style.background="rgba(184,28,58,0.06)"}
+                  onMouseLeave={e => e.currentTarget.style.background="transparent"}
+                >
+                  <LogOut style={{ width:14, height:14 }} />
+                  Abmelden
                 </button>
               </div>
             )}
@@ -308,76 +260,93 @@ export default function AppShell() {
         </div>
       </header>
 
-      {/* ── BODY: sidebar + content ─────────────────────── */}
-      <div className="flex flex-1 overflow-hidden">
+      {/* ── BODY ──────────────────────────────────────────────── */}
+      <div style={{ display:"flex", flex:1, overflow:"hidden" }}>
 
         {/* SIDEBAR */}
-        <aside
-          className="flex-shrink-0 flex flex-col overflow-hidden transition-all duration-200"
-          style={{
-            width: sidebarCollapsed ? 36 : 200,
-            background: "rgba(242,242,242,0.97)",
-            borderRight: "1px solid rgba(0,0,0,0.1)",
-            zIndex: 40,
-          }}
-        >
+        <aside style={{
+          flexShrink: 0,
+          width: sidebarCollapsed ? 38 : 208,
+          background: C.sidebar,
+          borderRight: `1px solid ${C.separator}`,
+          display: "flex", flexDirection: "column",
+          overflow: "hidden",
+          transition: "width 0.2s cubic-bezier(0.4,0,0.2,1)",
+          zIndex: 40,
+        }}>
           {/* Sidebar header */}
-          <div className="flex items-center justify-between flex-shrink-0 px-2" style={{ height: 34, borderBottom: "1px solid rgba(0,0,0,0.07)" }}>
+          <div style={{
+            height: 36, display:"flex", alignItems:"center",
+            justifyContent: sidebarCollapsed ? "center" : "space-between",
+            paddingInline: sidebarCollapsed ? 0 : "10px 8px",
+            borderBottom:`1px solid ${C.separator}`,
+            flexShrink: 0,
+          }}>
             {!sidebarCollapsed && (
-              <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", paddingLeft: 6, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              <p style={{ fontSize:11, fontWeight:700, color:C.label, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis", letterSpacing:"-0.01em" }}>
                 {sidebar?.title || activeNavItem.label}
               </p>
             )}
-            <button
-              onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="flex items-center justify-center rounded transition-all flex-shrink-0"
-              style={{ width: 22, height: 22, marginLeft: sidebarCollapsed ? "auto" : 0, marginRight: sidebarCollapsed ? "auto" : 0 }}
-              onMouseEnter={e => e.currentTarget.style.background = "rgba(0,0,0,0.08)"}
-              onMouseLeave={e => e.currentTarget.style.background = "transparent"}
-              title={sidebarCollapsed ? "Seitenleiste öffnen" : "Seitenleiste schließen"}
+            <button onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+              style={{
+                width:22, height:22, border:"none", background:"transparent",
+                borderRadius:6, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center",
+              }}
+              onMouseEnter={e => e.currentTarget.style.background="rgba(0,0,0,0.07)"}
+              onMouseLeave={e => e.currentTarget.style.background="transparent"}
+              title={sidebarCollapsed ? "Öffnen" : "Schließen"}
             >
-              <ChevronRight style={{ width: 12, height: 12, color: "#888", transform: sidebarCollapsed ? "rotate(0deg)" : "rotate(180deg)", transition: "transform 0.2s" }} />
+              <ChevronRight style={{
+                width:12, height:12, color:C.label2,
+                transform: sidebarCollapsed ? "rotate(0deg)" : "rotate(180deg)",
+                transition: "transform 0.2s",
+              }} />
             </button>
           </div>
 
           {/* Sidebar items */}
           {!sidebarCollapsed && (
-            <div className="flex-1 overflow-y-auto py-2" style={{ scrollbarWidth: "none" }}>
+            <div style={{ flex:1, overflowY:"auto", paddingBlock:10, scrollbarWidth:"none" }}>
               {sidebar?.sections?.map((section, si) => (
-                <div key={si} className="mb-3">
-                  <p style={{ fontSize: 9.5, fontWeight: 600, color: "#bbb", textTransform: "uppercase", letterSpacing: "0.07em", padding: "4px 14px 3px" }}>
+                <div key={si} style={{ marginBottom:16 }}>
+                  <p style={{
+                    fontSize:9.5, fontWeight:700, color:C.label3,
+                    textTransform:"uppercase", letterSpacing:"0.09em",
+                    padding:"0 16px 5px",
+                  }}>
                     {section.label}
                   </p>
                   {section.items.map((item, ii) => {
-                    const isItemActive = item.path && (item.path === location.pathname + location.search || location.pathname === item.path.split("?")[0]);
+                    const isItemActive = item.path && (
+                      item.path === location.pathname + location.search ||
+                      location.pathname === item.path.split("?")[0]
+                    );
                     return (
-                      <button
-                        key={ii}
+                      <button key={ii}
                         onClick={() => {
-                          if (item.path) {
-                            navigate(item.path);
-                          } else if (item.step && isCaseDetail && caseIdInUrl) {
-                            // Dispatch a custom event to switch tabs in CaseDetail
+                          if (item.path) navigate(item.path);
+                          else if (item.step && isCaseDetail && caseIdInUrl)
                             window.dispatchEvent(new CustomEvent("lexara_goto_step", { detail: { step: item.step } }));
-                          } else if (item.step) {
-                            // Navigate to lexara and remember step
-                            navigate("/lexara");
-                          }
+                          else if (item.step) navigate("/lexara");
                         }}
-                        className="w-full flex items-center gap-2 px-3 py-1.5 text-left transition-all"
                         style={{
-                          background: isItemActive ? "rgba(52,199,89,0.1)" : "transparent",
-                          color: isItemActive ? "#1a7f37" : "#444",
-                          fontSize: 12,
+                          width:"100%", display:"flex", alignItems:"center", gap:8,
+                          padding: isItemActive ? "7px 14px 7px 12px" : "7px 14px",
+                          fontSize:12.5,
                           fontWeight: isItemActive ? 600 : 400,
-                          borderLeft: isItemActive ? "2px solid #34C759" : "2px solid transparent",
-                          paddingLeft: isItemActive ? 10 : 12,
+                          background: isItemActive ? C.emeraldDim : "transparent",
+                          color: isItemActive ? C.emeraldText : C.label2,
+                          border:"none",
+                          borderLeft: isItemActive ? `2.5px solid ${C.emerald}` : "2.5px solid transparent",
+                          cursor:"pointer",
+                          textAlign:"left",
+                          transition:"all 0.12s",
                         }}
-                        onMouseEnter={e => { if (!isItemActive) { e.currentTarget.style.background = "rgba(0,0,0,0.05)"; e.currentTarget.style.color = "#1a1a1a"; }}}
-                        onMouseLeave={e => { if (!isItemActive) { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#444"; }}}
+                        onMouseEnter={e => { if (!isItemActive) { e.currentTarget.style.background="rgba(0,0,0,0.045)"; e.currentTarget.style.color=C.label; }}}
+                        onMouseLeave={e => { if (!isItemActive) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.label2; }}}
                       >
-                        <item.icon style={{ width: 12, height: 12, flexShrink: 0 }} />
-                        <span className="truncate">{item.label}</span>
+                        <item.icon style={{ width:12.5, height:12.5, flexShrink:0 }} />
+                        <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.label}</span>
                       </button>
                     );
                   })}
@@ -387,12 +356,9 @@ export default function AppShell() {
           )}
         </aside>
 
-        {/* MAIN CONTENT */}
-        <main
-          className="flex-1 overflow-auto"
-          style={{ background: "#f0f0f0" }}
-          onClick={() => setUserMenuOpen(false)}
-        >
+        {/* MAIN */}
+        <main style={{ flex:1, overflowY:"auto", background:C.content }}
+          onClick={() => setUserMenuOpen(false)}>
           <Outlet />
         </main>
       </div>

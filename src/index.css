@@ -2,187 +2,199 @@
 @tailwind components;
 @tailwind utilities;
 
-
 @layer base {
   :root {
+    /* ── SwiftUI / Apple HIG Monochrome Palette ── */
+    --background:        0 0% 96%;      /* #F4F4F4  systemGroupedBackground */
+    --foreground:        0 0% 7%;       /* #121212  label */
+    --card:              0 0% 100%;     /* #FFFFFF  secondarySystemBackground */
+    --card-foreground:   0 0% 7%;
+    --border:            0 0% 86%;      /* #DBDBDB  separator */
+    --input:             0 0% 94%;
+    --muted:             0 0% 96%;
+    --muted-foreground:  0 0% 50%;      /* secondaryLabel */
+    --popover:           0 0% 100%;
+    --popover-foreground:0 0% 7%;
 
-    /* Apple Numbers Color System */
-    --accent: 134 61% 49%;
+    /* Primary: Emerald / MintGreen — single accent */
+    --primary:           152 68% 31%;   /* #17803D */
+    --primary-foreground:0 0% 100%;
+    --accent:            152 68% 38%;
     --accent-foreground: 0 0% 100%;
-    --background: 0 0% 97%;
-    --border: 0 0% 88%;
-    --card: 0 0% 100%;
-    --card-foreground: 0 0% 8%;
-    --destructive: 0 72% 51%;
+    --ring:              152 68% 38%;
+
+    /* Destructive: Bordeaux / Weinrot */
+    --destructive:       348 72% 40%;   /* #B81C3A */
     --destructive-foreground: 0 0% 100%;
-    --foreground: 0 0% 8%;
-    --input: 0 0% 92%;
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 42%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 8%;
-    --primary: 134 61% 41%;
-    --primary-foreground: 0 0% 100%;
-    --radius: 0.5rem;
-    --ring: 134 61% 41%;
-    --secondary: 0 0% 95%;
-    --secondary-foreground: 0 0% 15%;
 
-    /* Numbers-specific tokens */
-    --numbers-green: #34C759;
-    --numbers-toolbar-bg: rgba(246,246,246,0.95);
-    --numbers-sidebar-bg: #f5f5f5;
-    --numbers-canvas-bg: #e8e8e8;
-    --numbers-tab-active: #34C759;
+    --secondary:         0 0% 93%;
+    --secondary-foreground: 0 0% 20%;
+    --radius:            0.75rem;
 
+    /* ── Brand tokens ── */
+    --swiftui-bg:              #F4F4F4;
+    --swiftui-card:            #FFFFFF;
+    --swiftui-card-secondary:  #F9F9F9;
+    --swiftui-separator:       rgba(0,0,0,0.09);
+    --swiftui-label:           #121212;
+    --swiftui-label2:          #636366;   /* secondaryLabel */
+    --swiftui-label3:          #AEAEB2;   /* tertiaryLabel */
+    --swiftui-emerald:         #1DB954;   /* primary accent */
+    --swiftui-emerald-dim:     rgba(29,185,84,0.12);
+    --swiftui-ocean:           #0A84FF;   /* links / info */
+    --swiftui-ocean-dim:       rgba(10,132,255,0.1);
+    --swiftui-spacegrey:       #636366;
+    --swiftui-bordeaux:        #B81C3A;   /* destructive / warning */
+    --swiftui-bordeaux-dim:    rgba(184,28,58,0.1);
+    --swiftui-shadow-sm:       0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
+    --swiftui-shadow:          0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.05);
+    --swiftui-shadow-lg:       0 12px 40px rgba(0,0,0,0.12), 0 4px 12px rgba(0,0,0,0.06);
   }
 }
-
 
 @layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
+  * { @apply border-border; }
+  body { @apply bg-background text-foreground; }
 }
 
+/* ── Typography: SF Pro via system stack ── */
+body {
+  font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif !important;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.01em;
+}
+h1, h2, h3, h4, h5, h6 {
+  font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif !important;
+  letter-spacing: -0.025em;
+}
+.font-mono { font-family: "SF Mono", "Menlo", "Monaco", Consolas, monospace !important; }
 
-/* Apple Numbers Design System */
-body { font-family: -apple-system, "SF Pro Text", "Helvetica Neue", Arial, sans-serif !important; }
-h1, h2, h3, h4, h5, h6 { font-family: -apple-system, "SF Pro Display", "Helvetica Neue", Arial, sans-serif !important; }
-
-/* Numbers-style scrollbars */
-::-webkit-scrollbar { width: 8px; height: 8px; }
+/* ── Scrollbars ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.18); border-radius: 10px; border: 2px solid transparent; background-clip: padding-box; }
-::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.30); background-clip: padding-box; }
+::-webkit-scrollbar-thumb {
+  background: rgba(0,0,0,0.14);
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(0,0,0,0.25); background-clip: padding-box; }
 
-/* Numbers toolbar button hover */
-.numbers-toolbar-btn:hover { background: rgba(0,0,0,0.07) !important; }
-.numbers-toolbar-btn.active { background: rgba(52,199,89,0.15) !important; color: #1a7f37 !important; }
+/* ── Focus ring ── */
+*:focus-visible {
+  outline: 2px solid rgba(29,185,84,0.55) !important;
+  outline-offset: 2px;
+}
 
-/* Numbers tab pill */
-.numbers-tab { background: rgba(0,0,0,0.06); border-radius: 20px; transition: all 0.15s ease; }
-.numbers-tab.active { background: #34C759; color: white; }
+/* ── SwiftUI-style card (default override) ── */
+.swiftui-card {
+  background: var(--swiftui-card);
+  border-radius: 18px;
+  border: 1px solid var(--swiftui-separator);
+  box-shadow: var(--swiftui-shadow);
+  overflow: hidden;
+}
 
-/* Numbers sidebar */
-.numbers-sidebar { border-left: 1px solid rgba(0,0,0,0.1); }
-
-/* Apple-style focus ring */
-*:focus-visible { outline: 3px solid rgba(52,199,89,0.5) !important; outline-offset: 1px; }
-
-/* Numbers panel separator */
-.numbers-separator { height: 1px; background: rgba(0,0,0,0.08); }
-
-/* Smooth transitions like macOS */
-*, *::before, *::after { transition-timing-function: cubic-bezier(0.25, 0.46, 0.45, 0.94); }
-
-/* Numbers-style card / panel overrides for all Lexara content */
+/* ── Apple rounded corners for generic white panels ── */
 .bg-white.rounded-2xl,
 .bg-white.rounded-xl {
-  border-radius: 8px !important;
-  border: 1px solid rgba(0,0,0,0.08) !important;
-  box-shadow: 0 1px 4px rgba(0,0,0,0.05) !important;
+  border-radius: 16px !important;
+  border: 1px solid rgba(0,0,0,0.07) !important;
+  box-shadow: var(--swiftui-shadow-sm) !important;
 }
 
-/* Clean up KI result panels */
-.bg-violet-50, .bg-amber-50, .bg-green-50, .bg-blue-50, .bg-red-50,
-.bg-violet-600, .bg-amber-600, .bg-green-600 {
-  /* keep these only for intentional colored elements */
+/* ── Navbar pill active ── */
+.nav-pill-active {
+  background: var(--swiftui-emerald-dim) !important;
+  color: #17803D !important;
+  border: 1px solid rgba(29,185,84,0.25) !important;
 }
 
-/* Professional monospace for legal references / IDs */
-.font-mono { font-family: "SF Mono", "Monaco", "Menlo", Consolas, monospace !important; }
-
-/* Numbers-style section headers */
-.section-header {
+/* ── Section label caps ── */
+.section-header,
+.numbers-row:first-child p[style*="text-transform: uppercase"] {
   font-size: 10px !important;
   font-weight: 600 !important;
   text-transform: uppercase !important;
-  letter-spacing: 0.07em !important;
-  color: #aaa !important;
+  letter-spacing: 0.08em !important;
+  color: var(--swiftui-label3) !important;
 }
 
-/* Table-style list rows (like Numbers cells) */
+/* ── Row separator ── */
 .numbers-row {
-  border-bottom: 1px solid rgba(0,0,0,0.06);
-  padding: 8px 0;
-  font-size: 12px;
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+  padding: 10px 0;
+  font-size: 13px;
 }
 .numbers-row:last-child { border-bottom: none; }
 
-/* Remove emoji-like colored icon backgrounds in content areas */
-.bg-violet-100, .bg-emerald-100, .bg-blue-100, .bg-amber-100, .bg-red-100 {
-  background: rgba(0,0,0,0.05) !important;
+/* ── Badges / pills: SwiftUI rounded rect ── */
+.rounded-full.px-2,
+.rounded-full.px-2\.5,
+.rounded-full.px-3 {
+  border-radius: 6px !important;
 }
 
-/* Input fields — Numbers-style */
-input[type="text"], input[type="number"], textarea, select {
+/* ── Progress bars ── */
+.h-1, .h-1\.5, .h-2 { border-radius: 99px !important; }
+
+/* ── Inputs ── */
+input, textarea, select {
   font-family: -apple-system, "Helvetica Neue", Arial, sans-serif !important;
+  border-radius: 10px !important;
 }
 
-/* Progress bars — subtle */
-.h-1.5, .h-2 {
-  border-radius: 99px !important;
+/* ── Sidebar ── */
+.numbers-sidebar { border-left: 1px solid rgba(0,0,0,0.08); }
+
+/* ── Smooth easing (macOS-native feel) ── */
+*, *::before, *::after {
+  transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-/* Badges: flatten and neutralize */
-.rounded-full.px-2, .rounded-full.px-2\.5, .rounded-full.px-3 {
-  border-radius: 4px !important;
+/* ── Suppress old colour overrides ── */
+.bg-violet-100, .bg-emerald-100, .bg-blue-100, .bg-amber-100, .bg-red-100 {
+  background: rgba(0,0,0,0.04) !important;
 }
 
-
-
-@keyframes floatA {
-  0%, 100% { transform: translateY(0px) translateX(0px); }
-  33% { transform: translateY(-14px) translateX(6px); }
-  66% { transform: translateY(8px) translateX(-4px); }
+/* ── Animations ── */
+@keyframes fadeScaleIn {
+  from { opacity: 0; transform: scale(0.97) translateY(4px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
-
-@keyframes floatB {
-  0%, 100% { transform: translateY(0px) translateX(0px); }
-  50% { transform: translateY(-10px) translateX(8px); }
-}
-
-@keyframes floatC {
-  0%, 100% { transform: translateY(0px); }
-  40% { transform: translateY(-18px) translateX(-6px); }
-  80% { transform: translateY(10px) translateX(4px); }
-}
+.animate-modal { animation: fadeScaleIn 0.18s ease forwards; }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
 }
-
 @keyframes gradient-x {
   0%, 100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+.animate-gradient-x {
+  animation: gradient-x 6s ease infinite;
+  background-size: 200% auto;
 }
 
-@keyframes sonner-fade-in {
-  0% { opacity: 0; transform: scale(0.8); }
-  100% { opacity: 1; transform: scale(1); }
+@keyframes floatA {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  33%  { transform: translateY(-14px) translateX(6px); }
+  66%  { transform: translateY(8px)  translateX(-4px); }
 }
-
-@keyframes sonner-fade-out {
-  0% { opacity: 1; transform: scale(1); }
-  100% { opacity: 0; transform: scale(0.8); }
+@keyframes floatB {
+  0%, 100% { transform: translateY(0) translateX(0); }
+  50%  { transform: translateY(-10px) translateX(8px); }
 }
-
-@keyframes sonner-spin {
-  0% { opacity: 1; }
-  100% { opacity: 0.15; }
+@keyframes floatC {
+  0%, 100% { transform: translateY(0); }
+  40%  { transform: translateY(-18px) translateX(-6px); }
+  80%  { transform: translateY(10px)  translateX(4px); }
 }
-
 @keyframes pulse-glow {
   0%, to { opacity: 0.4; }
-  50% { opacity: 0.8; }
+  50%    { opacity: 0.8; }
 }
-
 @keyframes enter {
   0% {
     opacity: var(--tw-enter-opacity, 1);
@@ -191,7 +203,6 @@ input[type="text"], input[type="number"], textarea, select {
       rotate(var(--tw-enter-rotate, 0));
   }
 }
-
 @keyframes exit {
   to {
     opacity: var(--tw-exit-opacity, 1);
@@ -199,9 +210,4 @@ input[type="text"], input[type="number"], textarea, select {
       scale3d(var(--tw-exit-scale, 1), var(--tw-exit-scale, 1), var(--tw-exit-scale, 1))
       rotate(var(--tw-exit-rotate, 0));
   }
-}
-
-.animate-gradient-x {
-  animation: gradient-x 6s ease infinite;
-  background-size: 200% auto;
 }

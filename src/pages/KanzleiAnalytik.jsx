@@ -13,26 +13,26 @@ import AkteureAnalytik from "../components/lexara/AkteureAnalytik";
 import KonzernRechtsgebietDashboard from "../components/lexara/KonzernRechtsgebietDashboard";
 
 const SF = { fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', Arial, sans-serif" };
-const APPLE_COLORS = ["#007AFF", "#34C759", "#FF9500", "#FF3B30", "#5856D6", "#AF52DE", "#FF2D55", "#00C7BE"];
+// SwiftUI-aligned monochrome palette — graphs still distinguishable
+const APPLE_COLORS = ["#0A84FF","#1DB954","#636366","#8E8E93","#3A3A3C","#48484A","#30D158","#0071E3"];
 
-// ── Reusable Apple-style card ──────────────────────────────────────────────────
+// ── SwiftUI-style card ────────────────────────────────────────────────────────
 function AppleCard({ title, children, style = {} }) {
   return (
     <div style={{
-      background: "rgba(255,255,255,0.88)",
-      backdropFilter: "blur(20px)",
+      background: "#FFFFFF",
       borderRadius: 20,
-      border: "1px solid rgba(0,0,0,0.06)",
-      boxShadow: "0 2px 12px rgba(0,0,0,0.06), 0 1px 3px rgba(0,0,0,0.04)",
+      border: "1px solid rgba(0,0,0,0.07)",
+      boxShadow: "0 2px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
       overflow: "hidden",
       ...style,
     }}>
       {title && (
         <div style={{ padding: "20px 24px 0" }}>
-          <p style={{ fontSize: 11, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.07em" }}>{title}</p>
+          <p style={{ fontSize: 10.5, fontWeight: 700, color: "#AEAEB2", textTransform: "uppercase", letterSpacing: "0.09em" }}>{title}</p>
         </div>
       )}
-      <div style={{ padding: title ? "14px 24px 22px" : "22px 24px" }}>
+      <div style={{ padding: title ? "14px 24px 24px" : "24px" }}>
         {children}
       </div>
     </div>
@@ -43,14 +43,14 @@ function AppleCard({ title, children, style = {} }) {
 function KpiCard({ icon: Icon, label, value, sub, iconBg, iconColor }) {
   return (
     <AppleCard>
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ width: 40, height: 40, borderRadius: 12, background: iconBg || "rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <Icon style={{ width: 20, height: 20, color: iconColor || "#888" }} />
+      <div style={{ marginBottom: 16 }}>
+        <div style={{ width: 42, height: 42, borderRadius: 13, background: iconBg || "rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <Icon style={{ width: 20, height: 20, color: iconColor || "#8E8E93" }} />
         </div>
       </div>
-      <p style={{ fontSize: 30, fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.5px", lineHeight: 1 }}>{value}</p>
-      <p style={{ fontSize: 11, fontWeight: 600, color: "#888", marginTop: 6, textTransform: "uppercase", letterSpacing: "0.04em" }}>{label}</p>
-      {sub && <p style={{ fontSize: 11, color: "#bbb", marginTop: 3 }}>{sub}</p>}
+      <p style={{ fontSize: 32, fontWeight: 700, color: "#1C1C1E", letterSpacing: "-0.04em", lineHeight: 1 }}>{value}</p>
+      <p style={{ fontSize: 10.5, fontWeight: 700, color: "#AEAEB2", marginTop: 7, textTransform: "uppercase", letterSpacing: "0.08em" }}>{label}</p>
+      {sub && <p style={{ fontSize: 11, color: "#C7C7CC", marginTop: 4 }}>{sub}</p>}
     </AppleCard>
   );
 }
@@ -60,24 +60,21 @@ function ErfolgsrateGauge({ rate }) {
   const r = 70, circ = 2 * Math.PI * r;
   const half = circ / 2;
   const offset = half - (rate / 100) * half;
-  const color = rate >= 65 ? "#34C759" : rate >= 40 ? "#FF9500" : "#FF3B30";
+  const color = rate >= 65 ? "#1DB954" : rate >= 40 ? "#636366" : "#B81C3A";
   return (
-    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10 }}>
       <svg width={180} height={110} viewBox="0 0 180 110">
-        {/* Track */}
-        <path d={`M 20 95 A ${r} ${r} 0 0 1 160 95`} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth={12} strokeLinecap="round" />
-        {/* Fill */}
+        <path d={`M 20 95 A ${r} ${r} 0 0 1 160 95`} fill="none" stroke="rgba(0,0,0,0.06)" strokeWidth={12} strokeLinecap="round" />
         <path d={`M 20 95 A ${r} ${r} 0 0 1 160 95`} fill="none" stroke={color} strokeWidth={12} strokeLinecap="round"
-          strokeDasharray={half} strokeDashoffset={offset} style={{ transition: "stroke-dashoffset 0.8s ease" }} />
-        {/* Value */}
-        <text x="90" y="86" textAnchor="middle" fontSize="26" fontWeight="700" fill="#1a1a1a" fontFamily="-apple-system">{rate}%</text>
-        <text x="90" y="104" textAnchor="middle" fontSize="10" fill="#aaa" fontFamily="-apple-system">Ø Erfolgsrate</text>
+          strokeDasharray={half} strokeDashoffset={offset} style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.4,0,0.2,1)" }} />
+        <text x="90" y="84" textAnchor="middle" fontSize="27" fontWeight="700" fill="#1C1C1E" fontFamily="-apple-system" letterSpacing="-2">{rate}%</text>
+        <text x="90" y="103" textAnchor="middle" fontSize="10" fill="#AEAEB2" fontFamily="-apple-system" letterSpacing="0.5">Ø ERFOLGSRATE</text>
       </svg>
-      <div style={{ display: "flex", gap: 16 }}>
-        {[["Hoch ≥65%","#34C759"],["Mittel ≥40%","#FF9500"],["Niedrig","#FF3B30"]].map(([l,c]) => (
-          <div key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
+      <div style={{ display: "flex", gap: 18 }}>
+        {[["≥65% Hoch","#1DB954"],["≥40% Mittel","#636366"],["Niedrig","#B81C3A"]].map(([l,c]) => (
+          <div key={l} style={{ display: "flex", alignItems: "center", gap: 5 }}>
             <div style={{ width: 7, height: 7, borderRadius: "50%", background: c }} />
-            <span style={{ fontSize: 10, color: "#aaa" }}>{l}</span>
+            <span style={{ fontSize: 10, color: "#AEAEB2" }}>{l}</span>
           </div>
         ))}
       </div>
@@ -210,10 +207,10 @@ export default function KanzleiAnalytik() {
   ].filter(d => d.value > 0);
 
   const prognoseRanges = [
-    { name: "0–25%",   count: cases.filter(c => (c.prognose || 0) <= 25).length,  fill: "#FF3B30" },
-    { name: "26–50%",  count: cases.filter(c => (c.prognose || 0) > 25 && (c.prognose || 0) <= 50).length, fill: "#FF9500" },
-    { name: "51–75%",  count: cases.filter(c => (c.prognose || 0) > 50 && (c.prognose || 0) <= 75).length, fill: "#007AFF" },
-    { name: "76–100%", count: cases.filter(c => (c.prognose || 0) > 75).length,  fill: "#34C759" },
+    { name: "0–25%",   count: cases.filter(c => (c.prognose || 0) <= 25).length,  fill: "#B81C3A" },
+    { name: "26–50%",  count: cases.filter(c => (c.prognose || 0) > 25 && (c.prognose || 0) <= 50).length, fill: "#8E8E93" },
+    { name: "51–75%",  count: cases.filter(c => (c.prognose || 0) > 50 && (c.prognose || 0) <= 75).length, fill: "#3A3A3C" },
+    { name: "76–100%", count: cases.filter(c => (c.prognose || 0) > 75).length,  fill: "#1DB954" },
   ];
 
   const instanzMap = {};
@@ -226,51 +223,51 @@ export default function KanzleiAnalytik() {
     .filter(d => d.daysLeft >= 0 && d.daysLeft <= 14)
     .sort((a, b) => a.daysLeft - b.daysLeft).slice(0, 5);
 
-  const tooltipStyle = { borderRadius: 12, border: "none", boxShadow: "0 4px 20px rgba(0,0,0,0.12)", fontSize: 12, fontFamily: SF.fontFamily };
+  const tooltipStyle = { borderRadius: 14, border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 8px 28px rgba(0,0,0,0.12)", fontSize: 12, fontFamily: SF.fontFamily, background: "#fff", padding: "8px 14px" };
 
   if (loading) {
     return (
-      <div style={{ minHeight: "100vh", background: "#f2f2f7", display: "flex", alignItems: "center", justifyContent: "center" }}>
-        <div style={{ width: 28, height: 28, borderRadius: "50%", border: "2.5px solid rgba(0,0,0,0.1)", borderTopColor: "#007AFF", animation: "spin 0.8s linear infinite" }} />
+      <div style={{ minHeight: "100vh", background: "#F2F2F7", display: "flex", alignItems: "center", justifyContent: "center" }}>
+        <div style={{ width: 28, height: 28, borderRadius: "50%", border: "3px solid rgba(0,0,0,0.08)", borderTopColor: "#1DB954", animation: "spin 0.8s linear infinite" }} />
       </div>
     );
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f2f2f7", ...SF, paddingBottom: 60 }}>
+    <div style={{ minHeight: "100vh", background: "#F2F2F7", ...SF, paddingBottom: 70 }}>
       {/* Top bar */}
-      <div style={{ background: "rgba(242,242,247,0.92)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(0,0,0,0.07)", position: "sticky", top: 0, zIndex: 20 }}>
-        <div style={{ maxWidth: 1080, margin: "0 auto", padding: "14px 28px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+      <div style={{ background: "rgba(242,242,247,0.96)", backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)", borderBottom: "1px solid rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 20, boxShadow: "0 1px 0 rgba(0,0,0,0.05)" }}>
+        <div style={{ maxWidth: 1100, margin: "0 auto", padding: "14px 32px", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
           <div>
-            <p style={{ fontSize: 17, fontWeight: 700, color: "#1a1a1a", letterSpacing: "-0.2px" }}>{t.module?.[5]?.title || "Kanzlei-Analytik"}</p>
-            <p style={{ fontSize: 12, color: "#888", marginTop: 1 }}>{t.mandatesSub(cases.length, activeCases)}</p>
+            <p style={{ fontSize: 17, fontWeight: 700, color: "#1C1C1E", letterSpacing: "-0.025em" }}>{t.module?.[5]?.title || "Kanzlei-Analytik"}</p>
+            <p style={{ fontSize: 11.5, color: "#8E8E93", marginTop: 2 }}>{t.mandatesSub(cases.length, activeCases)}</p>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <button onClick={() => setShowModal(true)} style={{
-              background: "#007AFF", color: "#fff", fontSize: 13, fontWeight: 600,
-              padding: "9px 18px", borderRadius: 12, border: "none", cursor: "pointer",
-              display: "flex", alignItems: "center", gap: 6, boxShadow: "0 2px 8px rgba(0,122,255,0.3)",
+              background: "#0A84FF", color: "#fff", fontSize: 13, fontWeight: 600,
+              padding: "9px 20px", borderRadius: 12, border: "none", cursor: "pointer",
+              display: "flex", alignItems: "center", gap: 7, boxShadow: "0 3px 12px rgba(10,132,255,0.30)",
             }}>
-              <TrendingUp style={{ width: 15, height: 15 }} /> {t.kiFallanalyse}
+              <TrendingUp style={{ width: 14, height: 14 }} /> {t.kiFallanalyse}
             </button>
-            <button onClick={loadData} style={{ padding: 8, borderRadius: 10, border: "1px solid rgba(0,0,0,0.08)", background: "rgba(255,255,255,0.8)", cursor: "pointer", display: "flex", alignItems: "center" }}>
-              <RefreshCw style={{ width: 15, height: 15, color: "#888" }} />
+            <button onClick={loadData} style={{ padding: 9, borderRadius: 11, border: "1px solid rgba(0,0,0,0.08)", background: "#fff", cursor: "pointer", display: "flex", alignItems: "center", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+              <RefreshCw style={{ width: 14, height: 14, color: "#8E8E93" }} />
             </button>
           </div>
         </div>
       </div>
 
-      <div style={{ maxWidth: 1080, margin: "0 auto", padding: "32px 28px", display: "flex", flexDirection: "column", gap: 24 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 32px", display: "flex", flexDirection: "column", gap: 26 }}>
 
         {/* KPIs */}
         <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
-          <KpiCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={t.ofTotalLabel(cases.length)} iconBg="rgba(0,122,255,0.12)" iconColor="#007AFF" />
+          <KpiCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={t.ofTotalLabel(cases.length)} iconBg="rgba(10,132,255,0.10)" iconColor="#0A84FF" />
           <KpiCard icon={AlertTriangle} label={t.offeeneFristenLabel} value={openDeadlines}
             sub={overdueDeadlines > 0 ? `${overdueDeadlines} überfällig` : t.allOnTrack}
-            iconBg={overdueDeadlines > 0 ? "rgba(255,59,48,0.12)" : "rgba(52,199,89,0.12)"}
-            iconColor={overdueDeadlines > 0 ? "#FF3B30" : "#34C759"} />
-          <KpiCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={t.winProbabilityLabel} iconBg="rgba(255,149,0,0.12)" iconColor="#FF9500" />
-          <KpiCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={t.totalRecordedLabel} iconBg="rgba(88,86,214,0.12)" iconColor="#5856D6" />
+            iconBg={overdueDeadlines > 0 ? "rgba(184,28,58,0.09)" : "rgba(29,185,84,0.09)"}
+            iconColor={overdueDeadlines > 0 ? "#B81C3A" : "#1DB954"} />
+          <KpiCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={t.winProbabilityLabel} iconBg="rgba(29,185,84,0.09)" iconColor="#1DB954" />
+          <KpiCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={t.totalRecordedLabel} iconBg="rgba(99,99,102,0.09)" iconColor="#636366" />
         </div>
 
         {/* ══ ERFOLGSRATE & DAUER (NEU – prominent oben) ══════════════════════ */}
@@ -302,12 +299,12 @@ export default function KanzleiAnalytik() {
                   <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
                     {erfolgsNachRG.map(d => (
                       <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                        <span style={{ fontSize: 11, color: "#555", minWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-                        <div style={{ flex: 1, height: 5, background: "rgba(0,0,0,0.06)", borderRadius: 3, overflow: "hidden" }}>
-                          <div style={{ height: "100%", borderRadius: 3, width: `${d.rate}%`, background: d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30", transition: "width 0.6s ease" }} />
+                        <span style={{ fontSize: 11.5, color: "#636366", minWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
+                        <div style={{ flex: 1, height: 5, background: "rgba(0,0,0,0.06)", borderRadius: 99, overflow: "hidden" }}>
+                          <div style={{ height: "100%", borderRadius: 99, width: `${d.rate}%`, background: d.rate >= 65 ? "#1DB954" : d.rate >= 40 ? "#636366" : "#B81C3A", transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
                         </div>
-                        <span style={{ fontSize: 12, fontWeight: 700, color: d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30", minWidth: 35, textAlign: "right" }}>{d.rate}%</span>
-                        <span style={{ fontSize: 10, color: "#ccc" }}>({d.total})</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, color: d.rate >= 65 ? "#1DB954" : d.rate >= 40 ? "#636366" : "#B81C3A", minWidth: 35, textAlign: "right" }}>{d.rate}%</span>
+                        <span style={{ fontSize: 10, color: "#C7C7CC" }}>({d.total})</span>
                       </div>
                     ))}
                   </div>
@@ -325,8 +322,8 @@ export default function KanzleiAnalytik() {
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {/* Große Kennzahl */}
               <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
-                <div style={{ width: 72, height: 72, borderRadius: 20, background: "rgba(88,86,214,0.1)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
-                  <Timer style={{ width: 28, height: 28, color: "#5856D6", marginBottom: 2 }} />
+                <div style={{ width: 72, height: 72, borderRadius: 20, background: "rgba(58,58,60,0.08)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center" }}>
+                <Timer style={{ width: 28, height: 28, color: "#3A3A3C", marginBottom: 2 }} />
                 </div>
                 <div>
                   <p style={{ fontSize: 36, fontWeight: 700, color: "#1a1a1a", letterSpacing: "-1px", lineHeight: 1 }}>
@@ -349,8 +346,8 @@ export default function KanzleiAnalytik() {
                       <XAxis dataKey="name" tick={{ fontSize: 9, fill: "#bbb" }} />
                       <YAxis tick={{ fontSize: 10, fill: "#bbb" }} allowDecimals={false} unit="M" />
                       <Tooltip contentStyle={tooltipStyle} formatter={v => [v + " Monate"]} />
-                      <ReferenceLine y={avgDauer} stroke="#5856D6" strokeDasharray="4 3" strokeWidth={1.5} label={{ value: "Ø", fill: "#5856D6", fontSize: 10 }} />
-                      <Bar dataKey="monate" fill="#5856D6" radius={[6, 6, 0, 0]} name="Monate" />
+                      <ReferenceLine y={avgDauer} stroke="#636366" strokeDasharray="4 3" strokeWidth={1.5} label={{ value: "Ø", fill: "#636366", fontSize: 10 }} />
+                      <Bar dataKey="monate" fill="#3A3A3C" radius={[6, 6, 0, 0]} name="Monate" />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
@@ -367,9 +364,9 @@ export default function KanzleiAnalytik() {
                         <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                           <span style={{ fontSize: 11, color: "#555", minWidth: 90, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
                           <div style={{ flex: 1, height: 5, background: "rgba(0,0,0,0.06)", borderRadius: 3, overflow: "hidden" }}>
-                            <div style={{ height: "100%", borderRadius: 3, width: `${(d.avg / maxDauer) * 100}%`, background: "#5856D6", transition: "width 0.6s ease" }} />
+                            <div style={{ height: "100%", borderRadius: 99, width: `${(d.avg / maxDauer) * 100}%`, background: "#3A3A3C", transition: "width 0.6s cubic-bezier(0.4,0,0.2,1)" }} />
                           </div>
-                          <span style={{ fontSize: 12, fontWeight: 700, color: "#5856D6", minWidth: 40, textAlign: "right" }}>{d.avg}M</span>
+                          <span style={{ fontSize: 12, fontWeight: 700, color: "#3A3A3C", minWidth: 40, textAlign: "right" }}>{d.avg}M</span>
                           <span style={{ fontSize: 10, color: "#ccc" }}>({d.count})</span>
                         </div>
                       );
@@ -396,9 +393,9 @@ export default function KanzleiAnalytik() {
                 <Tooltip contentStyle={tooltipStyle} formatter={v => [v + "%", "Erfolgsrate"]} />
                 <ReferenceLine y={50} stroke="rgba(0,0,0,0.1)" strokeDasharray="4 3" />
                 <Bar dataKey="rate" radius={[8, 8, 0, 0]} name="Erfolgsrate">
-                  {erfolgsNachGericht.map((d, i) => (
-                    <Cell key={i} fill={d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30"} />
-                  ))}
+                {erfolgsNachGericht.map((d, i) => (
+                  <Cell key={i} fill={d.rate >= 65 ? "#1DB954" : d.rate >= 40 ? "#636366" : "#B81C3A"} />
+                ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -424,7 +421,7 @@ export default function KanzleiAnalytik() {
                     labelLine={false}
                   >
                     {erfolgsNachRG.map((d, i) => (
-                      <Cell key={i} fill={d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30"} />
+                      <Cell key={i} fill={d.rate >= 65 ? "#1DB954" : d.rate >= 40 ? "#636366" : "#B81C3A"} />
                     ))}
                   </Pie>
                   <Tooltip
@@ -436,15 +433,15 @@ export default function KanzleiAnalytik() {
               <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
                 <p style={{ fontSize: 10, fontWeight: 700, color: "#aaa", textTransform: "uppercase", letterSpacing: "0.07em", marginBottom: 4 }}>Legende</p>
                 {erfolgsNachRG.map((d, i) => (
-                  <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                    <div style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30" }} />
+                <div key={d.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", flexShrink: 0, background: d.rate >= 65 ? "#1DB954" : d.rate >= 40 ? "#636366" : "#B81C3A" }} />
                     <span style={{ fontSize: 12, color: "#333", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</span>
-                    <span style={{ fontSize: 12, fontWeight: 700, color: d.rate >= 65 ? "#34C759" : d.rate >= 40 ? "#FF9500" : "#FF3B30" }}>{d.rate}%</span>
-                    <span style={{ fontSize: 10, color: "#ccc" }}>({d.total})</span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: d.rate >= 65 ? "#1DB954" : d.rate >= 40 ? "#636366" : "#B81C3A" }}>{d.rate}%</span>
+                    <span style={{ fontSize: 10, color: "#C7C7CC" }}>({d.total})</span>
                   </div>
                 ))}
-                <div style={{ marginTop: 8, paddingTop: 10, borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", gap: 14 }}>
-                  {[["≥65% Hoch","#34C759"],["≥40% Mittel","#FF9500"],["<40% Niedrig","#FF3B30"]].map(([l,c]) => (
+                <div style={{ marginTop: 10, paddingTop: 12, borderTop: "1px solid rgba(0,0,0,0.06)", display: "flex", gap: 14 }}>
+                  {[["≥65% Hoch","#1DB954"],["≥40% Mittel","#636366"],["<40% Niedrig","#B81C3A"]].map(([l,c]) => (
                     <div key={l} style={{ display: "flex", alignItems: "center", gap: 4 }}>
                       <div style={{ width: 7, height: 7, borderRadius: "50%", background: c }} />
                       <span style={{ fontSize: 10, color: "#aaa" }}>{l}</span>
@@ -519,7 +516,7 @@ export default function KanzleiAnalytik() {
                 <PieChart>
                   <Pie data={fristenData} cx="50%" cy="50%" outerRadius={80} dataKey="value" nameKey="name" paddingAngle={4}>
                     {fristenData.map((entry, i) => (
-                      <Cell key={i} fill={entry.name === "Überfällig" ? "#FF3B30" : entry.name === "Versäumt" ? "#FF9500" : entry.name === "Erledigt" ? "#34C759" : "#007AFF"} />
+                      <Cell key={i} fill={entry.name === "Überfällig" ? "#B81C3A" : entry.name === "Versäumt" ? "#8E8E93" : entry.name === "Erledigt" ? "#1DB954" : "#3A3A3C"} />
                     ))}
                   </Pie>
                   <Tooltip contentStyle={tooltipStyle} />

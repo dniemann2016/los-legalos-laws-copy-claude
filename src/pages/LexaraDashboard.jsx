@@ -4,29 +4,44 @@ import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle, LogIn } from "l
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 
-const STATUS_CONFIG = {
-  Aktiv:        { text: "text-emerald-700", bg: "bg-emerald-50", ring: "ring-1 ring-emerald-200" },
-  Vorbereitung: { text: "text-blue-700",    bg: "bg-blue-50",    ring: "ring-1 ring-blue-200" },
-  Abgeschlossen:{ text: "text-slate-500",   bg: "bg-slate-100",  ring: "" },
-  Ruhend:       { text: "text-amber-700",   bg: "bg-amber-50",   ring: "ring-1 ring-amber-200" },
+/* ── Design tokens (SwiftUI / Apple HIG) ─────────── */
+const C = {
+  bg:          "#F2F2F7",
+  card:        "#FFFFFF",
+  cardSecond:  "#F9F9F9",
+  separator:   "rgba(0,0,0,0.08)",
+  label:       "#1C1C1E",
+  label2:      "#636366",
+  label3:      "#AEAEB2",
+  emerald:     "#1DB954",
+  emeraldDim:  "rgba(29,185,84,0.10)",
+  emeraldText: "#166F38",
+  ocean:       "#0A84FF",
+  bordeaux:    "#B81C3A",
+  bordeauxDim: "rgba(184,28,58,0.09)",
+  shadowSm:    "0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04)",
+  shadow:      "0 4px 20px rgba(0,0,0,0.07), 0 1px 5px rgba(0,0,0,0.05)",
 };
+const SF = { fontFamily: "-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif" };
 
+/* ── Prognose arc ─────────────────────────────────── */
 function PrognoseArc({ value = 0 }) {
-  const color = value >= 65 ? "#16a34a" : value >= 40 ? "#d97706" : "#dc2626";
-  const r = 16, circ = 2 * Math.PI * r;
-  const offset = circ - (value / 100) * circ;
+  const color = value >= 65 ? C.emerald : value >= 40 ? "#FF9500" : C.bordeaux;
+  const r = 15, circ = 2 * Math.PI * r, offset = circ - (value / 100) * circ;
   return (
-    <div className="relative flex items-center justify-center w-10 h-10">
-      <svg width="40" height="40" style={{ transform: "rotate(-90deg)" }} className="absolute inset-0">
-        <circle cx="20" cy="20" r={r} fill="none" stroke="#f1f5f9" strokeWidth="3" />
-        <circle cx="20" cy="20" r={r} fill="none" stroke={color} strokeWidth="3"
-          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round" />
+    <div style={{ position:"relative", width:38, height:38, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <svg width="38" height="38" style={{ transform:"rotate(-90deg)", position:"absolute", inset:0 }}>
+        <circle cx="19" cy="19" r={r} fill="none" stroke="rgba(0,0,0,0.07)" strokeWidth="3" />
+        <circle cx="19" cy="19" r={r} fill="none" stroke={color} strokeWidth="3"
+          strokeDasharray={circ} strokeDashoffset={offset} strokeLinecap="round"
+          style={{ transition:"stroke-dashoffset 0.5s ease" }} />
       </svg>
-      <span className="relative text-[10px] font-bold" style={{ color }}>{Math.round(value)}</span>
+      <span style={{ position:"relative", fontSize:9, fontWeight:700, color }}>{Math.round(value)}</span>
     </div>
   );
 }
 
+/* ── Case card ────────────────────────────────────── */
 function CaseCard({ caseData, counts }) {
   const navigate = useNavigate();
   const total = 9;
@@ -34,79 +49,100 @@ function CaseCard({ caseData, counts }) {
     counts.args > 0, counts.evidence > 0, counts.persons > 0,
     counts.deadlines > 0, caseData.prognose, caseData.streitwert].filter(Boolean).length;
   const pct = Math.round((done / total) * 100);
-  const progColor = (caseData.prognose||0) >= 65 ? "#34C759" : (caseData.prognose||0) >= 40 ? "#FF9500" : "#FF3B30";
+  const progColor = (caseData.prognose||0) >= 65 ? C.emerald : (caseData.prognose||0) >= 40 ? "#FF9500" : C.bordeaux;
+
+  const statusStyle = {
+    Aktiv:         { bg: C.emeraldDim, color: C.emeraldText },
+    Vorbereitung:  { bg: "rgba(10,132,255,0.09)", color: "#0A5FC4" },
+    Abgeschlossen: { bg: "rgba(0,0,0,0.05)", color: C.label2 },
+    Ruhend:        { bg: "rgba(255,149,0,0.09)", color: "#BF7200" },
+  }[caseData.status] || { bg: "rgba(0,0,0,0.05)", color: C.label2 };
 
   return (
     <div
       onClick={() => navigate(`/lexara/case?id=${caseData.id}`)}
-      className="cursor-pointer flex flex-col gap-0 transition-all duration-150"
       style={{
-        background: "#fff",
-        border: "1px solid rgba(0,0,0,0.08)",
-        borderRadius: "10px",
-        boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-        fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif",
+        background: C.card,
+        border: `1px solid ${C.separator}`,
+        borderRadius: 18,
+        boxShadow: C.shadowSm,
+        cursor: "pointer",
+        transition: "box-shadow 0.18s, transform 0.18s, border-color 0.18s",
+        display: "flex", flexDirection: "column",
+        ...SF,
       }}
       onMouseEnter={e => {
-        e.currentTarget.style.boxShadow = "0 4px 16px rgba(0,0,0,0.10)";
-        e.currentTarget.style.borderColor = "rgba(52,199,89,0.3)";
-        e.currentTarget.style.transform = "translateY(-1px)";
+        e.currentTarget.style.boxShadow = C.shadow;
+        e.currentTarget.style.borderColor = "rgba(29,185,84,0.28)";
+        e.currentTarget.style.transform = "translateY(-2px)";
       }}
       onMouseLeave={e => {
-        e.currentTarget.style.boxShadow = "0 1px 4px rgba(0,0,0,0.06)";
-        e.currentTarget.style.borderColor = "rgba(0,0,0,0.08)";
+        e.currentTarget.style.boxShadow = C.shadowSm;
+        e.currentTarget.style.borderColor = C.separator;
         e.currentTarget.style.transform = "none";
       }}
     >
-      {/* Card header */}
-      <div className="flex items-start justify-between gap-3 px-4 pt-4 pb-3">
-        <div className="flex-1 min-w-0">
+      {/* Header */}
+      <div style={{ padding:"18px 20px 14px", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:12 }}>
+        <div style={{ flex:1, minWidth:0 }}>
           {caseData.aktenzeichen && (
-            <p className="font-mono mb-1" style={{ fontSize: 10, color: "#aaa", letterSpacing: "0.05em" }}>{caseData.aktenzeichen}</p>
+            <p style={{ fontFamily:"'SF Mono',Menlo,monospace", fontSize:9.5, color:C.label3, letterSpacing:"0.04em", marginBottom:4 }}>
+              {caseData.aktenzeichen}
+            </p>
           )}
-          <h3 className="font-semibold leading-snug" style={{ fontSize: 13, color: "#1a1a1a" }}>{caseData.fallname}</h3>
-          <div className="flex flex-wrap gap-1 mt-1.5">
+          <h3 style={{ fontSize:13.5, fontWeight:600, color:C.label, lineHeight:1.35, marginBottom:8 }}>
+            {caseData.fallname}
+          </h3>
+          <div style={{ display:"flex", flexWrap:"wrap", gap:5 }}>
             {caseData.status && (
-              <span style={{ fontSize: 10, fontWeight: 500, padding: "1px 7px", borderRadius: 4, background: "rgba(0,0,0,0.05)", color: "#555" }}>
+              <span style={{ fontSize:10.5, fontWeight:600, padding:"2px 8px", borderRadius:6, background:statusStyle.bg, color:statusStyle.color }}>
                 {caseData.status}
               </span>
             )}
             {caseData.rechtsgebiet && (
-              <span style={{ fontSize: 10, fontWeight: 400, padding: "1px 7px", borderRadius: 4, background: "rgba(0,0,0,0.04)", color: "#777" }}>
+              <span style={{ fontSize:10.5, padding:"2px 8px", borderRadius:6, background:"rgba(0,0,0,0.04)", color:C.label2 }}>
                 {caseData.rechtsgebiet}
               </span>
             )}
             {caseData.instanz && caseData.instanz !== "Erstinstanz" && (
-              <span style={{ fontSize: 10, fontWeight: 400, padding: "1px 7px", borderRadius: 4, background: "rgba(0,0,0,0.04)", color: "#777" }}>
+              <span style={{ fontSize:10.5, padding:"2px 8px", borderRadius:6, background:"rgba(0,0,0,0.04)", color:C.label2 }}>
                 {caseData.instanz}
               </span>
             )}
           </div>
         </div>
-        {/* Prognose indicator */}
-        <div className="flex-shrink-0 text-right">
-          <p style={{ fontSize: 18, fontWeight: 700, color: progColor, lineHeight: 1 }}>{Math.round(caseData.prognose||0)}%</p>
-          <p style={{ fontSize: 9, color: "#aaa", marginTop: 1 }}>Prognose</p>
+        <div style={{ flexShrink:0, textAlign:"right" }}>
+          <p style={{ fontSize:22, fontWeight:700, color:progColor, lineHeight:1, letterSpacing:"-0.03em" }}>{Math.round(caseData.prognose||0)}%</p>
+          <p style={{ fontSize:9, color:C.label3, marginTop:2 }}>Prognose</p>
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="px-4 pb-3">
-        <div className="flex justify-between mb-1" style={{ fontSize: 10, color: "#aaa" }}>
-          <span>Vollständigkeit</span>
-          <span style={{ color: "#666", fontWeight: 500 }}>{pct}%</span>
+      {/* Progress */}
+      <div style={{ paddingInline:20, paddingBottom:14 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:5 }}>
+          <span style={{ fontSize:10, color:C.label3 }}>Vollständigkeit</span>
+          <span style={{ fontSize:10, fontWeight:600, color:C.label2 }}>{pct}%</span>
         </div>
-        <div style={{ height: 3, background: "rgba(0,0,0,0.07)", borderRadius: 2, overflow: "hidden" }}>
-          <div style={{ height: "100%", borderRadius: 2, width: `${pct}%`, background: pct >= 80 ? "#34C759" : pct >= 50 ? "#FF9500" : "#ccc", transition: "width 0.3s" }} />
+        <div style={{ height:4, background:"rgba(0,0,0,0.06)", borderRadius:99, overflow:"hidden" }}>
+          <div style={{
+            height:"100%", borderRadius:99,
+            width:`${pct}%`,
+            background: pct >= 80 ? C.emerald : pct >= 50 ? "#FF9500" : "rgba(0,0,0,0.15)",
+            transition:"width 0.35s ease",
+          }} />
         </div>
       </div>
 
-      {/* Stats row */}
-      <div className="grid grid-cols-4 gap-0 px-4 pt-2.5 pb-3" style={{ borderTop: "1px solid rgba(0,0,0,0.06)" }}>
+      {/* Stats */}
+      <div style={{
+        display:"grid", gridTemplateColumns:"repeat(4,1fr)",
+        borderTop:`1px solid ${C.separator}`,
+        paddingBlock:12,
+      }}>
         {[["Argum.", counts.args], ["Beweise", counts.evidence], ["Personen", counts.persons], ["Fristen", counts.deadlines]].map(([l, v]) => (
-          <div key={l} className="text-center">
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a", lineHeight: 1 }}>{v}</p>
-            <p style={{ fontSize: 9, color: "#aaa", marginTop: 2 }}>{l}</p>
+          <div key={l} style={{ textAlign:"center" }}>
+            <p style={{ fontSize:15, fontWeight:700, color:C.label, lineHeight:1 }}>{v}</p>
+            <p style={{ fontSize:9.5, color:C.label3, marginTop:3 }}>{l}</p>
           </div>
         ))}
       </div>
@@ -114,16 +150,44 @@ function CaseCard({ caseData, counts }) {
   );
 }
 
+/* ── KPI chip ─────────────────────────────────────── */
+function KpiChip({ icon: Icon, label, value, accent }) {
+  return (
+    <div style={{
+      background: C.card,
+      border:`1px solid ${C.separator}`,
+      borderRadius:16,
+      padding:"16px 18px",
+      display:"flex", alignItems:"center", gap:14,
+      boxShadow: C.shadowSm,
+    }}>
+      <div style={{
+        width:40, height:40, borderRadius:12,
+        background: accent ? `${accent}14` : "rgba(0,0,0,0.05)",
+        display:"flex", alignItems:"center", justifyContent:"center",
+        flexShrink:0,
+      }}>
+        <Icon style={{ width:18, height:18, color: accent || C.label3 }} />
+      </div>
+      <div>
+        <p style={{ fontSize:22, fontWeight:700, color:C.label, lineHeight:1, letterSpacing:"-0.03em" }}>{value}</p>
+        <p style={{ fontSize:10.5, color:C.label3, marginTop:4 }}>{label}</p>
+      </div>
+    </div>
+  );
+}
+
+/* ── Main ─────────────────────────────────────────── */
 export default function LexaraDashboard() {
   const { isAuthenticated, isLoadingAuth, navigateToLogin } = useAuth();
-  const [cases, setCases] = useState([]);
-  const [search, setSearch] = useState("");
+  const [cases, setCases]         = useState([]);
+  const [search, setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading]     = useState(true);
   const [showCreate, setShowCreate] = useState(false);
-  const [newCase, setNewCase] = useState({ fallname: "", aktenzeichen: "", rechtsgebiet: "", status: "Aktiv", instanz: "Erstinstanz" });
+  const [newCase, setNewCase]     = useState({ fallname:"", aktenzeichen:"", rechtsgebiet:"", status:"Aktiv", instanz:"Erstinstanz" });
   const [caseCounts, setCaseCounts] = useState({});
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating]   = useState(false);
 
   useEffect(() => { if (isAuthenticated) loadData(); }, [isAuthenticated]);
 
@@ -140,9 +204,9 @@ export default function LexaraDashboard() {
     const counts = {};
     cs.forEach(c => {
       counts[c.id] = {
-        args: args.filter(a => a.case_id === c.id).length,
-        evidence: evs.filter(e => e.case_id === c.id).length,
-        persons: pers.filter(p => p.case_id === c.id).length,
+        args:      args.filter(a => a.case_id === c.id).length,
+        evidence:  evs.filter(e => e.case_id === c.id).length,
+        persons:   pers.filter(p => p.case_id === c.id).length,
         deadlines: deadlines.filter(d => d.case_id === c.id).length,
       };
     });
@@ -154,7 +218,7 @@ export default function LexaraDashboard() {
     if (!newCase.fallname.trim()) return;
     setCreating(true);
     await base44.entities.Case.create(newCase);
-    setNewCase({ fallname: "", aktenzeichen: "", rechtsgebiet: "", status: "Aktiv", instanz: "Erstinstanz" });
+    setNewCase({ fallname:"", aktenzeichen:"", rechtsgebiet:"", status:"Aktiv", instanz:"Erstinstanz" });
     setShowCreate(false);
     setCreating(false);
     loadData();
@@ -167,173 +231,200 @@ export default function LexaraDashboard() {
     return matchSearch && matchStatus;
   });
 
-  const aktiv = cases.filter(c => c.status === "Aktiv").length;
-  const avgPrognose = cases.length ? Math.round(cases.reduce((s, c) => s + (c.prognose || 0), 0) / cases.length) : 0;
-  const totalArgs = Object.values(caseCounts).reduce((s, c) => s + c.args, 0);
-  const totalDeadlines = Object.values(caseCounts).reduce((s, c) => s + c.deadlines, 0);
+  const aktiv      = cases.filter(c => c.status === "Aktiv").length;
+  const avgPrognose = cases.length ? Math.round(cases.reduce((s,c)=>s+(c.prognose||0),0)/cases.length) : 0;
+  const totalArgs  = Object.values(caseCounts).reduce((s,c)=>s+c.args,0);
+  const totalDead  = Object.values(caseCounts).reduce((s,c)=>s+c.deadlines,0);
 
-  const sf = { fontFamily: "-apple-system, 'Helvetica Neue', Arial, sans-serif" };
+  if (isLoadingAuth) return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
+      <div style={{ width:26, height:26, border:"3px solid rgba(0,0,0,0.08)", borderTopColor:C.emerald, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+    </div>
+  );
 
-  if (isLoadingAuth) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" style={{ background: "#f0f0f0" }}>
-        <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#34C759" }} />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return (
-      <div className="flex items-center justify-center min-h-screen" style={{ background: "#f0f0f0", ...sf }}>
-        <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 14, padding: 40, textAlign: "center", maxWidth: 340, boxShadow: "0 4px 24px rgba(0,0,0,0.08)" }}>
-          <div style={{ width: 48, height: 48, background: "rgba(52,199,89,0.1)", borderRadius: 12, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 16px" }}>
-            <Scale className="w-6 h-6" style={{ color: "#34C759" }} />
-          </div>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: "#1a1a1a", marginBottom: 8 }}>Anmeldung erforderlich</h2>
-          <p style={{ fontSize: 12, color: "#888", marginBottom: 24, lineHeight: 1.6 }}>Um Fälle zu verwalten und auf alle Funktionen zuzugreifen, bitte anmelden.</p>
-          <button onClick={navigateToLogin}
-            style={{ width: "100%", background: "#34C759", color: "#fff", fontSize: 13, fontWeight: 600, padding: "10px", borderRadius: 8, border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-            <LogIn className="w-4 h-4" /> Jetzt anmelden
-          </button>
+  if (!isAuthenticated) return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", ...SF }}>
+      <div style={{ background:C.card, border:`1px solid ${C.separator}`, borderRadius:22, padding:44, textAlign:"center", maxWidth:340, boxShadow:C.shadow }}>
+        <div style={{ width:52, height:52, background:C.emeraldDim, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 18px" }}>
+          <Scale style={{ width:24, height:24, color:C.emerald }} />
         </div>
+        <h2 style={{ fontSize:17, fontWeight:700, color:C.label, marginBottom:8, letterSpacing:"-0.025em" }}>Anmeldung erforderlich</h2>
+        <p style={{ fontSize:12.5, color:C.label2, marginBottom:26, lineHeight:1.6 }}>Um Fälle zu verwalten, bitte anmelden.</p>
+        <button onClick={navigateToLogin} style={{
+          width:"100%", background:C.emerald, color:"#fff", fontSize:13, fontWeight:600,
+          padding:"11px", borderRadius:12, border:"none", cursor:"pointer",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+          boxShadow:`0 4px 16px rgba(29,185,84,0.35)`,
+        }}>
+          <LogIn style={{ width:15, height:15 }} /> Jetzt anmelden
+        </button>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
-    <div className="min-h-screen" style={{ background: "#f0f0f0", ...sf }}>
+    <div style={{ minHeight:"100vh", background:C.bg, ...SF }}>
+
       {/* Toolbar */}
-      <div className="sticky top-0 z-20" style={{ background: "rgba(246,246,246,0.97)", borderBottom: "1px solid rgba(0,0,0,0.1)", backdropFilter: "blur(20px)" }}>
-        <div className="max-w-5xl mx-auto px-5 py-3 flex items-center gap-3">
-          <div className="mr-auto">
-            <p style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a", lineHeight: 1 }}>Fallübersicht</p>
-            <p style={{ fontSize: 10, color: "#999", marginTop: 2 }}>{cases.length} Mandate verwaltet</p>
+      <div style={{
+        position:"sticky", top:0, zIndex:20,
+        background:"rgba(242,242,247,0.96)",
+        borderBottom:`1px solid ${C.separator}`,
+        backdropFilter:"blur(24px)",
+        WebkitBackdropFilter:"blur(24px)",
+      }}>
+        <div style={{ maxWidth:1100, margin:"0 auto", padding:"14px 28px", display:"flex", alignItems:"center", gap:12 }}>
+          <div style={{ marginRight:"auto" }}>
+            <p style={{ fontSize:15, fontWeight:700, color:C.label, letterSpacing:"-0.025em" }}>Fallübersicht</p>
+            <p style={{ fontSize:11, color:C.label3, marginTop:1 }}>{cases.length} Mandate verwaltet</p>
           </div>
-          <div className="relative hidden sm:block">
-            <Search className="w-3 h-3 absolute left-2.5 top-1/2 -translate-y-1/2" style={{ color: "#aaa" }} />
-            <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)}
-              style={{ paddingLeft: 26, paddingRight: 10, width: 160, height: 28, fontSize: 12, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 6, outline: "none", color: "#333" }} />
+          <div style={{ position:"relative" }}>
+            <Search style={{ width:13, height:13, position:"absolute", left:10, top:"50%", transform:"translateY(-50%)", color:C.label3 }} />
+            <input placeholder="Suchen…" value={search} onChange={e => setSearch(e.target.value)} style={{
+              paddingLeft:30, paddingRight:12, width:170, height:32, fontSize:12.5,
+              background:"rgba(0,0,0,0.05)", border:`1px solid ${C.separator}`,
+              borderRadius:10, outline:"none", color:C.label,
+            }} />
           </div>
-          <button onClick={() => setShowCreate(true)}
-            className="flex items-center gap-1.5 transition-all"
-            style={{ background: "#34C759", color: "#fff", fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 6, border: "none" }}>
-            <Plus className="w-3 h-3" /> Neuer Fall
+          <button onClick={() => setShowCreate(true)} style={{
+            background:C.emerald, color:"#fff", fontSize:12, fontWeight:600,
+            padding:"7px 16px", borderRadius:10, border:"none", cursor:"pointer",
+            display:"flex", alignItems:"center", gap:6,
+            boxShadow:`0 2px 10px rgba(29,185,84,0.35)`,
+            transition:"all 0.14s",
+          }}
+            onMouseEnter={e => e.currentTarget.style.boxShadow=`0 4px 18px rgba(29,185,84,0.45)`}
+            onMouseLeave={e => e.currentTarget.style.boxShadow=`0 2px 10px rgba(29,185,84,0.35)`}
+          >
+            <Plus style={{ width:13, height:13 }} /> Neuer Fall
           </button>
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-5 py-5 space-y-5">
+      <div style={{ maxWidth:1100, margin:"0 auto", padding:"28px 28px 60px", display:"flex", flexDirection:"column", gap:24 }}>
+
         {/* KPIs */}
         {cases.length > 0 && (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-            {[
-              { icon: Scale, label: "Aktive Mandate", value: aktiv },
-              { icon: TrendingUp, label: "Ø Erfolgsquote", value: `${avgPrognose}%` },
-              { icon: AlertCircle, label: "Argumente ges.", value: totalArgs },
-              { icon: Clock, label: "Offene Fristen", value: totalDeadlines },
-            ].map((k, i) => {
-              const Icon = k.icon;
-              return (
-                <div key={i} style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.07)", borderRadius: 8, padding: "12px 14px", display: "flex", alignItems: "center", gap: 10, boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
-                  <Icon className="w-4 h-4 flex-shrink-0" style={{ color: "#aaa" }} />
-                  <div>
-                    <p style={{ fontSize: 18, fontWeight: 700, color: "#1a1a1a", lineHeight: 1 }}>{k.value}</p>
-                    <p style={{ fontSize: 10, color: "#aaa", marginTop: 2 }}>{k.label}</p>
-                  </div>
-                </div>
-              );
-            })}
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(4,1fr)", gap:14 }}>
+            <KpiChip icon={Scale}        label="Aktive Mandate"  value={aktiv}           accent={C.ocean} />
+            <KpiChip icon={TrendingUp}   label="Ø Erfolgsquote" value={`${avgPrognose}%`} accent={C.emerald} />
+            <KpiChip icon={AlertCircle}  label="Argumente ges."  value={totalArgs}        accent={C.label2} />
+            <KpiChip icon={Clock}        label="Offene Fristen"  value={totalDead}        accent={C.bordeaux} />
           </div>
         )}
 
         {/* Filters */}
-        <div className="flex items-center gap-1.5 flex-wrap">
-          {["all", "Aktiv", "Vorbereitung", "Ruhend", "Abgeschlossen"].map(s => (
-            <button key={s} onClick={() => setStatusFilter(s)}
-              style={{
-                padding: "4px 10px", borderRadius: 5, fontSize: 11, fontWeight: statusFilter===s ? 600 : 400, border: "1px solid",
-                borderColor: statusFilter===s ? "#34C759" : "rgba(0,0,0,0.1)",
-                background: statusFilter===s ? "rgba(52,199,89,0.1)" : "#fff",
-                color: statusFilter===s ? "#1a7f37" : "#666", transition: "all 0.12s",
+        <div style={{ display:"flex", alignItems:"center", gap:6, flexWrap:"wrap" }}>
+          {["all","Aktiv","Vorbereitung","Ruhend","Abgeschlossen"].map(s => {
+            const active = statusFilter === s;
+            return (
+              <button key={s} onClick={() => setStatusFilter(s)} style={{
+                padding:"5px 13px", borderRadius:8, fontSize:12, fontWeight: active ? 600 : 400,
+                border: `1px solid ${active ? "rgba(29,185,84,0.3)" : C.separator}`,
+                background: active ? C.emeraldDim : C.card,
+                color: active ? C.emeraldText : C.label2,
+                cursor:"pointer", transition:"all 0.13s",
               }}>
-              {s === "all" ? "Alle" : s}
-              {s !== "all" && <span style={{ marginLeft: 5, opacity: 0.5, fontSize: 10 }}>{cases.filter(c => c.status === s).length}</span>}
-            </button>
-          ))}
+                {s === "all" ? "Alle" : s}
+                {s !== "all" && <span style={{ marginLeft:6, opacity:0.5, fontSize:10 }}>{cases.filter(c=>c.status===s).length}</span>}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Cases grid */}
+        {/* Grid */}
         {loading ? (
-          <div className="flex items-center justify-center py-24">
-            <div className="w-5 h-5 border-2 rounded-full animate-spin" style={{ borderColor: "rgba(0,0,0,0.1)", borderTopColor: "#34C759" }} />
+          <div style={{ display:"flex", alignItems:"center", justifyContent:"center", paddingBlock:100 }}>
+            <div style={{ width:26, height:26, border:"3px solid rgba(0,0,0,0.07)", borderTopColor:C.emerald, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
           </div>
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))", gap:18 }}>
             {filtered.map(c => (
-              <CaseCard key={c.id} caseData={c} counts={caseCounts[c.id] || { args: 0, evidence: 0, persons: 0, deadlines: 0 }} />
+              <CaseCard key={c.id} caseData={c} counts={caseCounts[c.id] || { args:0, evidence:0, persons:0, deadlines:0 }} />
             ))}
           </div>
         ) : (
-          <div className="text-center py-20">
-            <div style={{ width: 44, height: 44, background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 10, display: "flex", alignItems: "center", justifyContent: "center", margin: "0 auto 12px" }}>
-              <Scale className="w-5 h-5" style={{ color: "#ccc" }} />
+          <div style={{ textAlign:"center", paddingBlock:80 }}>
+            <div style={{ width:48, height:48, background:C.card, border:`1px solid ${C.separator}`, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 14px", boxShadow:C.shadowSm }}>
+              <Scale style={{ width:22, height:22, color:C.label3 }} />
             </div>
-            <p style={{ fontSize: 13, fontWeight: 600, color: "#555", marginBottom: 4 }}>
+            <p style={{ fontSize:14, fontWeight:600, color:C.label2, marginBottom:5 }}>
               {search || statusFilter !== "all" ? "Keine Treffer" : "Noch keine Fälle"}
             </p>
-            <p style={{ fontSize: 11, color: "#aaa" }}>
+            <p style={{ fontSize:12, color:C.label3 }}>
               {search || statusFilter !== "all" ? "Filter oder Suche anpassen" : "Neuen Fall anlegen um zu beginnen"}
             </p>
           </div>
         )}
       </div>
 
-      {/* Create modal — Numbers-style sheet dialog */}
+      {/* Create modal */}
       {showCreate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center"
-          style={{ background: "rgba(0,0,0,0.35)", backdropFilter: "blur(8px)" }}
-          onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
-          <div style={{ background: "rgba(248,248,248,0.98)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 14, padding: 24, width: "100%", maxWidth: 420, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", ...sf }}>
-            <div className="flex items-center justify-between mb-5">
+        <div style={{
+          position:"fixed", inset:0, zIndex:50,
+          display:"flex", alignItems:"center", justifyContent:"center",
+          background:"rgba(0,0,0,0.38)", backdropFilter:"blur(10px)",
+        }} onClick={e => e.target === e.currentTarget && setShowCreate(false)}>
+          <div className="animate-modal" style={{
+            background:"rgba(250,250,250,0.98)",
+            border:`1px solid ${C.separator}`,
+            borderRadius:22, padding:28, width:"100%", maxWidth:420,
+            boxShadow:"0 24px 60px rgba(0,0,0,0.22)",
+            ...SF,
+          }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:22 }}>
               <div>
-                <h2 style={{ fontSize: 14, fontWeight: 600, color: "#1a1a1a" }}>Neuen Fall anlegen</h2>
-                <p style={{ fontSize: 11, color: "#999", marginTop: 2 }}>Grunddaten — weitere Details im Fall</p>
+                <h2 style={{ fontSize:15, fontWeight:700, color:C.label, letterSpacing:"-0.02em" }}>Neuen Fall anlegen</h2>
+                <p style={{ fontSize:11, color:C.label3, marginTop:3 }}>Grunddaten — weitere Details im Fall</p>
               </div>
-              <button onClick={() => setShowCreate(false)} style={{ color: "#aaa", padding: 4, borderRadius: 6, border: "none", background: "transparent", cursor: "pointer" }}>
-                <X className="w-4 h-4" />
+              <button onClick={() => setShowCreate(false)} style={{ color:C.label3, padding:6, borderRadius:8, border:"none", background:"transparent", cursor:"pointer" }}>
+                <X style={{ width:16, height:16 }} />
               </button>
             </div>
-            <div className="space-y-2.5">
+            <div style={{ display:"flex", flexDirection:"column", gap:10 }}>
               {[
-                { ph: "Fallname *", key: "fallname", full: true },
-                { ph: "Aktenzeichen", key: "aktenzeichen" },
-                { ph: "Rechtsgebiet", key: "rechtsgebiet" },
+                { ph:"Fallname *", key:"fallname" },
+                { ph:"Aktenzeichen", key:"aktenzeichen" },
+                { ph:"Rechtsgebiet", key:"rechtsgebiet" },
               ].map(f => (
-                <input key={f.key}
-                  className={f.full ? "w-full" : ""}
-                  style={{ display: "block", width: "100%", padding: "8px 10px", fontSize: 12, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, outline: "none", color: "#1a1a1a" }}
-                  placeholder={f.ph} value={newCase[f.key]} onChange={e => setNewCase({ ...newCase, [f.key]: e.target.value })}
-                  onKeyDown={e => e.key === "Enter" && f.key === "fallname" && handleCreate()} />
+                <input key={f.key} style={{
+                  width:"100%", padding:"9px 12px", fontSize:13,
+                  background:"rgba(0,0,0,0.04)", border:`1px solid ${C.separator}`,
+                  borderRadius:10, outline:"none", color:C.label, boxSizing:"border-box",
+                }}
+                  placeholder={f.ph} value={newCase[f.key]}
+                  onChange={e => setNewCase({ ...newCase, [f.key]: e.target.value })}
+                  onKeyDown={e => e.key==="Enter" && f.key==="fallname" && handleCreate()} />
               ))}
-              <div className="grid grid-cols-2 gap-2.5">
+              <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:10 }}>
                 {[
-                  { key: "status", opts: ["Aktiv","Vorbereitung","Abgeschlossen","Ruhend"] },
-                  { key: "instanz", opts: ["Erstinstanz","Berufung","Revision"] },
+                  { key:"status",  opts:["Aktiv","Vorbereitung","Abgeschlossen","Ruhend"] },
+                  { key:"instanz", opts:["Erstinstanz","Berufung","Revision"] },
                 ].map(f => (
-                  <select key={f.key} value={newCase[f.key]} onChange={e => setNewCase({ ...newCase, [f.key]: e.target.value })}
-                    style={{ padding: "8px 10px", fontSize: 12, background: "rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, outline: "none", color: "#1a1a1a" }}>
+                  <select key={f.key} value={newCase[f.key]} onChange={e => setNewCase({ ...newCase, [f.key]: e.target.value })} style={{
+                    padding:"9px 12px", fontSize:13,
+                    background:"rgba(0,0,0,0.04)", border:`1px solid ${C.separator}`,
+                    borderRadius:10, outline:"none", color:C.label,
+                  }}>
                     {f.opts.map(o => <option key={o}>{o}</option>)}
                   </select>
                 ))}
               </div>
             </div>
-            <div className="flex gap-2 mt-5">
-              <button onClick={handleCreate} disabled={!newCase.fallname.trim() || creating}
-                style={{ flex: 1, background: "#34C759", color: "#fff", fontSize: 12, fontWeight: 600, padding: "9px", borderRadius: 8, border: "none", cursor: "pointer", opacity: (!newCase.fallname.trim() || creating) ? 0.5 : 1 }}>
+            <div style={{ display:"flex", gap:10, marginTop:22 }}>
+              <button onClick={handleCreate} disabled={!newCase.fallname.trim() || creating} style={{
+                flex:1, background:C.emerald, color:"#fff", fontSize:13, fontWeight:600,
+                padding:"11px", borderRadius:12, border:"none", cursor:"pointer",
+                opacity:(!newCase.fallname.trim() || creating) ? 0.45 : 1,
+                boxShadow:`0 3px 12px rgba(29,185,84,0.35)`,
+                transition:"opacity 0.12s",
+              }}>
                 {creating ? "Erstelle…" : "Fall erstellen"}
               </button>
-              <button onClick={() => setShowCreate(false)}
-                style={{ padding: "9px 16px", fontSize: 12, background: "transparent", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 8, color: "#555", cursor: "pointer" }}>
+              <button onClick={() => setShowCreate(false)} style={{
+                padding:"11px 18px", fontSize:13, background:"transparent",
+                border:`1px solid ${C.separator}`, borderRadius:12, color:C.label2, cursor:"pointer",
+              }}>
                 Abbrechen
               </button>
             </div>
