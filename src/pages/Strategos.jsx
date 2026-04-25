@@ -20,13 +20,13 @@ const SZENARIO_TYPEN = {
 };
 
 const STEPS = [
-  { id: 1, title: "Sachverhalt", desc: "Ausgangslage und zentrale Fragestellung definieren" },
-  { id: 2, title: "Optionen", desc: "KI ermittelt Handlungsalternativen — manuell ergänzbar" },
-  { id: 3, title: "Finanzen", desc: "Kosten-Nutzen-Analyse für jede Option" },
-  { id: 4, title: "Risiken", desc: "KI bewertet Risiken — manuell ergänzbar" },
-  { id: 5, title: "Gesetzeslücken", desc: "KI identifiziert Lücken — manuell ergänzbar" },
-  { id: 6, title: "KI-Analyse", desc: "Umfassende strategische Gesamtanalyse" },
-  { id: 7, title: "Empfehlung", desc: "Abschlussempfehlung und Handlungsplan" },
+  { id: 1, title: "Kontext", desc: "Unternehmen, Sachverhalt, Rechtsgebiete" },
+  { id: 2, title: "Rechtsanalyse", desc: "KI-Tiefenanalyse pro Rechtsgebiet" },
+  { id: 3, title: "Verträge", desc: "Klausel-Risiko, Szenarioprojektion" },
+  { id: 4, title: "Patente", desc: "Schutzbereich, Freedom-to-Operate" },
+  { id: 5, title: "Optionen", desc: "Von A nach C — Gegner-Antizipation" },
+  { id: 6, title: "Quantitativ", desc: "EV, Monte Carlo, Bußgeld-Worst-Case" },
+  { id: 7, title: "Umsetzung", desc: "Roadmap, Monitoring, LEXARA-Export" },
 ];
 
 function ScenarioCard({ scenario, onClick }) {
@@ -241,7 +241,7 @@ export default function Strategos() {
         <div className="max-w-5xl mx-auto px-5 py-3 flex items-center gap-3">
           <div className="mr-auto">
             <p className="text-[14px] font-semibold text-gray-900">Strategos</p>
-            <p className="text-[10px] text-gray-500">Szenario-Prognose · Gesetzeslücken · Enterprise-Analyse</p>
+            <p className="text-[10px] text-gray-500">Präventive Entscheidungsintelligenz · Vertragsanalyse · Patente · Quantitative Risikoanalyse · LEXARA-Export</p>
           </div>
           <div className="flex gap-1 bg-gray-100 rounded-lg p-0.5">
             <button onClick={() => setView("scenarios")} className={`text-[11px] px-3 py-1 rounded-md transition-all ${view === "scenarios" ? "bg-white shadow-sm font-semibold text-gray-900" : "text-gray-500"}`}>Szenarien</button>
@@ -262,7 +262,7 @@ export default function Strategos() {
             <div className="text-center py-20 bg-white rounded-xl border border-gray-100">
               <Target className="w-10 h-10 mx-auto mb-3 text-gray-300" />
               <p className="text-sm font-semibold text-gray-600">Noch keine Szenarien</p>
-              <p className="text-xs text-gray-400 mt-1">Erstellen Sie Ihr erstes Szenario zur Analyse</p>
+              <p className="text-xs text-gray-400 mt-1">Strategos analysiert geplante Handlungen — Verträge, Patente, Fusionen — bevor sie zu Konflikten werden</p>
               <Button size="sm" onClick={() => setShowCreate(true)} className="mt-4 bg-gray-900 text-white rounded-lg text-xs"><Plus className="w-3 h-3 mr-1" /> Szenario erstellen</Button>
             </div>
           ) : (
