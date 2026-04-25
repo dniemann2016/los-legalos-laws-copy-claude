@@ -37,16 +37,45 @@ function KlauselCard({ k, idx }) {
               <p style={{ fontSize: 12, color: "#333", lineHeight: 1.5 }}>{k.rechtliche_mechanik}</p>
             </div>
           )}
+          {(k.juristische_vorteile?.length > 0 || k.juristische_nachteile?.length > 0) && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 10 }}>
+              {k.juristische_vorteile?.length > 0 && (
+                <div style={{ padding: "7px 10px", background: "rgba(29,185,84,0.07)", borderRadius: 8 }}>
+                  <p style={{ fontSize: 9, fontWeight: 700, color: "#1DB954", textTransform: "uppercase", marginBottom: 4 }}>Juristische Vorteile</p>
+                  {k.juristische_vorteile.map((v, i) => <p key={i} style={{ fontSize: 10, color: "#333", marginBottom: 2 }}>+ {v}</p>)}
+                </div>
+              )}
+              {k.juristische_nachteile?.length > 0 && (
+                <div style={{ padding: "7px 10px", background: "rgba(184,28,58,0.07)", borderRadius: 8 }}>
+                  <p style={{ fontSize: 9, fontWeight: 700, color: "#B81C3A", textTransform: "uppercase", marginBottom: 4 }}>Juristische Nachteile</p>
+                  {k.juristische_nachteile.map((v, i) => <p key={i} style={{ fontSize: 10, color: "#333", marginBottom: 2 }}>− {v}</p>)}
+                </div>
+              )}
+            </div>
+          )}
+          {k.illegale_umgehung && (
+            <div style={{ marginTop: 10, padding: "9px 12px", background: "rgba(184,28,58,0.08)", border: "2px solid rgba(184,28,58,0.4)", borderRadius: 9 }}>
+              <p style={{ fontSize: 10, fontWeight: 800, color: "#B81C3A", textTransform: "uppercase", marginBottom: 4 }}>⚠ ILLEGALE UMGEHUNGSMÖGLICHKEIT — NUR ZUR INFORMATION</p>
+              <p style={{ fontSize: 11, color: "#B81C3A" }}>{k.illegale_umgehung}</p>
+            </div>
+          )}
           {k.szenarien?.length > 0 && (
             <div style={{ marginTop: 10 }}>
-              <p style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", marginBottom: 5 }}>Szenario-Projektionen</p>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", marginBottom: 5 }}>Szenario-Projektionen & Reaktionsempfehlungen</p>
               {k.szenarien.map((s, i) => (
                 <div key={i} style={{ padding: "7px 10px", background: "rgba(0,0,0,0.03)", borderRadius: 8, marginBottom: 4 }}>
                   <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 3 }}>
                     <span style={{ fontSize: 10, fontWeight: 700, color: s.horizont === "kurzfristig" ? "#FF3B30" : s.horizont === "mittelfristig" ? "#FF9500" : "#34C759", textTransform: "uppercase" }}>{s.horizont}</span>
                     {s.eintrittsbedingung && <span style={{ fontSize: 10, color: "#888" }}>→ wenn: {s.eintrittsbedingung}</span>}
                   </div>
-                  <p style={{ fontSize: 11, color: "#333" }}>{s.beschreibung}</p>
+                  <p style={{ fontSize: 11, color: "#333", marginBottom: s.empfohlene_reaktion ? 4 : 0 }}>{s.beschreibung}</p>
+                  {s.empfohlene_reaktion && (
+                    <div style={{ padding: "4px 8px", background: "rgba(29,185,84,0.08)", borderRadius: 6, borderLeft: "2px solid #1DB954" }}>
+                      <p style={{ fontSize: 10, color: "#1DB954", fontWeight: 600 }}>Empfohlene Reaktion: {s.empfohlene_reaktion}</p>
+                    </div>
+                  )}
+                  {s.chancen && <p style={{ fontSize: 10, color: "#1DB954", marginTop: 3 }}>+ {s.chancen}</p>}
+                  {s.risiken && <p style={{ fontSize: 10, color: "#B81C3A", marginTop: 2 }}>− {s.risiken}</p>}
                 </div>
               ))}
             </div>
@@ -117,6 +146,12 @@ ANALYSEDIMENSIONEN:
 3. VERHANDLUNGSPOSITION: Wenn noch nicht unterzeichnet — Priorisierung der Verhandlungspunkte.
 
 Berücksichtige zwingend:
+WICHTIGE ANFORDERUNGEN:
+- Zeige ALLE relevanten Handlungsoptionen pro Klausel auf (legal und — falls vorhanden — illegal, letztere KLAR als ILLEGAL kennzeichnen)
+- Für JEDE Klausel: juristische Vorteile UND Nachteile
+- Für JEDES Szenario: konkrete empfohlene_reaktion wenn es eintritt, chancen, risiken
+- Keine feste Anzahl Klauseln — so viele wie sinnvoll (8-18)
+
 - §§ 133, 157 BGB (Auslegung nach obj. Empfängerhorizont)
 - §§ 305-310 BGB (AGB-Kontrolle)
 - §§ 305c BGB (überraschende Klauseln)
@@ -142,8 +177,14 @@ Berücksichtige zwingend:
             szenarien: { type: "array", items: { type: "object", properties: {
               horizont: { type: "string" },
               beschreibung: { type: "string" },
-              eintrittsbedingung: { type: "string" }
+              eintrittsbedingung: { type: "string" },
+              empfohlene_reaktion: { type: "string" },
+              chancen: { type: "string" },
+              risiken: { type: "string" }
             }}},
+            juristische_vorteile: { type: "array", items: { type: "string" } },
+            juristische_nachteile: { type: "array", items: { type: "string" } },
+            illegale_umgehung: { type: "string" },
             verhandlungsempfehlung: { type: "string" },
             alternativ_formulierung: { type: "string" },
             durchsetzbar: { type: "boolean" },

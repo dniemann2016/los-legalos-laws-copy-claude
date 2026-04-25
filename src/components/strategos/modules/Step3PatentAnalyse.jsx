@@ -53,7 +53,8 @@ Analysiere auf folgenden Dimensionen:
 
 4. FREEDOM-TO-OPERATE: Sind geplante Produktionen durch fremde Patente blockiert?
 
-5. STRATEGISCHE OPTIONEN: Lizenzierung, Blockadestrategie, Sperrpatente, Opt-out UPC (7-Jahre-Übergangsfrist EPÜ), FRAND-Verpflichtung (Huawei/ZTE, Sisvel/Haier)
+5. STRATEGISCHE OPTIONEN: Zeige ALLE sinnvollen Optionen auf (keine feste Anzahl). Für jede Option: juristische_vorteile (array), juristische_nachteile (array), folgen (kurzfristig/mittelfristig/langfristig), reaktionsszenarien (array mit szenario, reaktion), ist_illegal (bool), strafen (falls illegal).
+Lizenzierung, Blockadestrategie, Sperrpatente, Opt-out UPC (7-Jahre-Übergangsfrist EPÜ), FRAND-Verpflichtung (Huawei/ZTE, Sisvel/Haier). FALLS es illegale Wege gibt (z.B. Patentverletzung in Kauf nehmen, Reverse Engineering ohne Lizenz) — aufzeigen mit ist_illegal=true und Strafen.
 
 6. STANDARDESSENTIELLE PATENTE: FRAND-Analyse falls anwendbar
 
@@ -93,7 +94,13 @@ Liefere konkrete quantitative Bewertungen (Verletzungswahrscheinlichkeit %, Nich
             beschreibung: { type: "string" },
             empfehlung_score: { type: "number" },
             kosten_indikation: { type: "string" },
-            zeithorizont: { type: "string" }
+            zeithorizont: { type: "string" },
+            ist_illegal: { type: "boolean" },
+            strafen: { type: "string" },
+            juristische_vorteile: { type: "array", items: { type: "string" } },
+            juristische_nachteile: { type: "array", items: { type: "string" } },
+            folgen: { type: "object", properties: { kurzfristig: { type: "string" }, mittelfristig: { type: "string" }, langfristig: { type: "string" } } },
+            reaktionsszenarien: { type: "array", items: { type: "object", properties: { szenario: { type: "string" }, reaktion: { type: "string" } } } }
           }}},
           frand_analyse: { type: "object", properties: {
             relevant: { type: "boolean" },
@@ -244,13 +251,46 @@ Liefere konkrete quantitative Bewertungen (Verletzungswahrscheinlichkeit %, Nich
             <AppleCard title="Strategische Optionen" accentColor="#1DB954">
               <div style={{ display: "flex", flexDirection: "column", gap: 9 }}>
                 {result.strategische_optionen.sort((a, b) => (b.empfehlung_score || 0) - (a.empfehlung_score || 0)).map((o, i) => (
-                  <div key={i} style={{ padding: "10px 13px", background: "rgba(0,0,0,0.025)", borderRadius: 11, borderLeft: `3px solid ${i === 0 ? "#1DB954" : i === 1 ? "#0A84FF" : "#636366"}` }}>
+                  <div key={i} style={{ padding: "10px 13px", background: o.ist_illegal ? "rgba(184,28,58,0.06)" : "rgba(0,0,0,0.025)", borderRadius: 11, borderLeft: `3px solid ${o.ist_illegal ? "#B81C3A" : i === 0 ? "#1DB954" : i === 1 ? "#0A84FF" : "#636366"}` }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
                       <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a", flex: 1 }}>{o.option}</p>
+                      {o.ist_illegal && <span style={{ fontSize: 9, fontWeight: 800, background: "#B81C3A", color: "#fff", padding: "2px 7px", borderRadius: 5 }}>ILLEGAL</span>}
                       {o.empfehlung_score !== undefined && <span style={{ fontSize: 11, fontWeight: 700, color: o.empfehlung_score >= 7 ? "#1DB954" : "#888" }}>{o.empfehlung_score}/10</span>}
                     </div>
-                    <p style={{ fontSize: 11, color: "#555", lineHeight: 1.4 }}>{o.beschreibung}</p>
-                    <div style={{ display: "flex", gap: 10, marginTop: 5 }}>
+                    {o.ist_illegal && (
+                      <div style={{ marginBottom: 6, padding: "6px 9px", background: "rgba(184,28,58,0.1)", borderRadius: 7 }}>
+                        <p style={{ fontSize: 10, fontWeight: 700, color: "#B81C3A" }}>⚠ ACHTUNG: ILLEGAL — Nur zur Information. Strafen: {o.strafen || "Straf- und zivilrechtliche Konsequenzen"}</p>
+                      </div>
+                    )}
+                    <p style={{ fontSize: 11, color: "#555", lineHeight: 1.4, marginBottom: 5 }}>{o.beschreibung}</p>
+                    {(o.juristische_vorteile?.length > 0 || o.juristische_nachteile?.length > 0) && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, marginBottom: 5 }}>
+                        {o.juristische_vorteile?.length > 0 && <div style={{ padding: "5px 8px", background: "rgba(29,185,84,0.07)", borderRadius: 7 }}>{o.juristische_vorteile.map((v, j) => <p key={j} style={{ fontSize: 10, color: "#1DB954" }}>+ {v}</p>)}</div>}
+                        {o.juristische_nachteile?.length > 0 && <div style={{ padding: "5px 8px", background: "rgba(184,28,58,0.07)", borderRadius: 7 }}>{o.juristische_nachteile.map((v, j) => <p key={j} style={{ fontSize: 10, color: "#B81C3A" }}>− {v}</p>)}</div>}
+                      </div>
+                    )}
+                    {o.folgen && (
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 5, marginBottom: 5 }}>
+                        {[["Kurzfristig", o.folgen.kurzfristig, "#FF3B30"], ["Mittelfristig", o.folgen.mittelfristig, "#FF9500"], ["Langfristig", o.folgen.langfristig, "#1DB954"]].map(([l, v, c]) => v && (
+                          <div key={l} style={{ padding: "5px 7px", background: `${c}08`, borderRadius: 7 }}>
+                            <p style={{ fontSize: 9, fontWeight: 700, color: c, textTransform: "uppercase" }}>{l}</p>
+                            <p style={{ fontSize: 10, color: "#333" }}>{v}</p>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {o.reaktionsszenarien?.length > 0 && (
+                      <div style={{ marginBottom: 5 }}>
+                        <p style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", marginBottom: 4 }}>Mögliche Szenarien</p>
+                        {o.reaktionsszenarien.map((s, j) => (
+                          <div key={j} style={{ fontSize: 10, padding: "4px 8px", background: "rgba(88,86,214,0.06)", borderRadius: 6, marginBottom: 3 }}>
+                            <strong style={{ color: "#5856D6" }}>{s.szenario}</strong>
+                            {s.reaktion && <span style={{ color: "#555" }}> → {s.reaktion}</span>}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    <div style={{ display: "flex", gap: 10 }}>
                       {o.kosten_indikation && <p style={{ fontSize: 10, color: "#888" }}>💰 {o.kosten_indikation}</p>}
                       {o.zeithorizont && <p style={{ fontSize: 10, color: "#888" }}>⏱ {o.zeithorizont}</p>}
                     </div>
