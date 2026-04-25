@@ -10,14 +10,14 @@ const RG_META = new Proxy(
   { get: (target, key) => target[key] || { label: key, color: "#888", icon: "📋" } }
 );
 
-// Formel-Kontext für KI-Prompt (komprimiert)
+// Formel-Kontext für KI-Prompt (komprimiert — max. 5 RG, je 3 Felder, 2 Formeln)
 const buildFormelContext = (rechtsgebiete) => {
-  return rechtsgebiete.map(key => {
+  return rechtsgebiete.slice(0, 5).map(key => {
     const rg = RG_BY_KEY[key];
     if (!rg) return "";
-    const formeln = (rg.formeln || []).map(f => `  • ${f.name}: ${f.formel}`).join("\n");
-    const felder = (rg.pflichtfelder || []).slice(0, 5).join("; ");
-    return `[${rg.label}]\nPflichtfelder: ${felder}\nFormeln:\n${formeln}`;
+    const formeln = (rg.formeln || []).slice(0, 2).map(f => `  • ${f.name}: ${f.formel}`).join("\n");
+    const felder = (rg.pflichtfelder || []).slice(0, 3).join("; ");
+    return `[${rg.label}]\nFelder: ${felder}\nFormeln:\n${formeln}`;
   }).filter(Boolean).join("\n\n");
 };
 
@@ -146,16 +146,19 @@ export default function Step2Situation({ scenario, onSave }) {
   const rechtsgebiete = ctx.rechtsgebiete || [];
   const [sit, setSit] = useState(scenario.situationsanalyse || { module: [] });
   const [analyzing, setAnalyzing] = useState(false);
+  const [analyzeError, setAnalyzeError] = useState(null);
   const [qId, setQId] = useState(null);
 
   const run = async () => {
     setAnalyzing(true);
+    setAnalyzeError(null);
     const formelContext = buildFormelContext(rechtsgebiete);
     const jurisdiktionsHinweise = (ctx.operative_maerkte || [])
       .filter(m => JURISDIKTIONEN[m])
       .map(m => `${m}: ${(JURISDIKTIONEN[m]?.besonderheiten || []).slice(0, 3).join(" | ")}`)
       .join("\n");
 
+    try {
     const r = await base44.integrations.Core.InvokeLLM({
       prompt: `Du bist Senior-Partner einer internationalen Großkanzlei mit Expertise in allen 17+ Rechtsgebieten. Führe eine vollständige, mehrdimensionale Risikoanalyse durch.
 
@@ -179,11 +182,7 @@ ${formelContext}
 
 ${jurisdiktionsHinweise ? `═══ JURISDIKTIONS-BESONDERHEITEN ═══\n${jurisdiktionsHinweise}` : ""}
 
-═══ SYSTEMFORMELN (übergreifend) ═══
-Gesamtrisiko-Erwartungswert: ${SYSTEM_FORMELN.gesamtrisiko}
-Wechselwirkungen: ${SYSTEM_FORMELN.wechselwirkung}
-
-${scenario.ki_kontext?.ki_briefing ? `═══ KI-BASIS-BRIEFING (aus Dokumenten-Analyse — zwingend berücksichtigen) ═══\n${scenario.ki_kontext.ki_briefing}\n` : ""}
+${scenario.ki_kontext?.ki_briefing ? `═══ KI-BASIS-BRIEFING (aus Dokumenten-Analyse) ═══\n${String(scenario.ki_kontext.ki_briefing).slice(0, 800)}\n` : ""}
 ═══ ANALYSEAUFTRAG ═══
 Für JEDES Rechtsgebiet:
 1. risiko_score (0–10): präzise Bewertung unter Verwendung der Pflichtfelder und Formeln des jeweiligen Gebiets
@@ -221,31 +220,38 @@ Gesamtbewertung: gesamt_risiko, kritische_punkte (Top-3 mit konkreter Handlungse
     });
     setSit(r);
     await onSave({ situationsanalyse: r });
-    setAnalyzing(false);
+    } catch (err) {
+      setAnalyzeError(err?.message || "Analyse fehlgeschlagen. Bitte erneut versuchen.");
+    } finally {
+      setAnalyzing(false);
+    }
   };
 
   const quantify = async (m) => {
     setQId(m.rechtsgebiet);
-    const r = await base44.integrations.Core.InvokeLLM({
-      prompt: `Quantifiziere das Risiko für ${m.rechtsgebiet}.
+    try {
+      const r = await base44.integrations.Core.InvokeLLM({
+        prompt: `Quantifiziere das Risiko für ${m.rechtsgebiet}.
 Unternehmen: ${ctx.unternehmen_name}, Umsatz ${ctx.umsatz}€
 Findings: ${(m.findings || []).join(" | ")}
 Normen: ${(m.normen || []).join(", ")}
 Berechne: eintritt_pct(%), schaden_eur(€), reputation(gering/mittel/hoch/existenziell), praezedenz(nur_dieser_fall/alle_aehnlichen).`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          eintritt_pct: { type: "number" },
-          schaden_eur: { type: "number" },
-          reputation: { type: "string" },
-          praezedenz: { type: "string" }
+        response_json_schema: {
+          type: "object",
+          properties: {
+            eintritt_pct: { type: "number" },
+            schaden_eur: { type: "number" },
+            reputation: { type: "string" },
+            praezedenz: { type: "string" }
+          }
         }
-      }
-    });
-    const u = { ...sit, module: sit.module.map(x => x.rechtsgebiet === m.rechtsgebiet ? { ...x, quantifizierung: r } : x) };
-    setSit(u);
-    await onSave({ situationsanalyse: u });
-    setQId(null);
+      });
+      const u = { ...sit, module: sit.module.map(x => x.rechtsgebiet === m.rechtsgebiet ? { ...x, quantifizierung: r } : x) };
+      setSit(u);
+      await onSave({ situationsanalyse: u });
+    } finally {
+      setQId(null);
+    }
   };
 
   const has = sit.module?.length > 0;
@@ -316,6 +322,7 @@ Berechne: eintritt_pct(%), schaden_eur(€), reputation(gering/mittel/hoch/exist
           </AppleButton>
         </div>
         {rechtsgebiete.length === 0 && <p style={{ marginTop: 8, fontSize: 11, color: "#FF3B30" }}>⚠ Bitte in Schritt 1 Rechtsgebiete wählen.</p>}
+        {analyzeError && <p style={{ marginTop: 8, fontSize: 11, color: "#FF3B30", background: "rgba(255,59,48,0.07)", borderRadius: 8, padding: "8px 11px" }}>⚠ Fehler: {analyzeError}</p>}
       </AppleCard>
 
       {sit.module?.map((m, i) => (
