@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, FileText, Trash2, Loader2, Sparkles, File, CheckCircle, RefreshCw, Copy, Check } from "lucide-react";
+import { Upload, FileText, Trash2, Loader2, Sparkles, File, CheckCircle, RefreshCw, Copy, Check, Zap } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import TabDokumenteAnalyseV2 from "./TabDokumenteAnalyseV2";
 
 const DOC_TYPES = [
   { value: "klageschrift", label: "Klageschrift" },
@@ -193,6 +194,7 @@ ANFORDERUNGEN:
       <div className="flex items-center gap-2 border-b border-gray-100 mb-4">
         <button onClick={() => setActiveTab("dokumente")} className={`px-4 py-2 text-xs font-medium border-b-2 transition-all ${activeTab === "dokumente" ? "border-gray-900 text-gray-900" : "border-transparent text-gray-400 hover:text-gray-600"}`}>📄 Dokumente</button>
         <button onClick={() => setActiveTab("schriftsatz")} className={`px-4 py-2 text-xs font-medium border-b-2 transition-all ${activeTab === "schriftsatz" ? "border-gray-900 text-gray-900" : "border-transparent text-gray-400 hover:text-gray-600"}`}>📝 Schriftsatz-Generator</button>
+        <button onClick={() => setActiveTab("analyse_v2")} className={`px-4 py-2 text-xs font-medium border-b-2 transition-all flex items-center gap-1 ${activeTab === "analyse_v2" ? "border-green-600 text-green-700" : "border-transparent text-gray-400 hover:text-gray-600"}`}><Zap className="w-3 h-3" /> KI-Analyse V2</button>
       </div>
 
       {activeTab === "dokumente" && (
@@ -305,6 +307,10 @@ ANFORDERUNGEN:
         </div>
       )}
       </>
+      )}
+
+      {activeTab === "analyse_v2" && (
+        <TabDokumenteAnalyseV2 caseId={caseId} caseData={caseData} onDataImport={() => {}} />
       )}
 
       {activeTab === "schriftsatz" && (
