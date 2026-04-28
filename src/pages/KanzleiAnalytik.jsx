@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { motion } from "framer-motion";
 import { TrendingUp, AlertTriangle, Users, FileText, RefreshCw, Trophy, Timer } from "lucide-react";
 import { useJurisdiction } from "../hooks/useJurisdiction";
 import { getT, getTByLanguage } from "../lib/jurisdictionConfig";
@@ -17,44 +16,33 @@ const SF = { fontFamily: "-apple-system, 'SF Pro Display', 'Helvetica Neue', Ari
 // SwiftUI-aligned monochrome palette — graphs still distinguishable
 const APPLE_COLORS = ["#0A84FF","#1DB954","#636366","#8E8E93","#3A3A3C","#48484A","#30D158","#0071E3"];
 
-const fadeUp = {
-  hidden: { opacity: 0, y: 18 },
-  visible: (i = 0) => ({ opacity: 1, y: 0, transition: { delay: i * 0.06, duration: 0.38, ease: [0.4, 0, 0.2, 1] } }),
-};
-
 // ── SwiftUI-style card ────────────────────────────────────────────────────────
-function AppleCard({ title, children, style = {}, animIndex = 0 }) {
+function AppleCard({ title, children, style = {} }) {
   return (
-    <motion.div
-      variants={fadeUp}
-      initial="hidden"
-      animate="visible"
-      custom={animIndex}
-      style={{
-        background: "#FFFFFF",
-        borderRadius: 22,
-        border: "1px solid rgba(0,0,0,0.07)",
-        boxShadow: "0 2px 20px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.04)",
-        overflow: "hidden",
-        ...style,
-      }}
-    >
+    <div style={{
+      background: "#FFFFFF",
+      borderRadius: 20,
+      border: "1px solid rgba(0,0,0,0.07)",
+      boxShadow: "0 2px 16px rgba(0,0,0,0.06), 0 1px 4px rgba(0,0,0,0.04)",
+      overflow: "hidden",
+      ...style,
+    }}>
       {title && (
-        <div style={{ padding: "22px 28px 0" }}>
+        <div style={{ padding: "20px 24px 0" }}>
           <p style={{ fontSize: 10.5, fontWeight: 700, color: "#AEAEB2", textTransform: "uppercase", letterSpacing: "0.09em" }}>{title}</p>
         </div>
       )}
-      <div style={{ padding: title ? "16px 28px 28px" : "28px" }}>
+      <div style={{ padding: title ? "14px 24px 24px" : "24px" }}>
         {children}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
 // ── KPI card ──────────────────────────────────────────────────────────────────
-function KpiCard({ icon: Icon, label, value, sub, iconBg, iconColor, animIndex = 0 }) {
+function KpiCard({ icon: Icon, label, value, sub, iconBg, iconColor }) {
   return (
-    <AppleCard animIndex={animIndex}>
+    <AppleCard>
       <div style={{ marginBottom: 16 }}>
         <div style={{ width: 42, height: 42, borderRadius: 13, background: iconBg || "rgba(0,0,0,0.05)", display: "flex", alignItems: "center", justifyContent: "center" }}>
           <Icon style={{ width: 20, height: 20, color: iconColor || "#8E8E93" }} />
@@ -269,23 +257,23 @@ export default function KanzleiAnalytik() {
         </div>
       </div>
 
-      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "40px 36px", display: "flex", flexDirection: "column", gap: 32 }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto", padding: "32px 32px", display: "flex", flexDirection: "column", gap: 26 }}>
 
         {/* KPIs */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 20 }}>
-          <KpiCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={t.ofTotalLabel(cases.length)} iconBg="rgba(10,132,255,0.10)" iconColor="#0A84FF" animIndex={0} />
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: 16 }}>
+          <KpiCard icon={FileText} label={t.aktiveFaelleLabel} value={activeCases} sub={t.ofTotalLabel(cases.length)} iconBg="rgba(10,132,255,0.10)" iconColor="#0A84FF" />
           <KpiCard icon={AlertTriangle} label={t.offeeneFristenLabel} value={openDeadlines}
             sub={overdueDeadlines > 0 ? `${overdueDeadlines} überfällig` : t.allOnTrack}
             iconBg={overdueDeadlines > 0 ? "rgba(184,28,58,0.09)" : "rgba(29,185,84,0.09)"}
-            iconColor={overdueDeadlines > 0 ? "#B81C3A" : "#1DB954"} animIndex={1} />
-          <KpiCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={t.winProbabilityLabel} iconBg="rgba(29,185,84,0.09)" iconColor="#1DB954" animIndex={2} />
-          <KpiCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={t.totalRecordedLabel} iconBg="rgba(99,99,102,0.09)" iconColor="#636366" animIndex={3} />
+            iconColor={overdueDeadlines > 0 ? "#B81C3A" : "#1DB954"} />
+          <KpiCard icon={TrendingUp} label={t.avgPrognoseLabel} value={`${avgPrognose}%`} sub={t.winProbabilityLabel} iconBg="rgba(29,185,84,0.09)" iconColor="#1DB954" />
+          <KpiCard icon={Users} label={t.argumenteLabel} value={arguments_.length} sub={t.totalRecordedLabel} iconBg="rgba(99,99,102,0.09)" iconColor="#636366" />
         </div>
 
         {/* ══ ERFOLGSRATE & DAUER (NEU – prominent oben) ══════════════════════ */}
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
           {/* Erfolgsrate Gauge + Breakdown */}
-          <AppleCard title="Erfolgsrate bei Gericht" animIndex={1}>
+          <AppleCard title="Erfolgsrate bei Gericht">
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
                 <ErfolgsrateGauge rate={erfolgsrateAnzeige} />
@@ -330,7 +318,7 @@ export default function KanzleiAnalytik() {
           </AppleCard>
 
           {/* Verfahrensdauer */}
-          <AppleCard title="Ø Verfahrensdauer" animIndex={2}>
+          <AppleCard title="Ø Verfahrensdauer">
             <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
               {/* Große Kennzahl */}
               <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
@@ -396,7 +384,7 @@ export default function KanzleiAnalytik() {
 
         {/* Erfolgsrate nach Gericht */}
         {erfolgsNachGericht.length > 0 && (
-          <AppleCard title="Erfolgsrate nach Gericht" animIndex={3}>
+          <AppleCard title="Erfolgsrate nach Gericht">
             <ResponsiveContainer width="100%" height={180}>
               <BarChart data={erfolgsNachGericht} margin={{ left: 0, right: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
@@ -416,7 +404,7 @@ export default function KanzleiAnalytik() {
 
         {/* ══ Tortendiagramm: Strategieerfolg nach Rechtsgebiet ═══════════════ */}
         {erfolgsNachRG.length > 0 && (
-          <AppleCard title="Strategieerfolg nach Rechtsgebiet" animIndex={4}>
+          <AppleCard title="Strategieerfolg nach Rechtsgebiet">
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24, alignItems: "center" }}>
               <ResponsiveContainer width="100%" height={240}>
                 <PieChart>
@@ -466,8 +454,8 @@ export default function KanzleiAnalytik() {
         )}
 
         {/* ══ Standard Charts ════════════════════════════════════════════════ */}
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
-          <AppleCard title={t.faelleNachRechtsgebiet} animIndex={5}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+          <AppleCard title={t.faelleNachRechtsgebiet}>
             {filterLabel && (
               <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
                 <p style={{ fontSize: 12, color: "#1a1a1a" }}>Filter: <strong style={{ color: "#007AFF" }}>{filterLabel}</strong> · {filteredCases.length} Fälle</p>
@@ -490,7 +478,7 @@ export default function KanzleiAnalytik() {
             )}
           </AppleCard>
 
-          <AppleCard title={t.statusVerteilung} animIndex={6}>
+          <AppleCard title={t.statusVerteilung}>
             {statusData.length > 0 ? (
               <ResponsiveContainer width="100%" height={220}>
                 <PieChart>
@@ -507,8 +495,8 @@ export default function KanzleiAnalytik() {
           </AppleCard>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
-          <AppleCard title={t.prognoseVerteilung} animIndex={7}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <AppleCard title={t.prognoseVerteilung}>
             <ResponsiveContainer width="100%" height={200}>
               <BarChart data={prognoseRanges} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.04)" vertical={false} />
@@ -522,7 +510,7 @@ export default function KanzleiAnalytik() {
             </ResponsiveContainer>
           </AppleCard>
 
-          <AppleCard title={t.fristenUebersicht} animIndex={8}>
+          <AppleCard title={t.fristenUebersicht}>
             {fristenData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
@@ -541,8 +529,8 @@ export default function KanzleiAnalytik() {
           </AppleCard>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 20 }}>
-          <AppleCard title={t.naechste14Tage} animIndex={9}>
+        <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 16 }}>
+          <AppleCard title={t.naechste14Tage}>
             {upcoming.length > 0 ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 {upcoming.map((d, i) => (
@@ -565,7 +553,7 @@ export default function KanzleiAnalytik() {
             )}
           </AppleCard>
 
-          <AppleCard title={t.instanzVerteilung} animIndex={10}>
+          <AppleCard title={t.instanzVerteilung}>
             {instanzData.length > 0 ? (
               <ResponsiveContainer width="100%" height={200}>
                 <PieChart>
