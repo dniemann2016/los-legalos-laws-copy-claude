@@ -220,72 +220,42 @@ Fristen müssen exaktes Datum haben (YYYY-MM-DD). Personen nur wenn namentlich e
       return r;
     },
 
-    // ── Job 4: Gegneranalyse (Sonnet — juristische Tiefenbewertung) ─────
-    gegneranalyse: async () => {
+    // ── Job 4: Gesamte Tiefenanalyse (EIN Sonnet-Call — alle 7 Abschnitte) ─
+    tiefenanalyse: async () => {
       const start = t();
       const r = await base44.integrations.Core.InvokeLLM({
-        prompt: `${ctx}
-Du bist Senior-Partner. Analysiere die Gegenpartei.
-Bekannte Parteien: ${JSON.stringify(structured.parteien?.slice(0, 10) || [])}
-Schlüssel-Klauseln (Gegenposition): ${JSON.stringify(structured.klauseln?.filter(k => ["haftung","ausschluss","widerspruch","kündigung","penalty"].some(w => k.typ?.toLowerCase().includes(w) || k.text?.toLowerCase().includes(w))).slice(0, 8) || [])}
-Fakten: ${JSON.stringify(structured.schluessel_fakten?.slice(0, 12) || [])}
-Gesetze: ${JSON.stringify(structured.gesetze?.slice(0, 10) || [])}`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            zusammenfassung: { type: "string" },
-            taktiken: { type: "array", items: { type: "string" } },
-            schwachstellen: { type: "array", items: { type: "string" } },
-            gegner_profil: { type: "string" }
-          }
-        },
-        model: "claude_sonnet_4_6"
-      });
-      log("B_gegneranalyse", "claude_sonnet_4_6", null, t() - start);
-      return r;
-    },
+        prompt: `Du bist Senior-Partner einer Großkanzlei. Analysiere dieses juristische Dokument vollständig in einem Durchgang.
 
-    // ── Job 5: Rechtliche Analyse (Sonnet) ─────────────────────────────
-    rechtliche_analyse: async () => {
-      const start = t();
-      const r = await base44.integrations.Core.InvokeLLM({
-        prompt: `${ctx}
-Rechtliche Tiefenanalyse.
-Gesetze & Paragraphen: ${JSON.stringify(structured.gesetze?.slice(0, 20) || [])}
-Patentansprüche (falls vorhanden): ${JSON.stringify(structured.patentansprueche?.slice(0, 5) || [])}
-Schlüsselfakten: ${JSON.stringify(structured.schluessel_fakten?.slice(0, 12) || [])}
-Klauseln: ${JSON.stringify(structured.klauseln?.slice(0, 10) || [])}`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            zusammenfassung: { type: "string" },
-            relevante_paragrafen: { type: "array", items: { type: "string" } },
-            praezedenzfaelle: { type: "array", items: { type: "string" } },
-            compliance_risiken: { type: "array", items: { type: "string" } }
-          }
-        },
-        model: "claude_sonnet_4_6"
-      });
-      log("B_rechtliche_analyse", "claude_sonnet_4_6", null, t() - start);
-      return r;
-    },
+${ctx}
 
-    // ── Job 6: Strategie + Risiko (Sonnet — kombiniert für Effizienz) ───
-    strategie_risiko: async () => {
-      const start = t();
-      const r = await base44.integrations.Core.InvokeLLM({
-        prompt: `${ctx}
-Erstelle Prozessstrategie und Risikoanalyse.
-Klauseln: ${JSON.stringify(structured.klauseln?.slice(0, 12) || [])}
-Gesetze: ${JSON.stringify(structured.gesetze?.slice(0, 10) || [])}
+STRUKTURIERTE DATEN AUS DEM DOKUMENT:
+Parteien: ${JSON.stringify(structured.parteien?.slice(0, 10) || [])}
+Klauseln: ${JSON.stringify(structured.klauseln?.slice(0, 15) || [])}
+Fristen: ${JSON.stringify(structured.fristen?.slice(0, 8) || [])}
 Beträge: ${JSON.stringify(structured.betraege?.slice(0, 8) || [])}
-Fakten: ${JSON.stringify(structured.schluessel_fakten?.slice(0, 12) || [])}
-Gib konkrete Handlungsempfehlungen auf Senior-Partner-Niveau.`,
+Gesetze & Paragraphen: ${JSON.stringify(structured.gesetze?.slice(0, 20) || [])}
+Patentansprüche: ${JSON.stringify(structured.patentansprueche?.slice(0, 5) || [])}
+Schlüsselfakten: ${JSON.stringify(structured.schluessel_fakten?.slice(0, 15) || [])}
+
+Erstelle eine vollständige juristische Analyse mit allen folgenden Abschnitten. Sei konkret, präzise und auf Senior-Partner-Niveau.`,
         response_json_schema: {
           type: "object",
           properties: {
+            gegneranalyse: { type: "object", properties: {
+              zusammenfassung: { type: "string" },
+              taktiken: { type: "array", items: { type: "string" } },
+              schwachstellen: { type: "array", items: { type: "string" } },
+              gegner_profil: { type: "string" }
+            }},
+            rechtliche_analyse: { type: "object", properties: {
+              zusammenfassung: { type: "string" },
+              relevante_paragrafen: { type: "array", items: { type: "string" } },
+              praezedenzfaelle: { type: "array", items: { type: "string" } },
+              compliance_risiken: { type: "array", items: { type: "string" } }
+            }},
             schritt5_strategie: { type: "object", properties: {
-              zusammenfassung: { type: "string" }, empfohlene_strategie: { type: "string" },
+              zusammenfassung: { type: "string" },
+              empfohlene_strategie: { type: "string" },
               staerken: { type: "array", items: { type: "string" } },
               schwaechen: { type: "array", items: { type: "string" } }
             }},
@@ -293,30 +263,11 @@ Gib konkrete Handlungsempfehlungen auf Senior-Partner-Niveau.`,
               zusammenfassung: { type: "string" },
               risiken: { type: "array", items: { type: "string" } },
               risiko_level: { type: "string" }
-            }}
-          }
-        },
-        model: "claude_sonnet_4_6"
-      });
-      log("B_strategie_risiko", "claude_sonnet_4_6", null, t() - start);
-      return r;
-    },
-
-    // ── Job 7: Simulation + Cockpit + Abschluss (Sonnet — kombiniert) ──
-    simulation_abschluss: async () => {
-      const start = t();
-      const r = await base44.integrations.Core.InvokeLLM({
-        prompt: `${ctx}
-Verhandlungssimulation, Cockpit-Prognose und Abschlussempfehlung.
-Beträge: ${JSON.stringify(structured.betraege?.slice(0, 8) || [])}
-Fristen: ${JSON.stringify(structured.fristen?.slice(0, 8) || [])}
-Schlüsselfakten: ${JSON.stringify(structured.schluessel_fakten?.slice(0, 10) || [])}
-Schätze Vergleichswert und Prognose-Einfluss dieses Dokuments auf den Fall.`,
-        response_json_schema: {
-          type: "object",
-          properties: {
+            }},
             schritt7_simulation: { type: "object", properties: {
-              zusammenfassung: { type: "string" }, vergleichswert_eur: { type: "number" }, prognose_einfluss: { type: "string" }
+              zusammenfassung: { type: "string" },
+              vergleichswert_eur: { type: "number" },
+              prognose_einfluss: { type: "string" }
             }},
             schritt8_aktion: { type: "object", properties: {
               zusammenfassung: { type: "string" },
@@ -324,10 +275,13 @@ Schätze Vergleichswert und Prognose-Einfluss dieses Dokuments auf den Fall.`,
               erforderliche_dokumente: { type: "array", items: { type: "string" } }
             }},
             schritt9_cockpit: { type: "object", properties: {
-              zusammenfassung: { type: "string" }, prognose_delta_pct: { type: "number" }
+              zusammenfassung: { type: "string" },
+              prognose_delta_pct: { type: "number" }
             }},
             schritt10_abschluss: { type: "object", properties: {
-              zusammenfassung: { type: "string" }, prozessziel_erreichbar: { type: "boolean" }, vergleichsempfehlung: { type: "string" }
+              zusammenfassung: { type: "string" },
+              prozessziel_erreichbar: { type: "boolean" },
+              vergleichsempfehlung: { type: "string" }
             }},
             informationsluecken: { type: "array", items: { type: "object", properties: {
               schritt: { type: "string" }, hinweis: { type: "string" }
@@ -336,21 +290,18 @@ Schätze Vergleichswert und Prognose-Einfluss dieses Dokuments auf den Fall.`,
         },
         model: "claude_sonnet_4_6"
       });
-      log("B_simulation_abschluss", "claude_sonnet_4_6", null, t() - start);
+      log("B_tiefenanalyse", "claude_sonnet_4_6", null, t() - start);
       return r;
     },
   };
 
-  // ALLE Jobs parallel starten
+  // Schnelle Jobs + 1 Sonnet-Call parallel
   const startAll = t();
-  const [basisdaten, argBeweise, fristenPersonen, gegner, rechtlich, strategieRisiko, simAbschluss] = await Promise.all([
+  const [basisdaten, argBeweise, fristenPersonen, tief] = await Promise.all([
     jobs.basisdaten(),
     jobs.argumente_beweise(),
     jobs.fristen_personen(),
-    jobs.gegneranalyse(),
-    jobs.rechtliche_analyse(),
-    jobs.strategie_risiko(),
-    jobs.simulation_abschluss(),
+    jobs.tiefenanalyse(),
   ]);
   log("B_total_parallel", "all", null, t() - startAll);
 
@@ -362,15 +313,15 @@ Schätze Vergleichswert und Prognose-Einfluss dieses Dokuments auf den Fall.`,
     beweise: argBeweise.beweise || [],
     fristen: fristenPersonen.fristen || [],
     personen: fristenPersonen.personen || [],
-    schritt3_gegneranalyse: gegner,
-    schritt4_rechtliche_analyse: rechtlich,
-    schritt5_strategie: strategieRisiko.schritt5_strategie || {},
-    schritt6_risiko: strategieRisiko.schritt6_risiko || {},
-    schritt7_simulation: simAbschluss.schritt7_simulation || {},
-    schritt8_aktion: simAbschluss.schritt8_aktion || {},
-    schritt9_cockpit: simAbschluss.schritt9_cockpit || {},
-    schritt10_abschluss: simAbschluss.schritt10_abschluss || {},
-    informationsluecken: simAbschluss.informationsluecken || [],
+    schritt3_gegneranalyse: tief.gegneranalyse || {},
+    schritt4_rechtliche_analyse: tief.rechtliche_analyse || {},
+    schritt5_strategie: tief.schritt5_strategie || {},
+    schritt6_risiko: tief.schritt6_risiko || {},
+    schritt7_simulation: tief.schritt7_simulation || {},
+    schritt8_aktion: tief.schritt8_aktion || {},
+    schritt9_cockpit: tief.schritt9_cockpit || {},
+    schritt10_abschluss: tief.schritt10_abschluss || {},
+    informationsluecken: tief.informationsluecken || [],
   };
 }
 
