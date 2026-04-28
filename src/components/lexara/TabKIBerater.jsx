@@ -98,15 +98,70 @@ JSON-Format:
   "compliance_check": {"risiken":["..."],"empfehlungen":["..."]},
   "empfehlung":"..."
 }`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            rechtliche_einordnung: { type: "object", properties: {
+              anspruchsgrundlagen: { type: "array", items: { type: "string" } },
+              pruefungsschema: { type: "string" },
+              gegner_gegenargumente: { type: "array", items: { type: "string" } },
+              kritische_schwachstellen: { type: "array", items: { type: "string" } }
+            }},
+            issue_spotting: { type: "array", items: { type: "object", properties: {
+              risiko: { type: "string" }, kategorie: { type: "string" },
+              empfehlung: { type: "string" }, prioritaet: { type: "string" }
+            }}},
+            psychologisches_profil: { type: "object", properties: {
+              big_five: { type: "object", properties: {
+                Offenheit: { type: "number" }, Gewissenhaftigkeit: { type: "number" },
+                Extraversion: { type: "number" }, Verträglichkeit: { type: "number" }, Neurotizismus: { type: "number" }
+              }},
+              dark_triad: { type: "object", properties: {
+                Narzissmus: { type: "number" }, Machiavelismus: { type: "number" }, Psychopathie: { type: "number" }
+              }},
+              trigger: { type: "array", items: { type: "object", properties: {
+                trigger: { type: "string" }, beschreibung: { type: "string" }, intensitaet: { type: "string" }
+              }}},
+              empfehlung: { type: "string" }
+            }},
+            druckmittel: { type: "array", items: { type: "object", properties: {
+              titel: { type: "string" }, kategorie: { type: "string" },
+              wie_nutzen: { type: "string" }, timing: { type: "string" },
+              risiko: { type: "string" }, staerke: { type: "number" }
+            }}},
+            strategien: { type: "array", items: { type: "object", properties: {
+              name: { type: "string" }, stil: { type: "string" },
+              schritte: { type: "array", items: { type: "string" } },
+              risiko: { type: "string" }, zitat: { type: "string" }, erfolg_pct: { type: "number" }
+            }}},
+            timing: { type: "object", properties: {
+              momentum: { type: "string" }, momentum_pct: { type: "number" },
+              zeitfenster: { type: "array", items: { type: "object", properties: {
+                zeitraum: { type: "string" }, aktion: { type: "string" }
+              }}},
+              naechster_schritt: { type: "string" }
+            }},
+            informationsstrategie: { type: "object", properties: {
+              sofort_offenlegen: { type: "array", items: { type: "string" } },
+              verbergen: { type: "array", items: { type: "string" } },
+              als_bluff: { type: "array", items: { type: "string" } }
+            }},
+            verhandlungsskript: { type: "object", properties: {
+              vorbereitung: { type: "string" }, opening: { type: "string" },
+              argumentation: { type: "string" }, closing: { type: "string" },
+              einwand: { type: "string" }, backup: { type: "string" },
+              psycho_notizen: { type: "array", items: { type: "string" } }
+            }},
+            compliance_check: { type: "object", properties: {
+              risiken: { type: "array", items: { type: "string" } },
+              empfehlungen: { type: "array", items: { type: "string" } }
+            }},
+            empfehlung: { type: "string" }
+          }
+        },
         model: "claude_sonnet_4_6"
       });
-      let parsed;
-      if (typeof res === "string") {
-        const match = res.match(/\{[\s\S]*\}/);
-        parsed = JSON.parse(match ? match[0] : res);
-      } else {
-        parsed = res;
-      }
+      const parsed = res;
       if (!parsed || typeof parsed !== "object") {
         throw new Error("Kein gültiges Ergebnis erhalten.");
       }
