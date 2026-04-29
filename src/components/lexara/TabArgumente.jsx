@@ -578,9 +578,10 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
   };
 
   const takeKiArg = async (a, side) => {
+    if (!a.titel || !a.titel.trim()) return;
     await base44.entities.Argument.create({
       case_id: caseId,
-      title: a.titel,
+      title: a.titel.trim(),
       description: a.beschreibung || "",
       side,
       strength: a.staerke || 5,
@@ -596,11 +597,12 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
     const all = [
       ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
-    ];
+    ].filter(a => a.titel && a.titel.trim());
+    
     for (const a of all) {
       await base44.entities.Argument.create({
         case_id: caseId,
-        title: a.titel,
+        title: a.titel.trim(),
         description: a.beschreibung || "",
         side: a.side,
         strength: a.staerke || 5,
