@@ -367,7 +367,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         if (evEntity?.id) {
           evidenceMap[ev.titel] = evEntity.id;
         }
-        await new Promise(r => setTimeout(r, 500));
+        await new Promise(r => setTimeout(r, 800));
       }
     }
     
@@ -384,7 +384,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: linkedEvidenceIds
       });
-      await new Promise(r => setTimeout(r, 500));
+      await new Promise(r => setTimeout(r, 800));
     }
     setExtracted(null);
     loadAll(true);
