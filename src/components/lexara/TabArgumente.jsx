@@ -243,6 +243,12 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
   useEffect(() => { loadAll(); }, [caseId]);
 
+  // Refresh jede 2 Sekunden um Sync mit Beweise-Tab zu halten
+  useEffect(() => {
+    const interval = setInterval(() => loadAll(false), 2000);
+    return () => clearInterval(interval);
+  }, [caseId]);
+
   const loadAll = async (notify = false) => {
     const [args, evs] = await Promise.all([
       base44.entities.Argument.filter({ case_id: caseId }),
