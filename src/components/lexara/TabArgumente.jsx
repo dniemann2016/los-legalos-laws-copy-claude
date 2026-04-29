@@ -1044,9 +1044,20 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
                           <div className="flex items-center gap-1 flex-wrap">
                             <span className="font-medium text-gray-800 flex-1">{a.titel}</span>
                             <span className="text-gray-400">{a.staerke || 5}/10</span>
+                            {(a.paragraphen || []).length > 0 && (
+                              <span className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">§§: {a.paragraphen.length}</span>
+                            )}
                             <button onClick={() => take(a, side)} className="text-[10px] border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-50">Übernehmen</button>
                           </div>
                           {a.typ && <p className="text-gray-400">{a.typ}</p>}
+                          {(a.paragraphen || []).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {a.paragraphen.slice(0, 3).map((p, pi) => (
+                                <span key={pi} className="text-[8px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1 py-0.5">{p}</span>
+                              ))}
+                              {a.paragraphen.length > 3 && <span className="text-[8px] text-gray-400">+{a.paragraphen.length - 3}</span>}
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
