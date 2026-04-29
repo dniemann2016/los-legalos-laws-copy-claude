@@ -683,12 +683,20 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
       `KI empfiehlt: ${toDelete.length} von ${withoutEvidence.length} Arguments löschen\n\n${toDelete.map(a => `• ${a.titel}\n  Grund: ${a.grund}`).join("\n\n")}`
     );
     if (confirmed) {
+      let deleted = 0;
       for (const item of toDelete) {
         const arg = withoutEvidence.find(a => a.title === item.titel);
-        if (arg) await base44.entities.Argument.delete(arg.id);
+        if (arg) {
+          try {
+            await base44.entities.Argument.delete(arg.id);
+            deleted++;
+          } catch (e) {
+            console.warn(`Argument ${arg.id} konnte nicht gelöscht werden:`, e);
+          }
+        }
       }
       await load(true);
-      alert(`✓ ${toDelete.length} Argumente gelöscht (KI-basiert).`);
+      if (deleted > 0) alert(`✓ ${deleted} Argumente gelöscht (KI-basiert).`);
     }
   };
 
