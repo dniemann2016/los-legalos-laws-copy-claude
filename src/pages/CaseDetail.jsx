@@ -128,6 +128,18 @@ export default function CaseDetail() {
     setExporting(false);
   };
 
+  const handleExportSupabase = async () => {
+    setExporting(true);
+    try {
+      const result = await base44.functions.invoke('exportToSupabase', {});
+      alert(`✓ Export erfolgreich: ${Object.keys(result.results).filter(k => result.results[k].success).length} Tabellen synchronisiert`);
+    } catch (error) {
+      alert(`⚠️ Export-Fehler: ${error.message}`);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   useEffect(() => {
     if (!caseId) { navigate("/lexara"); return; }
     loadCase();
@@ -223,6 +235,10 @@ export default function CaseDetail() {
                 className="flex items-center gap-1"
                 style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, cursor: "pointer", background: "rgba(0,0,0,0.05)", color: "#555", border: "1px solid rgba(0,0,0,0.09)" }}>
                 <Download className="w-3 h-3" /> CSV
+              </button>
+              <button onClick={handleExportSupabase} disabled={exporting}
+                style={{ fontSize: 11, fontWeight: 500, padding: "5px 12px", borderRadius: 8, cursor: "pointer", background: "rgba(0,0,0,0.05)", color: "#555", border: "1px solid rgba(0,0,0,0.09)" }}>
+                {exporting ? "…" : "Supabase"}
               </button>
               <PrognoseCircle value={caseData.prognose||0}/>
             </div>
