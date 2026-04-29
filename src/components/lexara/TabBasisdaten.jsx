@@ -45,8 +45,8 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
     const timer = setTimeout(async () => {
       try {
         const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
-        const updated = await base44.entities.Case.update(caseId, { ...form, ki_berater_result });
-        onUpdate(updated);
+        await base44.entities.Case.update(caseId, { ...form, ki_berater_result });
+        onUpdate({ ...caseData, ...form, ki_berater_result });
       } catch (error) {
         console.error('Auto-save failed:', error);
       } finally {
@@ -57,7 +57,7 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
       clearTimeout(timer);
       setSaving(false);
     };
-  }, [form, rechtsgebietMeta, caseId, onUpdate]);
+  }, [form, rechtsgebietMeta, caseId, onUpdate, caseData]);
 
   const handleSave = async () => {
     setSaving(true);
