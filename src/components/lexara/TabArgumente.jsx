@@ -368,7 +368,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         if (evEntity?.id) {
           evidenceMap[ev.titel] = evEntity.id;
         }
-        await new Promise(r => setTimeout(r, 800));
+        await new Promise(r => setTimeout(r, 1500));
       }
     }
     
@@ -386,7 +386,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: linkedEvidenceIds
       });
-      if (ai < all.length - 1) await new Promise(r => setTimeout(r, 1000));
+      if (ai < all.length - 1) await new Promise(r => setTimeout(r, 1500));
     }
     setExtracted(null);
     loadAll(true);
@@ -625,7 +625,7 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
       } catch (e) {
         console.error("Fehler beim Erstellen des Arguments:", e);
       }
-      if (i < all.length - 1) await new Promise(r => setTimeout(r, 1000));
+      if (i < all.length - 1) await new Promise(r => setTimeout(r, 1500));
     }
     setTakingAllKi(false);
     setKiGenResult(null);
