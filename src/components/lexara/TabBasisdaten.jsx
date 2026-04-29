@@ -41,23 +41,23 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
 
   // Auto-save with debounce
   useEffect(() => {
-    setSaving(true);
     const timer = setTimeout(async () => {
+      setSaving(true);
       try {
         const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
-        await base44.entities.Case.update(caseId, { ...form, ki_berater_result });
-        onUpdate({ ...caseData, ...form, ki_berater_result });
+        const payload = { ...form, ki_berater_result };
+        console.log('Speichere Fall:', caseId, payload);
+        const result = await base44.entities.Case.update(caseId, payload);
+        console.log('Fall gespeichert:', result);
+        onUpdate(result);
       } catch (error) {
-        console.error('Auto-save failed:', error);
+        console.error('Auto-save Fehler:', error);
       } finally {
         setSaving(false);
       }
-    }, 1500);
-    return () => {
-      clearTimeout(timer);
-      setSaving(false);
-    };
-  }, [form, rechtsgebietMeta, caseId, onUpdate, caseData]);
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [form, rechtsgebietMeta]);
 
   const handleSave = async () => {
     setSaving(true);
