@@ -256,6 +256,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const handleExtract = async () => {
     if (extractMode === "ki" && !dsgvo) { setExtractError("Bitte DSGVO-Hinweis akzeptieren"); return; }
     if (!files.length && !text.trim()) { setExtractError("Dokument oder Text erforderlich"); return; }
+    if (!caseId) { setExtractError("Fall-ID erforderlich"); return; }
     setExtracting(true);
     setExtractError(null);
     try {
@@ -383,7 +384,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       });
     }
     setExtracted(null);
-    loadAll(true);
+    await loadAll(true);
   };
 
   const take = async (a, side) => {
@@ -396,7 +397,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       type: "Rechtsargument",
       paragraphs: a.paragraphen || [],
     });
-    loadAll(true);
+    await loadAll(true);
   };
 
   const rateBatch = async () => {
@@ -477,7 +478,7 @@ Prozessziel: ${caseData?.prozessziel || ""}
 Instanz: ${caseData?.instanz || ""}
 Gericht: ${caseData?.gericht || ""}
 
-Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.
+Generiere MAXIMAL 19 Argumente insgesamt (Eigen + Gegner). Priorisiere die stärksten und relevantesten. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.
 
 Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete Beweismittel, die dieses Argument belegen könnten. Nur wenn ein Beweis wirklich sinnvoll und typisch für diesen Argumenttyp ist – keine generischen Platzhalter. Falls kein geeigneter Beweis existiert, lass das Array leer.`,
       response_json_schema: {
@@ -551,7 +552,7 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       paragraphs: a.paragraphen || [],
       evidence_ids: evidenceIds,
     });
-    loadAll(true);
+    await loadAll(true);
   };
 
   const takeAllKiArgumente = async () => {
@@ -586,7 +587,7 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       });
     }
     setKiGenResult(null);
-    loadAll(true);
+    await loadAll(true);
   };
 
   const addManual = async () => {
@@ -594,7 +595,7 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
     await base44.entities.Argument.create({ case_id: caseId, ...newArg });
     setNewArg({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
     setShowAdd(false);
-    load(true);
+    await load(true);
   };
 
   const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
@@ -618,7 +619,7 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
             {batchRating ? "Bewerte..." : "⭐ Alle bewerten"}
           </Button>
           <Button size="sm" onClick={generateKiArgumente} disabled={kiGenerating} className="bg-emerald-700 text-white rounded-xl text-xs gap-1">
-            {kiGenerating ? <><RefreshCw className="w-3 h-3 animate-spin" /> KI generiert…</> : <><Sparkles className="w-3 h-3" /> Von KI hinzufügen</>}
+           {kiGenerating ? <><RefreshCw className="w-3 h-3 animate-spin" /> KI generiert…</> : <><Sparkles className="w-3 h-3" /> KI-Argumente (max. 19)</>}
           </Button>
           <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1">
             <Plus className="w-3 h-3" /> Argument

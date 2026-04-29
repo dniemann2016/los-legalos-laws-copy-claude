@@ -342,8 +342,8 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
       )
     );
     setKiSuggestions(null);
-      setPendingAssignments({});
-      load();
+    setPendingAssignments({});
+    await load();
   };
 
   const selectedArgData = args.find(a => a.id === selectedArg);
