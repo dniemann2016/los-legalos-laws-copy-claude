@@ -353,68 +353,79 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
 
   const takeAll = async () => {
     if (!extracted) return;
-    const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
-    
-    // Erstelle Beweise aus dem Dokument
-    const evidenceMap = {};
-    if (extracted.beweise && Array.isArray(extracted.beweise)) {
-      for (const ev of extracted.beweise) {
-        const evEntity = await base44.entities.Evidence.create({
-          case_id: caseId,
-          title: ev.titel || "Beweis",
-          description: ev.beschreibung || "",
-          type: ev.typ || "Dokument",
-          source: "Vertrag",
-          weight: ev.gewicht || 5
-        });
-        evidenceMap[ev.titel] = evEntity?.id || evEntity;
+    try {
+      const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
+      
+      // Erstelle Beweise aus dem Dokument
+      const evidenceMap = {};
+      if (extracted.beweise && Array.isArray(extracted.beweise)) {
+        for (const ev of extracted.beweise) {
+          const evEntity = await base44.entities.Evidence.create({
+            case_id: caseId,
+            title: ev.titel || "Beweis",
+            description: ev.beschreibung || "",
+            type: ev.typ || "Dokument",
+            source: "Vertrag",
+            weight: ev.gewicht || 5
+          });
+          evidenceMap[ev.titel] = evEntity?.id || evEntity;
+        }
       }
+      
+      // Erstelle Argumente und verlinke Beweise
+      for (const a of all) {
+        const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
+        await base44.entities.Argument.create({
+          case_id: caseId,
+          title: a.titel,
+          description: a.beschreibung || "",
+          side: a.side,
+          strength: a.staerke || 5,
+          type: "Rechtsargument",
+          paragraphs: a.paragraphen || [],
+          evidence_ids: linkedEvidenceIds
+        });
+      }
+      setExtracted(null);
+      await loadAll(true);
+    } catch (e) {
+      console.error("Fehler beim Übernehmen all:", e);
+      alert("Fehler beim Übernehmen der Argumente");
     }
-    
-    // Erstelle Argumente und verlinke Beweise
-    for (const a of all) {
-      const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
+  };
+
+  const take = async (a, side) => {
+    try {
+      // Erstelle zuerst Beweise (falls vorhanden)
+      const evidenceIds = [];
+      if (side === "eigen" && (a.beweise || []).length > 0) {
+        for (const ev of a.beweise) {
+          const created = await base44.entities.Evidence.create({
+            case_id: caseId,
+            title: ev.titel,
+            description: ev.beschreibung || "",
+            type: ev.typ || "Dokument",
+            weight: ev.gewicht || 5,
+          });
+          if (created?.id) evidenceIds.push(created.id);
+        }
+      }
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel,
         description: a.beschreibung || "",
-        side: a.side,
+        side,
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
-        evidence_ids: linkedEvidenceIds
+        evidence_ids: evidenceIds,
       });
+      // Lade nach Erstellung neu UND SCHLIESSE NICHT automatisch
+      await loadAll(true);
+    } catch (e) {
+      console.error("Fehler beim Übernehmen:", e);
+      alert("Fehler beim Übernehmen des Arguments");
     }
-    setExtracted(null);
-    await loadAll(true);
-  };
-
-  const take = async (a, side) => {
-    // Erstelle zuerst Beweise (falls vorhanden)
-    const evidenceIds = [];
-    if (side === "eigen" && (a.beweise || []).length > 0) {
-      for (const ev of a.beweise) {
-        const created = await base44.entities.Evidence.create({
-          case_id: caseId,
-          title: ev.titel,
-          description: ev.beschreibung || "",
-          type: ev.typ || "Dokument",
-          weight: ev.gewicht || 5,
-        });
-        if (created?.id) evidenceIds.push(created.id);
-      }
-    }
-    await base44.entities.Argument.create({
-      case_id: caseId,
-      title: a.titel,
-      description: a.beschreibung || "",
-      side,
-      strength: a.staerke || 5,
-      type: "Rechtsargument",
-      paragraphs: a.paragraphen || [],
-      evidence_ids: evidenceIds,
-    });
-    await loadAll(true);
   };
 
   const rateBatch = async () => {
@@ -545,42 +556,10 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
   };
 
   const takeKiArg = async (a, side) => {
-    // Erstelle zuerst Beweise (falls vorhanden)
-    const evidenceIds = [];
-    if (side === "eigen" && (a.beweise || []).length > 0) {
-      for (const ev of a.beweise) {
-        const created = await base44.entities.Evidence.create({
-          case_id: caseId,
-          title: ev.titel,
-          description: ev.beschreibung || "",
-          type: ev.typ || "Dokument",
-          weight: ev.gewicht || 5,
-        });
-        if (created?.id) evidenceIds.push(created.id);
-      }
-    }
-    await base44.entities.Argument.create({
-      case_id: caseId,
-      title: a.titel,
-      description: a.beschreibung || "",
-      side,
-      strength: a.staerke || 5,
-      type: "Rechtsargument",
-      paragraphs: a.paragraphen || [],
-      evidence_ids: evidenceIds,
-    });
-    await loadAll(true);
-  };
-
-  const takeAllKiArgumente = async () => {
-    if (!kiGenResult) return;
-    const all = [
-      ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
-      ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
-    ];
-    for (const a of all) {
+    try {
+      // Erstelle zuerst Beweise (falls vorhanden)
       const evidenceIds = [];
-      if (a.side === "eigen" && (a.beweise || []).length > 0) {
+      if (side === "eigen" && (a.beweise || []).length > 0) {
         for (const ev of a.beweise) {
           const created = await base44.entities.Evidence.create({
             case_id: caseId,
@@ -596,15 +575,57 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
         case_id: caseId,
         title: a.titel,
         description: a.beschreibung || "",
-        side: a.side,
+        side,
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
+      await loadAll(true);
+    } catch (e) {
+      console.error("Fehler beim Übernehmen:", e);
+      alert("Fehler beim Übernehmen des Arguments");
     }
-    setKiGenResult(null);
-    await loadAll(true);
+  };
+
+  const takeAllKiArgumente = async () => {
+    if (!kiGenResult) return;
+    try {
+      const all = [
+        ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
+        ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
+      ];
+      for (const a of all) {
+        const evidenceIds = [];
+        if (a.side === "eigen" && (a.beweise || []).length > 0) {
+          for (const ev of a.beweise) {
+            const created = await base44.entities.Evidence.create({
+              case_id: caseId,
+              title: ev.titel,
+              description: ev.beschreibung || "",
+              type: ev.typ || "Dokument",
+              weight: ev.gewicht || 5,
+            });
+            if (created?.id) evidenceIds.push(created.id);
+          }
+        }
+        await base44.entities.Argument.create({
+          case_id: caseId,
+          title: a.titel,
+          description: a.beschreibung || "",
+          side: a.side,
+          strength: a.staerke || 5,
+          type: "Rechtsargument",
+          paragraphs: a.paragraphen || [],
+          evidence_ids: evidenceIds,
+        });
+      }
+      setKiGenResult(null);
+      await loadAll(true);
+    } catch (e) {
+      console.error("Fehler beim Übernehmen KI-Arguments:", e);
+      alert("Fehler beim Übernehmen der KI-Argumente");
+    }
   };
 
   const addManual = async () => {
