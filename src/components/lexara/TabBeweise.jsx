@@ -254,6 +254,8 @@ export default function TabBeweise({ caseId }) {
   const [activePara, setActivePara] = useState(null);
   const [showLink, setShowLink] = useState(false);
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
+  const [kiGenArgs, setKiGenArgs] = useState(null);
+  const [kiGenLoading, setKiGenLoading] = useState(false);
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -347,6 +349,91 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
     load();
   };
 
+  const generateArgumentsFromEvidence = async () => {
+    if (evidence.length === 0) return;
+    setKiGenLoading(true);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Rechtsanwalt. Basierend auf den folgenden Beweismitteln, generiere PRÄZISE ARGUMENTE die exakt zu diesen Beweisen passen.
+
+BEWEISE (aus den Dokumenten):
+${evidence.map(e => `- ${e.title} (${e.type}): ${e.description || ''}`).join('\n')}
+
+AUFGABE:
+1. Generiere 20-50 konkrete Argumente (eigen & gegner), die DIREKT aus diesen Beweisen ableitbar sind
+2. Jedes Argument MUSS eine konkrete Beweisreferenz haben
+3. Fokus: Was sagen diese Beweise juristisch aus? Welche Schlüsse folgen daraus?
+4. Für jedes: Titel, Beschreibung (bezogen auf den Beweis), Stärke 1-10
+
+WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          eigene_argumente: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                beschreibung: { type: "string" },
+                staerke: { type: "number" },
+                beweisreferenz: { type: "string" }
+              }
+            }
+          },
+          gegner_argumente: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                beschreibung: { type: "string" },
+                staerke: { type: "number" },
+                beweisreferenz: { type: "string" }
+              }
+            }
+          }
+        }
+      }
+    });
+    setKiGenArgs(result);
+    setKiGenLoading(false);
+  };
+
+  const addArgFromEvidence = async (arg, side) => {
+    if (!arg.titel || !arg.titel.trim()) return;
+    await base44.entities.Argument.create({
+      case_id: caseId,
+      title: arg.titel.trim(),
+      description: `${arg.beschreibung || ''}\n[Basierend auf: ${arg.beweisreferenz || ''}]`,
+      side,
+      strength: arg.staerke || 5,
+      type: "Rechtsargument"
+    });
+    load();
+  };
+
+  const addAllArgsFromEvidence = async () => {
+    if (!kiGenArgs) return;
+    const all = [
+      ...(kiGenArgs.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
+      ...(kiGenArgs.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
+    ].filter(a => a.titel && a.titel.trim());
+
+    for (const a of all) {
+      await base44.entities.Argument.create({
+        case_id: caseId,
+        title: a.titel.trim(),
+        description: `${a.beschreibung || ''}\n[Basierend auf: ${a.beweisreferenz || ''}]`,
+        side: a.side,
+        strength: a.staerke || 5,
+        type: "Rechtsargument"
+      });
+      await new Promise(r => setTimeout(r, 300));
+    }
+    setKiGenArgs(null);
+    load();
+  };
+
   const selectedArgData = args.find(a => a.id === selectedArg);
   const argEvidence = evidence.filter(e =>
     e.argument_id === selectedArg ||
@@ -383,6 +470,11 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
                 <h3 className="font-semibold text-gray-900 mt-1">{selectedArgData.title}</h3>
               </div>
               <div className="flex items-center gap-2">
+                <Button size="sm" onClick={generateArgumentsFromEvidence} disabled={kiGenLoading || evidence.length === 0}
+                  className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs gap-1">
+                  {kiGenLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                  {kiGenLoading ? "KI analysiert…" : "KI-Argumente"}
+                </Button>
                 <Button size="sm" variant="outline" onClick={() => setShowLink(!showLink)}
                   className="rounded-xl text-xs gap-1 border-blue-200 text-blue-700 hover:bg-blue-50">
                   🔗 Verknüpfen {unlinkedEvidence.length > 0 && `(${unlinkedEvidence.length})`}
@@ -392,6 +484,44 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
                 </Button>
               </div>
             </div>
+
+            {kiGenArgs && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente aus Beweisen</p>
+                  <div className="flex gap-2">
+                    {((kiGenArgs.eigene_argumente || []).length > 0 || (kiGenArgs.gegner_argumente || []).length > 0) && (
+                      <button onClick={addAllArgsFromEvidence} className="text-[10px] bg-emerald-700 text-white px-2 py-1 rounded hover:bg-emerald-800">
+                        <Check className="w-3 h-3 inline mr-1" /> Alle übernehmen
+                      </button>
+                    )}
+                    <button onClick={() => setKiGenArgs(null)} className="text-[10px] text-emerald-600 hover:text-emerald-800">Verwerfen</button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {[["EIGENE", kiGenArgs.eigene_argumente || [], "eigen"], ["GEGNER", kiGenArgs.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
+                    <div key={side}>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label} · {items.length}</p>
+                      {items.map((a, i) => (
+                        <div key={i} className="mb-2 bg-white rounded-lg border border-gray-100 p-2 text-xs">
+                          <div className="flex items-start gap-1">
+                            <div className="flex-1 min-w-0">
+                              <p className="font-semibold text-gray-800">{a.titel}</p>
+                              <p className="text-gray-600 mt-0.5 text-[10px]">{a.beschreibung}</p>
+                              {a.beweisreferenz && <p className="text-[9px] text-emerald-600 mt-0.5 italic">📌 {a.beweisreferenz}</p>}
+                            </div>
+                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                              <span className="text-[10px] text-gray-400">{a.staerke}/10</span>
+                              <button onClick={() => addArgFromEvidence(a, side)} className="text-[9px] border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-50">+</button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {showLink && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
