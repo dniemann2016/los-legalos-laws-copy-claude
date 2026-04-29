@@ -478,9 +478,9 @@ Instanz: ${caseData?.instanz || ""}
 Gericht: ${caseData?.gericht || ""}
 
 AUFGABE 1 — DIREKT FALLRELEVANTE PARAGRAPHEN (ALS BEWEISE):
-Identifiziere NUR die Paragraphen die DIREKT und UNMITTELBAR mit dem Kern des Falls zu tun haben — also Normen die für die zentrale Rechtsfrage oder Streitpunkte entscheidend sind. 
+Identifiziere ALLE Paragraphen die DIREKT und UNMITTELBAR mit dem Kern des Falls zu tun haben — mindestens 20-30 §§ sofern diese als Beweise geeignet sind, ansonsten auch weniger, aber wenn vorhanden dann 20-30 §.
 NICHT aufnehmen: generische Backup-Normen, theoretisch anwendbare aber tangentiale Bestimmungen, oder Normen die nur als sekundäre Optionen relevant sind (z.B. bei Straffall: Schadensersatz-Normen sind keine Kern-Beweise, sondern nur Folge-Optionen).
-Nur die Paragraphen die WIRKLICH den Fall entscheiden. Für jede Norm: Paragraph, Gesetz, Kurztitel, kurze direkte Relevanz (1-2 Sätze).
+Ziel: Umfassend ALLE fallentscheidenden Paragraphen sammeln, nicht nur die Top 5. Für jede Norm: Paragraph, Gesetz, Kurztitel, kurze direkte Relevanz (1-2 Sätze).
 
 AUFGABE 2 — EIGENE ARGUMENTE:
 Generiere 3-5 starke eigene Argumente basierend auf den identifizierten Normen. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
