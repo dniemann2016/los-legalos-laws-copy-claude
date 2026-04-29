@@ -488,10 +488,10 @@ NICHT aufnehmen: generische Backup-Normen, theoretisch anwendbare aber tangentia
 Ziel: Umfassend ALLE fallentscheidenden Paragraphen sammeln, nicht nur die Top 5. Für jede Norm: Paragraph, Gesetz, Kurztitel, kurze direkte Relevanz (1-2 Sätze).
 
 AUFGABE 2 — EIGENE ARGUMENTE:
-Generiere 3-5 starke eigene Argumente basierend auf den identifizierten Normen. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
+Generiere MINDESTENS 50-100 starke eigene Argumente basierend auf den identifizierten Normen und Beweisen — sofern tauglich als Beweise, sonst weniger. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
 
 AUFGABE 3 — GEGNERARGUMENTE:
-Generiere 2-4 zu erwartende Gegenargumente. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
+Generiere MINDESTENS 30-50 zu erwartende Gegenargumente — sofern tauglich als Beweise, sonst weniger. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
 
 AUFGABE 4 — ALLE POTENZIELLEN BEWEISE (umfassend — mindestens 50):
 Identifiziere ALLE möglichen Beweise für diesen Fall — mindestens 50 wenn vorhanden, sonst weniger:
