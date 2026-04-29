@@ -237,6 +237,8 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [text, setText] = useState("");
   const [extracting, setExtracting] = useState(false);
   const [extracted, setExtracted] = useState(null);
+  const [detectingDuplicates, setDetectingDuplicates] = useState(false);
+  const [duplicates, setDuplicates] = useState(null);
   const fileRef = useRef(null);
 
   useEffect(() => { loadAll(); }, [caseId]);
@@ -615,6 +617,82 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
 
   const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
 
+  const detectDuplicates = async () => {
+    if (args.length < 2) {
+      alert("✓ Zu wenige Argumente zum Vergleich.");
+      return;
+    }
+    setDetectingDuplicates(true);
+    try {
+      const result = await base44.integrations.Core.InvokeLLM({
+        prompt: `Du bist ein Rechtsanwalt. Finde ÄHNLICHE oder DOPPELTE Argumente in dieser Liste. Berücksichtige Paraphrasierungen, leicht unterschiedliche Formulierungen und inhaltliche Überlappungen.
+
+ARGUMENTE:
+${args.map((a, i) => `${i + 1}. [${a.side === "eigen" ? "EIGEN" : "GEGNER"}] ${a.title}\n   ${a.description || ""}`).join("\n\n")}
+
+Gib GRUPPEN ähnlicher Arguments zurück (mindestens 2 pro Gruppe). Pro Gruppe: welche Argument-Nummern sind ähnlich, Begründung, und welche sollte BEHALTEN werden (beste Version).`,
+        response_json_schema: {
+          type: "object",
+          properties: {
+            duplikat_gruppen: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  nummern: { type: "array", items: { type: "integer" }, description: "1-basierte Indizes der ähnlichen Arguments" },
+                  grund: { type: "string" },
+                  zu_behalten: { type: "integer", description: "Index des Arguments das behalten werden sollte" }
+                }
+              }
+            }
+          }
+        }
+      });
+      
+      if (result?.duplikat_gruppen && result.duplikat_gruppen.length > 0) {
+        setDuplicates(result.duplikat_gruppen);
+      } else {
+        alert("✓ Keine ähnlichen Argumente gefunden.");
+        setDuplicates(null);
+      }
+    } catch (e) {
+      console.error("Duplikat-Erkennung fehler:", e);
+      alert("Fehler bei Duplikat-Erkennung");
+    } finally {
+      setDetectingDuplicates(false);
+    }
+  };
+
+  const deleteDuplicates = async (groups) => {
+    const toDelete = [];
+    for (const group of groups) {
+      const keep = group.zu_behalten;
+      for (const idx of group.nummern) {
+        if (idx !== keep && args[idx - 1]) {
+          toDelete.push(args[idx - 1].id);
+        }
+      }
+    }
+    
+    const confirmed = window.confirm(
+      `${toDelete.length} doppelte Argumente löschen?\n\nBestätige zum Löschen.`
+    );
+    if (confirmed) {
+      let deleted = 0;
+      for (const id of toDelete) {
+        try {
+          await base44.entities.Argument.delete(id);
+          deleted++;
+        } catch (e) {
+          console.warn(`Argument ${id} konnte nicht gelöscht werden:`, e);
+        }
+      }
+      await load(true);
+      setDuplicates(null);
+      alert(`✓ ${deleted} doppelte Argumente gelöscht.`);
+    }
+  };
+
   const cleanupWithoutEvidence = async () => {
     const withoutEvidence = args.filter(a => !a.evidence_ids || a.evidence_ids.length === 0);
     if (withoutEvidence.length === 0) {
@@ -722,14 +800,54 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
            <Button size="sm" onClick={generateKiArgumente} disabled={kiGenerating} className="bg-emerald-700 text-white rounded-xl text-xs gap-1">
             {kiGenerating ? <><RefreshCw className="w-3 h-3 animate-spin" /> KI generiert…</> : <><Sparkles className="w-3 h-3" /> KI-Argumente (max. 19)</>}
            </Button>
+           <Button size="sm" onClick={detectDuplicates} disabled={detectingDuplicates} className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs gap-1">
+             {detectingDuplicates ? <><RefreshCw className="w-3 h-3 animate-spin" /> Prüfe…</> : "🔍 Duplikate"}
+            </Button>
            <Button size="sm" onClick={cleanupWithoutEvidence} className="bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs gap-1">
-            🗑️ Ohne Belege löschen
-           </Button>
+             🗑️ Ohne Belege löschen
+            </Button>
            <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1">
             <Plus className="w-3 h-3" /> Argument
            </Button>
          </div>
       </div>
+
+      {duplicates && (
+        <div className="bg-orange-50 border border-orange-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-orange-900">🔍 Ähnliche Argumente gefunden</p>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={() => deleteDuplicates(duplicates)} className="bg-orange-700 text-white text-xs gap-1">
+                <Trash2 className="w-3 h-3" /> Doppelte löschen
+              </Button>
+              <button onClick={() => setDuplicates(null)} className="text-orange-500 hover:text-orange-700 text-xs">Schließen</button>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {duplicates.map((group, gi) => (
+              <div key={gi} className="bg-white rounded-lg border border-orange-100 p-3 text-xs">
+                <p className="font-semibold text-orange-900 mb-2">Gruppe {gi + 1}: {group.grund}</p>
+                <div className="space-y-1">
+                  {group.nummern.map(idx => {
+                    const arg = args[idx - 1];
+                    const isKeeped = idx === group.zu_behalten;
+                    return (
+                      <div key={idx} className={`flex items-start gap-2 p-2 rounded ${isKeeped ? "bg-green-50 border border-green-100" : "bg-red-50 border border-red-100"}`}>
+                        <span className={`font-mono font-bold ${isKeeped ? "text-green-700" : "text-red-600"}`}>#{idx}</span>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-gray-800">{arg?.title}</p>
+                          {arg?.description && <p className="text-gray-500 text-[10px] mt-0.5 line-clamp-1">{arg.description}</p>}
+                        </div>
+                        {isKeeped && <span className="text-green-600 font-semibold flex-shrink-0">✓ BEHALTEN</span>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {kiGenResult && (
         <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
