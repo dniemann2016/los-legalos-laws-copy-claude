@@ -4,6 +4,28 @@ import { RefreshCw, Sparkles, Target, Shield, Zap, AlertTriangle, Calculator, Ch
 import { Button } from "@/components/ui/button";
 import { computePrognose, computeBreakEven } from "@/lib/legalAlgorithms";
 
+// Einfache Laienerklärungen pro Berechnungsschritt-Label
+const SIMPLE_EXPLANATIONS = {
+  "Prior-Wahrscheinlichkeit (Basisrate)":
+    "💡 Einfach erklärt: Bevor wir irgendetwas über den Fall wissen, fragen wir: Wie oft gewinnt der Kläger in diesem Rechtsgebiet statistisch? Das ist unser Startpunkt – wie ein Wettertipp vor Betrachtung der Wolken.",
+  "Argumentationsbilanz":
+    "💡 Einfach erklärt: Wie stark sind unsere Argumente im Vergleich zu den gegnerischen? Starke eigene Argumente verbessern die Prognose, starke Gegenargumente verschlechtern sie – ähnlich wie bei einer Waage.",
+  "Beweisqualität & -quantität":
+    "💡 Einfach erklärt: Mehr gute Beweise = bessere Chancen. Aber mehr Beweise bringen immer weniger zusätzlichen Nutzen (der 10. Beweis zählt weniger als der 1.). Die Qualität jedes Beweises fließt gewichtet ein.",
+  "Richter-Statistik (Bayesianisch)":
+    "💡 Einfach erklärt: Wenn wir wissen, wie oft dieser Richter den Kläger gewinnen lässt, passen wir unsere Prognose entsprechend an – wie ein Tipp auf einen Tennisspieler, wenn man dessen Siegquote auf diesem Platz kennt.",
+  "Richter-Statistik":
+    "💡 Einfach erklärt: Kein Richter bekannt – deshalb bleibt die Prognose an dieser Stelle unverändert.",
+  "Fristenrisiko (Malus)":
+    "💡 Einfach erklärt: Versäumte Fristen schaden dem Fall erheblich – Gerichte nehmen das sehr ernst. Jede versäumte Frist zieht die Prognose nach unten, wie ein Strafstoß beim Fußball.",
+  "Vergleichsangebot-Signal":
+    "💡 Einfach erklärt: Ein hohes Vergleichsangebot der Gegenseite zeigt, dass die Gegner nervös sind – ein positives Zeichen für uns. Ein niedriges Angebot deutet auf ihre Stärke hin.",
+  "Finale Wahrscheinlichkeit (Logistische Transformation)":
+    "💡 Einfach erklärt: Alle Faktoren wurden auf einer technischen Skala addiert. Die logistische Funktion wandelt diese Summe in eine echte Prozentzahl zwischen 0% und 100% um – wie ein Thermometer, das eine Zahl in 'heiß' oder 'kalt' übersetzt.",
+  "90%-Konfidenzintervall (Fehlerfortpflanzung)":
+    "💡 Einfach erklärt: Kein Ergebnis ist 100% sicher. Das Konfidenzintervall zeigt den realistischen Korridor: 'Mit 90% Wahrscheinlichkeit liegt die echte Chance zwischen X% und Y%.' Je breiter der Bereich, desto unsicherer die Datenlage.",
+};
+
 function AlgoStepCard({ step, index }) {
   const [open, setOpen] = useState(false);
   const wert = typeof step.wert === "number"
@@ -11,6 +33,7 @@ function AlgoStepCard({ step, index }) {
     : typeof step.wert === "object" && step.wert?.ciLow !== undefined
       ? `[${(step.wert.ciLow * 100).toFixed(1)}%, ${(step.wert.ciHigh * 100).toFixed(1)}%]`
       : "";
+  const simpleExpl = SIMPLE_EXPLANATIONS[step.label];
   return (
     <div className="border border-gray-100 rounded-xl overflow-hidden">
       <button onClick={() => setOpen(o => !o)}
@@ -29,6 +52,11 @@ function AlgoStepCard({ step, index }) {
             </div>
           )}
           <p className="text-xs text-gray-600">{step.erklaerung}</p>
+          {simpleExpl && (
+            <div className="bg-blue-50 border border-blue-100 rounded-lg px-3 py-2">
+              <p className="text-xs text-blue-800 leading-relaxed">{simpleExpl}</p>
+            </div>
+          )}
         </div>
       )}
     </div>
