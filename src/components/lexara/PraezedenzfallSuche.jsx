@@ -94,6 +94,39 @@ Für jedes Urteil: Aktenzeichen, Gericht, Datum, Leitsatz, Relevanz, ob es uns o
   };
 
   const [suchInfo, setSuchInfo] = useState(null);
+  const [importedPara, setImportedPara] = useState({});
+  const [importingPara, setImportingPara] = useState(null);
+
+  const importParaAsArgument = async (p, i) => {
+    setImportingPara(`arg_${i}`);
+    await base44.entities.Argument.create({
+      case_id: caseId,
+      title: `${p.norm} ${p.gesetz}${p.titel ? " – " + p.titel : ""}`,
+      description: p.warum_relevant || "",
+      side: p.bedeutung === "gefährdet_uns" ? "gegner" : "eigen",
+      strength: p.bedeutung === "stärkt_uns" ? 7 : p.bedeutung === "gefährdet_uns" ? 7 : 5,
+      type: "Rechtsargument",
+      paragraphs: [`${p.norm} ${p.gesetz}`.trim()],
+    });
+    setImportedPara(prev => ({ ...prev, [`arg_${i}`]: true }));
+    setImportingPara(null);
+    onImport && onImport();
+  };
+
+  const importParaAsEvidence = async (p, i) => {
+    setImportingPara(`ev_${i}`);
+    await base44.entities.Evidence.create({
+      case_id: caseId,
+      title: `${p.norm} ${p.gesetz}${p.titel ? " – " + p.titel : ""}`,
+      description: (p.warum_relevant || "") + ` [§§: ${p.norm} ${p.gesetz}]`,
+      type: "Gesetzliche Grundlage / Normtext",
+      weight: 10,
+      source: p.gesetz || "",
+    });
+    setImportedPara(prev => ({ ...prev, [`ev_${i}`]: true }));
+    setImportingPara(null);
+    onImport && onImport();
+  };
 
   const importAsArgument = async (urteil, idx) => {
     setImportingId(idx);
@@ -233,6 +266,24 @@ Für jedes Urteil: Aktenzeichen, Gericht, Datum, Leitsatz, Relevanz, ob es uns o
                         <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${tagColor}`}>{tagLabel}</span>
                       </div>
                       <p className="text-[11px] text-gray-700 leading-relaxed">{p.warum_relevant}</p>
+                      <div className="flex gap-2 mt-2">
+                        {importedPara[`arg_${i}`] ? (
+                          <span className="flex items-center gap-1 text-[9px] text-green-700 font-semibold"><CheckCircle2 className="w-3 h-3" /> Als Argument</span>
+                        ) : (
+                          <button onClick={() => importParaAsArgument(p, i)} disabled={importingPara === `arg_${i}`}
+                            className="flex items-center gap-1 text-[9px] bg-gray-900 text-white px-2 py-1 rounded hover:bg-gray-800 disabled:opacity-50">
+                            <Plus className="w-2.5 h-2.5" /> {importingPara === `arg_${i}` ? "…" : "Als Argument"}
+                          </button>
+                        )}
+                        {importedPara[`ev_${i}`] ? (
+                          <span className="flex items-center gap-1 text-[9px] text-blue-700 font-semibold"><CheckCircle2 className="w-3 h-3" /> Als Beweis</span>
+                        ) : (
+                          <button onClick={() => importParaAsEvidence(p, i)} disabled={importingPara === `ev_${i}`}
+                            className="flex items-center gap-1 text-[9px] border border-blue-300 text-blue-700 px-2 py-1 rounded hover:bg-blue-50 disabled:opacity-50">
+                            <Plus className="w-2.5 h-2.5" /> {importingPara === `ev_${i}` ? "…" : "Als Beweis"}
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

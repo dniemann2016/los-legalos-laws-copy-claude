@@ -51,6 +51,12 @@ function ScoreBar({ value, max = 10, color = "bg-green-500" }) {
 function EvidenceCard({ ev, onDelete, onSave }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ title: ev.title, description: ev.description || "", type: ev.type || BEWEIS_TYPES[0], source: ev.source || "", weight: ev.weight || 5 });
+  const [newPara, setNewPara] = useState("");
+  const [paragraphen, setParagraphen] = useState(() => {
+    // Paragraphen werden im description-Feld als "[§§: ...]" gespeichert
+    const match = (ev.description || "").match(/\[§§: ([^\]]+)\]/);
+    return match ? match[1].split(", ").filter(Boolean) : [];
+  });
   const [kiWeighting, setKiWeighting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
@@ -60,8 +66,19 @@ function EvidenceCard({ ev, onDelete, onSave }) {
     : 0;
   const hasDiscrepancy = discrepancy >= 2;
 
+  const addParagraph = () => {
+    if (!newPara.trim()) return;
+    setParagraphen(p => [...p, newPara.trim()]);
+    setNewPara("");
+  };
+
+  const removeParagraph = (i) => setParagraphen(p => p.filter((_, j) => j !== i));
+
   const save = async () => {
-    await base44.entities.Evidence.update(ev.id, form);
+    // Paragraphen in die description einbetten (als Anhang)
+    let desc = form.description.replace(/\s*\[§§: [^\]]*\]/, "").trim();
+    if (paragraphen.length > 0) desc = desc + (desc ? " " : "") + `[§§: ${paragraphen.join(", ")}]`;
+    await base44.entities.Evidence.update(ev.id, { ...form, description: desc });
     setEditing(false);
     onSave();
   };
@@ -122,6 +139,21 @@ function EvidenceCard({ ev, onDelete, onSave }) {
               <span className="text-xs text-gray-500">Manuelles Gewicht:</span>
               <input type="number" min={0} max={10} step={0.5} className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-16 bg-white" value={form.weight} onChange={e => setForm({ ...form, weight: +e.target.value })} />
             </div>
+            {/* Paragraphen */}
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">Paragraphen / Normen</label>
+              <div className="flex gap-1 mb-1 flex-wrap">
+                {paragraphen.map((p, i) => (
+                  <span key={i} className="flex items-center gap-1 text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">
+                    {p}<button onClick={() => removeParagraph(i)} className="text-blue-400 hover:text-red-500">×</button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-1">
+                <input className="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white" placeholder="z.B. § 286 ZPO" value={newPara} onChange={e => setNewPara(e.target.value)} onKeyDown={e => e.key === "Enter" && addParagraph()} />
+                <button onClick={addParagraph} className="text-[10px] px-2 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">+</button>
+              </div>
+            </div>
             <div className="flex gap-2">
               <Button size="sm" onClick={save} className="bg-gray-900 text-white rounded-lg text-xs gap-1"><Check className="w-3 h-3" /> Speichern</Button>
               <Button size="sm" variant="outline" onClick={() => setEditing(false)} className="rounded-lg text-xs">Abbrechen</Button>
@@ -161,6 +193,13 @@ function EvidenceCard({ ev, onDelete, onSave }) {
                 {ev.description && <p className="text-xs text-gray-500">{ev.description}</p>}
                 {ev.type && <p className="text-[10px] text-gray-400 mt-0.5">{ev.type}</p>}
                 {ev.source && <p className="text-[10px] text-gray-400">Quelle: {ev.source}</p>}
+                {paragraphen.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {paragraphen.map((p, i) => (
+                      <span key={i} className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">{p}</span>
+                    ))}
+                  </div>
+                )}
                 {ev.ki_reasoning && (
                   <div className="mt-2 bg-violet-50 border border-violet-100 rounded-lg p-2">
                     <p className="text-[10px] font-semibold text-violet-700 mb-0.5">KI-Begründung (Gewicht {ev.ki_weight}/10):</p>

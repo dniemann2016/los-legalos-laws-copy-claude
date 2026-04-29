@@ -14,7 +14,8 @@ function ScoreBar({ value, max = 10, color = "bg-green-500" }) {
 
 function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ title: arg.title, description: arg.description || "", side: arg.side || "eigen", type: arg.type || "Rechtsargument", strength: arg.strength || 5, zeitpunkt: arg.zeitpunkt || "", anmerkungen: arg.anmerkungen || "" });
+  const [form, setForm] = useState({ title: arg.title, description: arg.description || "", side: arg.side || "eigen", type: arg.type || "Rechtsargument", strength: arg.strength || 5, zeitpunkt: arg.zeitpunkt || "", anmerkungen: arg.anmerkungen || "", paragraphs: arg.paragraphs || [] });
+  const [newPara, setNewPara] = useState("");
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
   const [kiWeighting, setKiWeighting] = useState(false);
@@ -28,6 +29,16 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
     await base44.entities.Argument.update(arg.id, { ...form, zeitpunkt: form.zeitpunkt || null, anmerkungen: form.anmerkungen || null });
     setEditing(false);
     onSave();
+  };
+
+  const addParagraph = () => {
+    if (!newPara.trim()) return;
+    setForm(f => ({ ...f, paragraphs: [...(f.paragraphs || []), newPara.trim()] }));
+    setNewPara("");
+  };
+
+  const removeParagraph = (i) => {
+    setForm(f => ({ ...f, paragraphs: (f.paragraphs || []).filter((_, j) => j !== i) }));
   };
 
   const kiWeight = async () => {
@@ -82,6 +93,22 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
             <div>
               <label className="text-[10px] text-gray-400 block mb-1">Anmerkungen (Risiken / Vorteile)</label>
               <input className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs bg-white" placeholder="z.B. Beweis fehlt noch, starkes Argument..." value={form.anmerkungen} onChange={e => setForm({ ...form, anmerkungen: e.target.value })} />
+            </div>
+          </div>
+          {/* Paragraphen im Edit-Modus */}
+          <div>
+            <label className="text-[10px] text-gray-400 block mb-1">Paragraphen / Normen</label>
+            <div className="flex gap-1 mb-1 flex-wrap">
+              {(form.paragraphs || []).map((p, i) => (
+                <span key={i} className="flex items-center gap-1 text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">
+                  {p}
+                  <button onClick={() => removeParagraph(i)} className="text-blue-400 hover:text-red-500">×</button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-1">
+              <input className="flex-1 border border-gray-200 rounded-lg px-2 py-1 text-xs bg-white" placeholder="z.B. § 280 BGB" value={newPara} onChange={e => setNewPara(e.target.value)} onKeyDown={e => e.key === "Enter" && addParagraph()} />
+              <button onClick={addParagraph} className="text-[10px] px-2 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700">+</button>
             </div>
           </div>
           <div className="flex gap-2 flex-wrap">
@@ -145,6 +172,13 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
                 </div>
               </div>
 
+              {(arg.paragraphs && arg.paragraphs.length > 0) && (
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {arg.paragraphs.map((p, i) => (
+                    <span key={i} className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">{p}</span>
+                  ))}
+                </div>
+              )}
               <div className="flex items-center gap-2 mt-2 flex-wrap">
                 <button onClick={kiWeight} disabled={kiWeighting}
                   className="flex items-center gap-1 text-[10px] text-violet-600 hover:text-violet-800 border border-violet-200 rounded px-1.5 py-0.5 disabled:opacity-40">
