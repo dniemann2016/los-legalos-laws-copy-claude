@@ -401,13 +401,25 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
 
   const addArgFromEvidence = async (arg, side) => {
     if (!arg.titel || !arg.titel.trim()) return;
+    // Finde passende Beweise basierend auf Beweisreferenz
+    const linkedEvidenceIds = arg.beweisreferenz
+      ? evidence
+          .filter(e => 
+            e.title?.includes(arg.beweisreferenz) || 
+            e.description?.includes(arg.beweisreferenz) ||
+            arg.beweisreferenz.includes(e.title)
+          )
+          .map(e => e.id)
+      : [];
+    
     await base44.entities.Argument.create({
       case_id: caseId,
       title: arg.titel.trim(),
       description: `${arg.beschreibung || ''}\n[Basierend auf: ${arg.beweisreferenz || ''}]`,
       side,
       strength: arg.staerke || 5,
-      type: "Rechtsargument"
+      type: "Rechtsargument",
+      evidence_ids: linkedEvidenceIds
     });
     load();
   };
@@ -420,13 +432,25 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
     ].filter(a => a.titel && a.titel.trim());
 
     for (const a of all) {
+      // Finde passende Beweise basierend auf Beweisreferenz
+      const linkedEvidenceIds = a.beweisreferenz
+        ? evidence
+            .filter(e => 
+              e.title?.includes(a.beweisreferenz) || 
+              e.description?.includes(a.beweisreferenz) ||
+              a.beweisreferenz.includes(e.title)
+            )
+            .map(e => e.id)
+        : [];
+
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel.trim(),
         description: `${a.beschreibung || ''}\n[Basierend auf: ${a.beweisreferenz || ''}]`,
         side: a.side,
         strength: a.staerke || 5,
-        type: "Rechtsargument"
+        type: "Rechtsargument",
+        evidence_ids: linkedEvidenceIds
       });
       await new Promise(r => setTimeout(r, 300));
     }
