@@ -355,14 +355,21 @@ Gib eine JSON mit:
             </div>
           )}
           {breakEven?.break_even_pct !== null && (
-            <div className="mt-3 pt-3 border-t border-gray-100 flex items-center justify-between">
-              <div>
-                <p className="text-xs text-gray-500">Break-Even-Schwelle</p>
-                <p className="text-[10px] text-gray-400">{breakEven?.formel}</p>
+            <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-gray-500">Break-Even-Schwelle</p>
+                  <p className="text-[10px] text-gray-400">{breakEven?.formel}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-2xl font-bold text-amber-600">{breakEven?.break_even_pct}%</p>
+                  <p className="text-[10px] text-gray-400">Mindest-Erfolgsquote</p>
+                </div>
               </div>
-              <div className="text-right">
-                <p className="text-2xl font-bold text-amber-600">{breakEven?.break_even_pct}%</p>
-                <p className="text-[10px] text-gray-400">Mindest-Erfolgsquote</p>
+              <div className="bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                <p className="text-xs text-amber-800 leading-relaxed">
+                  💡 <strong>Einfach erklärt:</strong> Der Break-Even-Punkt beantwortet die Frage: „Ab wann lohnt sich dieser Rechtsstreit finanziell überhaupt?" Wenn unsere Erfolgschance unter {breakEven?.break_even_pct}% liegt, verlieren wir im Erwartungswert Geld – selbst wenn wir manchmal gewinnen. Liegt die Prognose darüber, ist die Klage wirtschaftlich sinnvoll. {breakEven?.empfehlung}
+                </p>
               </div>
             </div>
           )}
