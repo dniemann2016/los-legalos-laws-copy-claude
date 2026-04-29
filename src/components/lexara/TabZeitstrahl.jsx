@@ -474,7 +474,7 @@ Erstelle eine Sequenz-Liste im Format: ZEITSTEMPEL | BESCHREIBUNG`,
         <label className="flex items-center gap-2 px-4 py-3 border-2 border-dashed border-gray-200 rounded-lg cursor-pointer hover:border-gray-300 transition-colors">
           <Upload className="w-4 h-4 text-gray-400" />
           <span className="text-xs text-gray-500">{uploading ? "Lädt hoch..." : "Dokumente, Fotos oder Videos auswählen"}</span>
-          <input type="file" multiple className="hidden" accept="image/*,video/*,.pdf,.doc,.docx" onChange={handleFileUpload} disabled={uploading} />
+          <input type="file" multiple className="hidden" accept="image/*,video/*,.pdf,.doc,.docx,.txt,.xlsx,.xls,.csv,.pptx,.ppt,.odt,.ods,.rtf" onChange={handleFileUpload} disabled={uploading} />
         </label>
 
         {hasMedia && (

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Tab10Abschluss from "./Tab10Abschluss";
 import TabKIProtokoll from "./TabKIProtokoll";
 import TabZeitstrahl from "./TabZeitstrahl";
@@ -11,6 +11,7 @@ const SUB_TABS = [
 
 export default function TabAbschlussProtokoll({ caseId, caseData, kiMode, activeSub }) {
   const [sub, setSub] = useState(activeSub || 0);
+  useEffect(() => { setSub(activeSub || 0); }, [activeSub]);
   return (
     <div className="space-y-4">
       <div className="flex gap-2 border-b border-gray-100 overflow-x-auto">
