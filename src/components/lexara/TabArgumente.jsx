@@ -364,8 +364,10 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           source: "Vertrag",
           weight: ev.gewicht || 5
         });
-        evidenceMap[ev.titel] = evEntity?.id || evEntity;
-        await new Promise(r => setTimeout(r, 300));
+        if (evEntity?.id) {
+          evidenceMap[ev.titel] = evEntity.id;
+        }
+        await new Promise(r => setTimeout(r, 500));
       }
     }
     
@@ -382,7 +384,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: linkedEvidenceIds
       });
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 500));
     }
     setExtracted(null);
     loadAll(true);
@@ -612,7 +614,7 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
         paragraphs: a.paragraphen || [],
         evidence_ids: []
       });
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 500));
     }
     setKiGenResult(null);
     loadAll(true);
