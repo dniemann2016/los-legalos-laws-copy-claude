@@ -306,13 +306,13 @@ export default function AppShell() {
 
           {/* Sidebar items */}
           {!sidebarCollapsed && (
-            <div style={{ flex:1, overflowY:"auto", paddingBlock:10, scrollbarWidth:"none" }}>
+            <div style={{ flex:1, overflowY:"auto", padding:"12px 0", scrollbarWidth:"none" }}>
               {sidebar?.sections?.map((section, si) => (
-                <div key={si} style={{ marginBottom:16 }}>
+                <div key={si} style={{ marginBottom:20 }}>
                   <p style={{
-                    fontSize:9.5, fontWeight:700, color:C.label3,
-                    textTransform:"uppercase", letterSpacing:"0.09em",
-                    padding:"0 16px 5px",
+                    fontSize:9, fontWeight:700, color:C.label3,
+                    textTransform:"uppercase", letterSpacing:"0.1em",
+                    padding:"0 16px 6px",
                   }}>
                     {section.label}
                   </p>
@@ -331,8 +331,8 @@ export default function AppShell() {
                         }}
                         style={{
                           width:"100%", display:"flex", alignItems:"center", gap:8,
-                          padding: isItemActive ? "7px 14px 7px 12px" : "7px 14px",
-                          fontSize:12.5,
+                          padding: isItemActive ? "7px 14px 7px 11px" : "7px 14px 7px 13.5px",
+                          fontSize:12,
                           fontWeight: isItemActive ? 600 : 400,
                           background: isItemActive ? C.emeraldDim : "transparent",
                           color: isItemActive ? C.emeraldText : C.label2,
@@ -340,12 +340,13 @@ export default function AppShell() {
                           borderLeft: isItemActive ? `2.5px solid ${C.emerald}` : "2.5px solid transparent",
                           cursor:"pointer",
                           textAlign:"left",
+                          lineHeight: 1.35,
                           transition:"all 0.12s",
                         }}
-                        onMouseEnter={e => { if (!isItemActive) { e.currentTarget.style.background="rgba(0,0,0,0.045)"; e.currentTarget.style.color=C.label; }}}
+                        onMouseEnter={e => { if (!isItemActive) { e.currentTarget.style.background="rgba(0,0,0,0.04)"; e.currentTarget.style.color=C.label; }}}
                         onMouseLeave={e => { if (!isItemActive) { e.currentTarget.style.background="transparent"; e.currentTarget.style.color=C.label2; }}}
                       >
-                        <item.icon style={{ width:12.5, height:12.5, flexShrink:0 }} />
+                        <item.icon style={{ width:12, height:12, flexShrink:0, opacity: isItemActive ? 1 : 0.7 }} />
                         <span style={{ overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{item.label}</span>
                       </button>
                     );
