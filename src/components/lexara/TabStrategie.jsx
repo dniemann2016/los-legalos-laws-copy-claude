@@ -81,7 +81,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
     const inputSummary = `Fall: ${caseData?.fallname||""} | Rechtsgebiet: ${caseData?.rechtsgebiet||""} | Instanz: ${caseData?.instanz||""} | Zentrale Frage: ${caseData?.zentrale_rechtsfrage||""} | Eigene Argumente: ${eigenA.length} | Gegnerargumente: ${gegnerA.length} | Beweise: ${evidence.length} | Fristen: ${deadlines.length}`;
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein hochrangiger Prozessrechtsspezialist und strategischer Berater, der skrupellos und kompromisslos die eigene Partei vertritt. Analysiere diesen Prozess vollständig.
+      prompt: `Du bist ein hochrangiger Prozessrechtsspezialist und strategischer Berater auf Senior-Partner-Niveau. Du analysierst ausschließlich nach juristischer Methodik: Anspruchsgrundlage → Tatbestandsprüfung → Rechtsfolge. Zitiere stets konkrete §§ (BGB, ZPO, StGB, StPO, VwGO, GG) und einschlägige BGH/BVerfG-Rechtsprechung mit Aktenzeichen wo bekannt.
 
 Fall: ${caseData?.fallname || ""}
 Rechtsgebiet: ${caseData?.rechtsgebiet || ""} | Instanz: ${caseData?.instanz || ""}
@@ -97,12 +97,12 @@ BEWEISE: ${evidence.slice(0,10).map(e=>`${e.title} (${e.type||""}, ${e.weight||5
 FRISTEN: ${deadlines.length} gesamt, ${deadlines.filter(d=>d.status==="versaeumt").length} versäumt
 Richter-Klägerquote: ${caseData?.richter_klaeger_rate || 50}%
 
-Deine Analyse muss folgendes enthalten:
-1. Realistische Erfolgswahrscheinlichkeit mit ausführlicher Begründung
-2. Die 3 stärksten Gegenargumente der Gegenseite mit Gefahrengrad
-3. Die 2 kritischsten Schwachstellen unserer Position
-4. Eine strategische Gesamtempfehlung
-5. AGGRESSIVE GEGENMASSNAHMEN: Identifiziere ALLE juristischen Mittel um den Gegner zu schwächen, abzulenken, unter Druck zu setzen oder ihm zu schaden. Denke dabei an: Widerklage, Schadensersatz, Strafanzeigen (z.B. Falschaussage, Betrug, üble Nachrede), Prozesskostensicherheit, einstweilige Verfügungen, Beweisanträge die den Gegner belasten, Kostentragungspflicht, Anträge auf Vertagung um Fristen des Gegners zu gefährden, Aufdeckung von Interessenkonflikten/Befangenheiten etc. Sei so aggressiv und taktisch wie möglich.`,
+Deine juristische Analyse muss enthalten:
+1. ERFOLGSWAHRSCHEINLICHKEIT: Juristische Begründung mit Normbezug (§§) und Rspr. (BGH/BVerfG). Prüfe: Anspruch entstanden? Nicht erloschen? Durchsetzbar?
+2. DIE 3 STÄRKSTEN GEGENARGUMENTE der Gegenseite mit konkreter Rechtsnorm und Gefahrengrad (hoch/mittel/niedrig).
+3. DIE 2 KRITISCHSTEN SCHWACHSTELLEN unserer Position mit juristischer Begründung (welche Norm, welches Tatbestandsmerkmal ist schwach?).
+4. STRATEGISCHE GESAMTEMPFEHLUNG: Klage, Vergleich oder Aufgabe — mit juristischer Begründung und Normbezug.
+5. JURISTISCHE GEGENMASSSNAHMEN: Alle prozessualen und materiell-rechtlichen Mittel zur Stärkung der eigenen Position: Widerklage (§ 33 ZPO), Schadensersatz (§§ 249 ff. BGB), einstweilige Verfügung (§§ 935 ff. ZPO), Prozesskostensicherheit (§ 110 ZPO), Beweisanträge (§ 244 StPO / § 356 ZPO), Befangenheitsantrag (§ 42 ZPO), Aussetzung (§ 148 ZPO), Aufrechnung (§ 387 BGB), Streitverkündung (§ 72 ZPO). Nenne für jede Maßnahme die Rechtsgrundlage.`,
       response_json_schema: {
         type: "object",
         properties: {
