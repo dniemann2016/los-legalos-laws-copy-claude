@@ -488,14 +488,16 @@ Generiere 3-5 starke eigene Argumente basierend auf den identifizierten Normen. 
 AUFGABE 3 — GEGNERARGUMENTE:
 Generiere 2-4 zu erwartende Gegenargumente. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
 
-AUFGABE 4 — ALLE POTENZIELLEN BEWEISE (umfassend):
-Identifiziere ALLE möglichen Beweise für diesen Fall:
-- Dokumente (Verträge, Briefe, E-Mails, Rechnungen, Notarakte, etc.)
+AUFGABE 4 — ALLE POTENZIELLEN BEWEISE (umfassend — mindestens 50):
+Identifiziere ALLE möglichen Beweise für diesen Fall — mindestens 50 wenn vorhanden, sonst weniger:
+- Dokumente (Verträge, Briefe, E-Mails, Rechnungen, Notarakte, Abrechnungen, etc.)
 - Personen/Zeugen (wer kann aussagen und zu was?)
 - Gegenstände/physische Beweise
-- Daten, Aufzeichnungen, Protokolle
+- Daten, Aufzeichnungen, Protokolle, Zeitstempel
 - Gutachten, Sachverständigenbefunde
 - Rechtsnormen & Gerichtsentscheidungen (als Beweise)
+- Verhaltensmuster, Zugeständnisse, Parteiverhalten
+- Negative Beweise (fehlende Handlungen, unterlassene Mitteilungen)
 Für JEDEN Beweis: Titel, Typ, ausführliche Beschreibung, geschätztes Gewicht (1-10).
 
 AUFGABE 5 — ARGUMENTE DIE SELBST BEWEISE SIND:
