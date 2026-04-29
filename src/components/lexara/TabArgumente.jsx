@@ -349,7 +349,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
   }
 
   const takeAll = async () => {
-    if (!extracted) return;
+    if (!extracted || extracting) return; // Verhindere doppelte Ausführung
     const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
     
     // Erstelle Beweise aus dem Dokument
@@ -599,26 +599,33 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
   };
 
   const takeAllKiArgumente = async () => {
-    if (!kiGenResult) return;
+    if (!kiGenResult || batchRating) return; // Verhindere doppelte Ausführung
+    
     const all = [
       ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
     ].filter(a => a.titel && a.titel.trim());
     
+    setBatchRating(true);
     for (let i = 0; i < all.length; i++) {
       const a = all[i];
-      await base44.entities.Argument.create({
-        case_id: caseId,
-        title: a.titel.trim(),
-        description: a.beschreibung || "",
-        side: a.side,
-        strength: a.staerke || 5,
-        type: "Rechtsargument",
-        paragraphs: a.paragraphen || [],
-        evidence_ids: []
-      });
+      try {
+        await base44.entities.Argument.create({
+          case_id: caseId,
+          title: a.titel.trim(),
+          description: a.beschreibung || "",
+          side: a.side,
+          strength: a.staerke || 5,
+          type: "Rechtsargument",
+          paragraphs: a.paragraphen || [],
+          evidence_ids: []
+        });
+      } catch (e) {
+        console.error("Fehler beim Erstellen des Arguments:", e);
+      }
       if (i < all.length - 1) await new Promise(r => setTimeout(r, 1000));
     }
+    setBatchRating(false);
     setKiGenResult(null);
     loadAll(true);
   };
