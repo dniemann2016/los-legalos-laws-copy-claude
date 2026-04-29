@@ -468,7 +468,7 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
     setKiGenerating(true);
     setKiGenResult(null);
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Rechtsanwalt. Generiere auf Basis des folgenden Fallkontexts die stärksten juristischen Argumente für unsere Seite UND die zu erwartenden Gegenargumente.
+      prompt: `Du bist ein erfahrener Rechtsanwalt. Führe eine UMFASSENDE juristische Gesamtanalyse durch für folgenden Fall:
 
 Fall: ${caseData?.fallname || ""}
 Rechtsgebiet: ${caseData?.rechtsgebiet || ""}
@@ -477,20 +477,44 @@ Prozessziel: ${caseData?.prozessziel || ""}
 Instanz: ${caseData?.instanz || ""}
 Gericht: ${caseData?.gericht || ""}
 
-Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.
+AUFGABE 1 — ALLE RELEVANTEN PARAGRAPHEN:
+Identifiziere ALLE einschlägigen Rechtsnormen (§§, Artikel, Gesetze) die auf diesen Fall anwendbar sind. Nicht nur die Top 3-5, sondern wirklich ALLE relevanten Normen. Für jede Norm: Paragraph, Gesetz, Kurztitel, kurze Relevanz (1-2 Sätze).
 
-ZUSÄTZLICH: Identifiziere ALLE potenziellen Beweise für diesen Fall (unabhängig von einzelnen Argumenten):
-- Dokumente (Verträge, Briefe, E-Mails, Rechnungen, etc.)
-- Personen/Zeugen (wer könnte aussagen?)
-- Gegenstände (physische Beweise)
-- Daten/Aufzeichnungen
-- Rechtsnormen & Rechtsprechung
-Für jeden Beweis: Titel, Typ, Beschreibung, geschätztes Gewicht (1-10).
+AUFGABE 2 — EIGENE ARGUMENTE:
+Generiere 3-5 starke eigene Argumente basierend auf den identifizierten Normen. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
 
-WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu generieren, gib leere Arrays zurück und erkläre den Grund in "keine_argumente_begruendung".`,
+AUFGABE 3 — GEGNERARGUMENTE:
+Generiere 2-4 zu erwartende Gegenargumente. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
+
+AUFGABE 4 — ALLE POTENZIELLEN BEWEISE (umfassend):
+Identifiziere ALLE möglichen Beweise für diesen Fall:
+- Dokumente (Verträge, Briefe, E-Mails, Rechnungen, Notarakte, etc.)
+- Personen/Zeugen (wer kann aussagen und zu was?)
+- Gegenstände/physische Beweise
+- Daten, Aufzeichnungen, Protokolle
+- Gutachten, Sachverständigenbefunde
+- Rechtsnormen & Gerichtsentscheidungen (als Beweise)
+Für JEDEN Beweis: Titel, Typ, ausführliche Beschreibung, geschätztes Gewicht (1-10).
+
+AUFGABE 5 — ARGUMENTE DIE SELBST BEWEISE SIND:
+Identifiziere Argumente/Positionen die gleichzeitig als Beweismittel fungieren (z.B. Zugeständnisse, dokumentierte Aussagen, Parteiverhalten). Titel, Beschreibung, Gewicht.
+
+WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "keine_argumente_begruendung".`,
       response_json_schema: {
         type: "object",
         properties: {
+          alle_relevanten_paragraphen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                paragraph: { type: "string" },
+                gesetz: { type: "string" },
+                titel: { type: "string" },
+                relevanz: { type: "string" }
+              }
+            }
+          },
           eigene_argumente: {
             type: "array",
             items: {
@@ -498,8 +522,7 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
               properties: {
                 titel: { type: "string" },
                 beschreibung: { type: "string" },
-                staerke: { type: "number" },
-                paragraphen: { type: "array", items: { type: "string" } }
+                staerke: { type: "number" }
               }
             }
           },
@@ -510,8 +533,7 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
               properties: {
                 titel: { type: "string" },
                 beschreibung: { type: "string" },
-                staerke: { type: "number" },
-                paragraphen: { type: "array", items: { type: "string" } }
+                staerke: { type: "number" }
               }
             }
           },
@@ -522,6 +544,17 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
               properties: {
                 titel: { type: "string" },
                 typ: { type: "string" },
+                beschreibung: { type: "string" },
+                gewicht: { type: "number", minimum: 1, maximum: 10 }
+              }
+            }
+          },
+          argumente_als_beweise: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
                 beschreibung: { type: "string" },
                 gewicht: { type: "number", minimum: 1, maximum: 10 }
               }
@@ -624,19 +657,47 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
              <p className="text-xs text-amber-800">⚠️ {kiGenResult.keine_argumente_begruendung}</p>
            </div>
           )}
+          {(kiGenResult.alle_relevanten_paragraphen || []).length > 0 && (
+            <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-purple-900 mb-2">⚖️ Alle relevanten Rechtsnormen ({kiGenResult.alle_relevanten_paragraphen.length})</p>
+              <div className="grid grid-cols-2 gap-2">
+                {kiGenResult.alle_relevanten_paragraphen.map((para, i) => (
+                  <div key={i} className="text-[10px] bg-white rounded px-2 py-1.5 border border-purple-100">
+                    <p className="font-mono font-semibold text-purple-700">{para.paragraph} {para.gesetz}</p>
+                    {para.titel && <p className="text-gray-800 text-[9px] mt-0.5">{para.titel}</p>}
+                    {para.relevanz && <p className="text-gray-600 text-[9px] mt-0.5">{para.relevanz}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           {(kiGenResult.alle_potenziellen_beweise || []).length > 0 && (
-           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-             <p className="text-xs font-semibold text-blue-900 mb-2">📋 Identifizierte potenzielle Beweise ({kiGenResult.alle_potenziellen_beweise.length})</p>
-             <div className="grid grid-cols-2 gap-2">
-               {kiGenResult.alle_potenziellen_beweise.map((bew, i) => (
-                 <div key={i} className="text-[10px] bg-white rounded px-2 py-1.5 border border-blue-100">
-                   <p className="font-semibold text-gray-800">{bew.titel}</p>
-                   <p className="text-gray-600 mt-0.5">{bew.typ} · Gewicht {bew.gewicht}/10</p>
-                   {bew.beschreibung && <p className="text-gray-500 text-[9px] mt-0.5 line-clamp-2">{bew.beschreibung}</p>}
-                 </div>
-               ))}
-             </div>
-           </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-blue-900 mb-2">📋 Alle potenziellen Beweise ({kiGenResult.alle_potenziellen_beweise.length})</p>
+              <div className="grid grid-cols-2 gap-2">
+                {kiGenResult.alle_potenziellen_beweise.map((bew, i) => (
+                  <div key={i} className="text-[10px] bg-white rounded px-2 py-1.5 border border-blue-100">
+                    <p className="font-semibold text-gray-800">{bew.titel}</p>
+                    <p className="text-gray-600 mt-0.5">{bew.typ} · Gewicht {bew.gewicht}/10</p>
+                    {bew.beschreibung && <p className="text-gray-500 text-[9px] mt-0.5 line-clamp-2">{bew.beschreibung}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {(kiGenResult.argumente_als_beweise || []).length > 0 && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+              <p className="text-xs font-semibold text-green-900 mb-2">🎯 Argumente die selbst Beweise sind ({kiGenResult.argumente_als_beweise.length})</p>
+              <div className="grid grid-cols-2 gap-2">
+                {kiGenResult.argumente_als_beweise.map((arg, i) => (
+                  <div key={i} className="text-[10px] bg-white rounded px-2 py-1.5 border border-green-100">
+                    <p className="font-semibold text-gray-800">{arg.titel}</p>
+                    <p className="text-gray-600 mt-0.5">Gewicht {arg.gewicht}/10</p>
+                    {arg.beschreibung && <p className="text-gray-500 text-[9px] mt-0.5 line-clamp-2">{arg.beschreibung}</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
           <div className="grid grid-cols-2 gap-4">
             {[["EIGENE ARGUMENTE", kiGenResult.eigene_argumente || [], "eigen"], ["GEGNERARGUMENTE", kiGenResult.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
