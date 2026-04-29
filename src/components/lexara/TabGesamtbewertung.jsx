@@ -127,13 +127,14 @@ export default function TabGesamtbewertung({ caseId, caseData }) {
       const ev = evidence.slice(0, 5).map(e => `"${e.title}" Gewicht:${e.ki_weight ?? e.weight ?? 5}/10`).join(", ");
 
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist Rechtsanwalt. Analysiere diesen Fall:
+        prompt: `Du bist erfahrener Strafverteidiger. Analysiere diesen Fall tiefgehend:
 
 Fall: "${caseData?.fallname}" | ${caseData?.rechtsgebiet || ""} | Gericht: ${caseData?.gericht || ""}
 Zentrale Frage: ${caseData?.zentrale_rechtsfrage || ""}
 Eigene Argumente: ${eigArg || "keine"}
-Gegnerargumente: ${gegArg || "keine"}
+Gegnerargumente (bekannte): ${gegArg || "keine"}
 Beweise: ${ev || "keine"}
+Fallnotizen: ${caseData?.notes || ""}
 
 Gib eine JSON mit:
 1. Erfolgswahrscheinlichkeit (0-100)
@@ -141,7 +142,9 @@ Gib eine JSON mit:
 3. 3 Gegner Strategien (titel, beschreibung, gefahr: hoch/mittel/niedrig)
 4. 3 Gegner Asse (titel, beschreibung kurz)
 5. 3 unsere Schwachstellen (titel, risiko kurz)
-6. Gesamtstrategie (1-2 Sätze)`,
+6. Gesamtstrategie (1-2 Sätze)
+7. gegner_argumente: 5 konkrete juristische Argumente die die Gegenseite (Staatsanwaltschaft/Kläger) wahrscheinlich vorbringen wird – spezifisch auf den Fallinhalt bezogen, mit Paragraphen und Beweismitteln
+8. gegner_vorgehen: Schritt-für-Schritt wie die Gegenseite in diesem Verfahren konkret vorgehen wird (Eröffnung, Beweisanträge, Befragungen, Plädoyer etc.) – sehr spezifisch auf diesen Fall`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -196,9 +199,36 @@ Gib eine JSON mit:
                 required: ["titel"] 
               }
             },
-            gesamtstrategie: { type: "string", maxLength: 300 }
+            gesamtstrategie: { type: "string", maxLength: 300 },
+            gegner_argumente: {
+              type: "array",
+              maxItems: 5,
+              items: {
+                type: "object",
+                properties: {
+                  argument: { type: "string", maxLength: 300 },
+                  paragraphen: { type: "string", maxLength: 100 },
+                  staerke: { type: "string", enum: ["hoch", "mittel", "niedrig"] },
+                  unsere_antwort: { type: "string", maxLength: 200 }
+                },
+                required: ["argument", "staerke"]
+              }
+            },
+            gegner_vorgehen: {
+              type: "array",
+              maxItems: 6,
+              items: {
+                type: "object",
+                properties: {
+                  phase: { type: "string", maxLength: 60 },
+                  beschreibung: { type: "string", maxLength: 300 },
+                  risiko: { type: "string", enum: ["hoch", "mittel", "niedrig"] }
+                },
+                required: ["phase", "beschreibung"]
+              }
+            }
           },
-          required: ["erfolgswahrscheinlichkeit", "unsure_taktiken", "gegner_strategien"]
+          required: ["erfolgswahrscheinlichkeit", "unsere_taktiken", "gegner_strategien"]
         },
         model: "gemini_3_flash"
       });
@@ -489,7 +519,84 @@ Gib eine JSON mit:
               </div>
             )}
 
-            {/* Counter-arguments list */}
+            {/* Gegner-Argumente (neu) */}
+            {(kiAnalysis.gegner_argumente || []).length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">⚖️ Konkrete Argumente der Gegenseite</p>
+                <div className="space-y-2">
+                  {kiAnalysis.gegner_argumente.map((g, i) => {
+                    const staerkeColor = g.staerke === "hoch"
+                      ? "border-red-200 bg-red-50"
+                      : g.staerke === "mittel"
+                      ? "border-amber-200 bg-amber-50"
+                      : "border-gray-200 bg-gray-50";
+                    const staerkeDot = g.staerke === "hoch" ? "#ef4444" : g.staerke === "mittel" ? "#f59e0b" : "#9ca3af";
+                    return (
+                      <div key={i} className={`border rounded-xl p-3 ${staerkeColor}`}>
+                        <div className="flex items-start gap-2">
+                          <div style={{ width: 8, height: 8, borderRadius: "50%", background: staerkeDot, flexShrink: 0, marginTop: 4 }} />
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="text-sm font-semibold text-gray-900">{g.argument}</p>
+                              {g.paragraphen && (
+                                <span className="text-[10px] font-mono bg-white/70 border border-current/20 rounded px-1.5 py-0.5 text-gray-600 flex-shrink-0">
+                                  {g.paragraphen}
+                                </span>
+                              )}
+                            </div>
+                            {g.unsere_antwort && (
+                              <p className="text-xs mt-1.5 text-gray-600">
+                                <span className="font-semibold">Unsere Antwort: </span>{g.unsere_antwort}
+                              </p>
+                            )}
+                          </div>
+                          <span className="text-[9px] font-bold uppercase px-1.5 py-0.5 rounded bg-white/60 text-gray-500 flex-shrink-0">{g.staerke}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Gegner-Vorgehen (neu) */}
+            {(kiAnalysis.gegner_vorgehen || []).length > 0 && (
+              <div>
+                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">🗂️ Vorgehensweise der Gegenseite (Schritt für Schritt)</p>
+                <div className="relative">
+                  <div style={{ position: "absolute", left: 15, top: 0, bottom: 0, width: 1, background: "rgba(0,0,0,0.08)" }} />
+                  <div className="space-y-2 pl-8">
+                    {kiAnalysis.gegner_vorgehen.map((v, i) => {
+                      const risikoColor = v.risiko === "hoch" ? "#ef4444" : v.risiko === "mittel" ? "#f59e0b" : "#9ca3af";
+                      return (
+                        <div key={i} className="relative bg-white border border-gray-100 rounded-xl p-3" style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.05)" }}>
+                          <div style={{
+                            position: "absolute", left: -22, top: 12,
+                            width: 14, height: 14, borderRadius: "50%",
+                            background: "#fff", border: `2px solid ${risikoColor}`,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 8, fontWeight: 700, color: risikoColor,
+                          }}>{i + 1}</div>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-semibold text-gray-800">{v.phase}</p>
+                              <p className="text-xs text-gray-600 mt-0.5 leading-relaxed">{v.beschreibung}</p>
+                            </div>
+                            {v.risiko && (
+                              <span style={{ fontSize: 9, fontWeight: 700, color: risikoColor, textTransform: "uppercase", flexShrink: 0 }}>
+                                {v.risiko}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Counter-arguments list (legacy) */}
             {(kiAnalysis.gegenargumente_gegner || []).length > 0 && (
               <div>
                 <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-2">🔴 Spezifische Gegenargumente der Gegenseite</p>
