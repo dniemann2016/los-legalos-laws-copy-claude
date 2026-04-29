@@ -388,6 +388,20 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
   };
 
   const take = async (a, side) => {
+    // Erstelle zuerst Beweise (falls vorhanden)
+    const evidenceIds = [];
+    if (side === "eigen" && (a.beweise || []).length > 0) {
+      for (const ev of a.beweise) {
+        const created = await base44.entities.Evidence.create({
+          case_id: caseId,
+          title: ev.titel,
+          description: ev.beschreibung || "",
+          type: ev.typ || "Dokument",
+          weight: ev.gewicht || 5,
+        });
+        if (created?.id) evidenceIds.push(created.id);
+      }
+    }
     await base44.entities.Argument.create({
       case_id: caseId,
       title: a.titel,
@@ -396,6 +410,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       strength: a.staerke || 5,
       type: "Rechtsargument",
       paragraphs: a.paragraphen || [],
+      evidence_ids: evidenceIds,
     });
     await loadAll(true);
   };
