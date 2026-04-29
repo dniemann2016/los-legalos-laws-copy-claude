@@ -372,9 +372,11 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         }
       }
       
-      // Erstelle Argumente und verlinke Beweise
+      // Erstelle Argumente NUR wenn sie KEINE Beweise mitbringen
+      // (Argumente die zu Beweisen werden, werden nicht als Argument gespeichert)
       for (const a of all) {
         const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
+        if (linkedEvidenceIds.length > 0) continue; // Argument wurde zu Beweis(en) → nicht als Argument speichern
         await base44.entities.Argument.create({
           case_id: caseId,
           title: a.titel,
@@ -382,8 +384,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           side: a.side,
           strength: a.staerke || 5,
           type: "Rechtsargument",
-          paragraphs: a.paragraphen || [],
-          evidence_ids: linkedEvidenceIds
+          paragraphs: a.paragraphen || []
         });
       }
       // Lösche das Extraktions-Panel
@@ -411,6 +412,18 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           if (created?.id) evidenceIds.push(created.id);
         }
       }
+      // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern
+      if (evidenceIds.length > 0) {
+        setExtracted(prev => {
+          if (!prev) return null;
+          const key = side === "eigen" ? "eigene_argumente" : "gegenseite_argumente";
+          const updated = { ...prev };
+          updated[key] = (updated[key] || []).filter(x => x.titel !== a.titel);
+          return updated;
+        });
+        await loadAll(true);
+        return;
+      }
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel,
@@ -419,7 +432,6 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
-        evidence_ids: evidenceIds,
       });
       // Entferne das Argument aus der Extraktions-Liste
       setExtracted(prev => {
@@ -579,6 +591,18 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
           if (created?.id) evidenceIds.push(created.id);
         }
       }
+      // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern
+      if (evidenceIds.length > 0) {
+        setKiGenResult(prev => {
+          if (!prev) return null;
+          return {
+            ...prev,
+            [side === "eigen" ? "eigene_argumente" : "gegner_argumente"]: (prev[side === "eigen" ? "eigene_argumente" : "gegner_argumente"] || []).filter(x => x.titel !== a.titel)
+          };
+        });
+        await loadAll(true);
+        return;
+      }
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel,
@@ -587,7 +611,6 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
-        evidence_ids: evidenceIds,
       });
       // Entferne das Argument aus der KI-Liste
       setKiGenResult(prev => {
@@ -625,6 +648,8 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
             if (created?.id) evidenceIds.push(created.id);
           }
         }
+        // Wenn Argument zu Beweis(en) wurde → NICHT als Argument speichern
+        if (evidenceIds.length > 0) continue;
         await base44.entities.Argument.create({
           case_id: caseId,
           title: a.titel,
@@ -633,7 +658,6 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
           strength: a.staerke || 5,
           type: "Rechtsargument",
           paragraphs: a.paragraphen || [],
-          evidence_ids: evidenceIds,
         });
       }
       // Lösche das KI-Panel nach erfolgreichem Übernehmen
