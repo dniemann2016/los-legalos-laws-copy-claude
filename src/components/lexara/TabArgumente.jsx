@@ -477,8 +477,10 @@ Prozessziel: ${caseData?.prozessziel || ""}
 Instanz: ${caseData?.instanz || ""}
 Gericht: ${caseData?.gericht || ""}
 
-AUFGABE 1 — ALLE RELEVANTEN PARAGRAPHEN:
-Identifiziere ALLE einschlägigen Rechtsnormen (§§, Artikel, Gesetze) die auf diesen Fall anwendbar sind. Nicht nur die Top 3-5, sondern wirklich ALLE relevanten Normen. Für jede Norm: Paragraph, Gesetz, Kurztitel, kurze Relevanz (1-2 Sätze).
+AUFGABE 1 — DIREKT FALLRELEVANTE PARAGRAPHEN (ALS BEWEISE):
+Identifiziere NUR die Paragraphen die DIREKT und UNMITTELBAR mit dem Kern des Falls zu tun haben — also Normen die für die zentrale Rechtsfrage oder Streitpunkte entscheidend sind. 
+NICHT aufnehmen: generische Backup-Normen, theoretisch anwendbare aber tangentiale Bestimmungen, oder Normen die nur als sekundäre Optionen relevant sind (z.B. bei Straffall: Schadensersatz-Normen sind keine Kern-Beweise, sondern nur Folge-Optionen).
+Nur die Paragraphen die WIRKLICH den Fall entscheiden. Für jede Norm: Paragraph, Gesetz, Kurztitel, kurze direkte Relevanz (1-2 Sätze).
 
 AUFGABE 2 — EIGENE ARGUMENTE:
 Generiere 3-5 starke eigene Argumente basierend auf den identifizierten Normen. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
