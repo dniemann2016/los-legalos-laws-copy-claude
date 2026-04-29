@@ -421,15 +421,17 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
-      // Entferne das Argument aus der Extraktions-Liste
+      // Entferne das Argument aus der Extraktions-Liste LOKAL
       setExtracted(prev => {
         if (!prev) return null;
         const key = side === "eigen" ? "eigene_argumente" : "gegenseite_argumente";
-        const updated = { ...prev };
-        updated[key] = (updated[key] || []).filter(x => x.titel !== a.titel);
-        return updated;
+        return {
+          ...prev,
+          [key]: (prev[key] || []).filter(x => x.titel !== a.titel)
+        };
       });
-      await loadAll(true);
+      // Reload Argumente OHNE extracted zu laden (damit es nicht überschrieben wird)
+      await load(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
       alert("Fehler beim Übernehmen des Arguments: " + e.message);
