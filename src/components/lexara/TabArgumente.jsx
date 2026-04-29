@@ -359,7 +359,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
     if (!extracted) return;
     try {
       const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
-      
+
       // Erstelle Beweise aus dem Dokument
       const evidenceMap = {};
       if (extracted.beweise && Array.isArray(extracted.beweise)) {
@@ -375,7 +375,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           evidenceMap[ev.titel] = evEntity?.id || evEntity;
         }
       }
-      
+
       // Erstelle Argumente und verlinke Beweise
       for (const a of all) {
         const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
@@ -390,8 +390,11 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           evidence_ids: linkedEvidenceIds
         });
       }
-      // Lösche das Extraktions-Panel
+      // Lösche das Extraktions-Panel UND stelle sicher, dass es nicht neu geladen wird
       setExtracted(null);
+      setShowExtraction(false);
+      setFiles([]);
+      setText("");
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen all:", e);
@@ -425,17 +428,25 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
-      // Entferne das Argument aus der Extraktions-Liste LOKAL
+      // Entferne das Argument aus der Extraktions-Liste LOKAL (SOFORT)
       setExtracted(prev => {
         if (!prev) return null;
         const key = side === "eigen" ? "eigene_argumente" : "gegenseite_argumente";
-        return {
+        const updated = {
           ...prev,
           [key]: (prev[key] || []).filter(x => x.titel !== a.titel)
         };
+        // Wenn beide Arrays leer sind → Extraktions-Panel schließen
+        if ((updated.eigene_argumente || []).length === 0 && (updated.gegenseite_argumente || []).length === 0) {
+          setShowExtraction(false);
+          setFiles([]);
+          setText("");
+          return null;
+        }
+        return updated;
       });
-      // Reload nur Arguments, NICHT extracted
-      await loadArgs(true);
+      // Reload nur Arguments, NICHT extracted (extracted wird separat über setState aktualisiert)
+      await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
       alert("Fehler beim Übernehmen des Arguments: " + e.message);
