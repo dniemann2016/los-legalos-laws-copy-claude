@@ -3,6 +3,40 @@ import { base44 } from "@/api/base44Client";
 import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, RefreshCw, Pencil, Check, AlertTriangle, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const PARAGRAPHEN_REFERENZ = {
+  "Zivilrecht (ZPO / BGB)": [
+    { para: "§ 286 ZPO", titel: "Freie Beweiswürdigung", beschreibung: "Das Gericht entscheidet nach freier Überzeugung, ob eine Tatsache als bewiesen gilt." },
+    { para: "§ 415 ZPO", titel: "Öffentliche Urkunden", beschreibung: "Volle Beweiskraft für den beurkundeten Vorgang (z.B. notarielle Akte, Behördenakte)." },
+    { para: "§ 416 ZPO", titel: "Private Urkunden", beschreibung: "Beweis dafür, dass die enthaltenen Erklärungen vom Aussteller abgegeben wurden." },
+    { para: "§ 371 ZPO", titel: "Augenscheinsbeweis", beschreibung: "Unmittelbare Wahrnehmung durch das Gericht (Fotos, Videos, Objekte)." },
+    { para: "§ 373 ZPO", titel: "Zeugenbeweis", beschreibung: "Antrag auf Vernehmung benannter Zeugen; Glaubwürdigkeit ist gerichtlich zu würdigen." },
+    { para: "§ 402 ZPO", titel: "Sachverständigenbeweis", beschreibung: "Gutachter mit besonderem Fachwissen; gerichtlich bestellt oder privat." },
+    { para: "§ 445 ZPO", titel: "Parteivernehmung", beschreibung: "Vernehmung der Partei selbst; subsidiär, wenn andere Beweise fehlen." },
+    { para: "§ 253 BGB", titel: "Immaterieller Schaden / Schmerzensgeld", beschreibung: "Geldentschädigung für nichtvermögensrechtliche Schäden (z.B. Körperverletzung)." },
+    { para: "§ 249 BGB", titel: "Art und Umfang des Schadenersatzes", beschreibung: "Naturalrestitution als Grundprinzip; Geldersatz wenn Naturalrestitution unmöglich." },
+    { para: "§ 280 BGB", titel: "Schadensersatz wegen Pflichtverletzung", beschreibung: "Schuldner haftet bei Verletzung einer Pflicht aus dem Schuldverhältnis." },
+  ],
+  "Öffentliches Recht (VwGO / GG)": [
+    { para: "§ 86 VwGO", titel: "Untersuchungsgrundsatz", beschreibung: "Gericht erforscht den Sachverhalt von Amts wegen; Beweiserhebung auf Antrag oder von Amts wegen." },
+    { para: "§ 98 VwGO", titel: "Anwendung der ZPO-Beweisregeln", beschreibung: "Im Verwaltungsprozess gelten die §§ 358–444 ZPO entsprechend." },
+    { para: "Art. 19 Abs. 4 GG", titel: "Rechtsschutzgarantie", beschreibung: "Effektiver Rechtsschutz gegen Akte der öffentlichen Gewalt." },
+    { para: "Art. 20 Abs. 3 GG", titel: "Rechtsstaatsprinzip", beschreibung: "Bindung der Verwaltung an Gesetz und Recht; Grundlage der Beweisführung im ÖR." },
+    { para: "§ 108 VwGO", titel: "Freie Beweiswürdigung (VwGO)", beschreibung: "Richter entscheidet nach seiner freien, aus dem Gesamtergebnis gewonnenen Überzeugung." },
+    { para: "§ 74 VwGO", titel: "Klagefrist", beschreibung: "Anfechtungsklage innerhalb eines Monats nach Bekanntgabe; Fristdokumente als Beweise kritisch." },
+    { para: "§ 80 VwGO", titel: "Aufschiebende Wirkung", beschreibung: "Widerspruch und Anfechtungsklage haben grds. aufschiebende Wirkung; einstweiliger Rechtsschutz." },
+  ],
+  "Strafrecht (StPO / StGB)": [
+    { para: "§ 261 StPO", titel: "Freie Beweiswürdigung (StPO)", beschreibung: "Gericht entscheidet nach seiner freien, aus dem Inbegriff der Hauptverhandlung geschöpften Überzeugung." },
+    { para: "§ 244 StPO", titel: "Beweisantragsrecht", beschreibung: "Recht des Angeklagten, Beweisanträge zu stellen; Ablehnung nur aus gesetzlichen Gründen." },
+    { para: "§ 136a StPO", titel: "Verbotene Vernehmungsmethoden", beschreibung: "Aussagen unter Zwang, Täuschung oder Drohung sind unverwertbar – Beweisverwertungsverbot." },
+    { para: "§ 252 StPO", titel: "Verwertungsverbot bei Zeugnisverweigerung", beschreibung: "Vernehmungsprotokoll über frühere Aussage nicht verwertbar, wenn Zeuge sein Recht ausübt." },
+    { para: "§ 100a StPO", titel: "Telekommunikationsüberwachung", beschreibung: "TKÜ-Protokolle als Beweismittel; nur bei richterlicher Anordnung verwertbar." },
+    { para: "§ 94 StPO", titel: "Sicherstellung / Beschlagnahme", beschreibung: "Gegenstände als Beweismittel sicherstellen; Verwertbarkeit abhängig von Rechtmäßigkeit." },
+    { para: "§ 170 StPO", titel: "Einstellung des Verfahrens", beschreibung: "Anklageschrift oder Einstellung – Beweislage entscheidet über Anklageerhebung." },
+    { para: "§ 46 StGB", titel: "Strafzumessung", beschreibung: "Beweise zur Tatschwere, Schuld, Vorleben des Täters sind strafzumessungsrelevant." },
+  ],
+};
+
 const BEWEIS_TYPES = ["Gesetzliche Grundlage / Normtext","BGH/BVerfG Entscheidung (einschlägig)","Notarielle Beurkundung","Öffentliche Urkunde §415 ZPO","BGH-Entscheidung (übertragbar)","Gerichtliches SV-Gutachten","OLG-Entscheidung (gleiches BL)","Private Urkunde §416 ZPO","Augenscheinsbeweis","Privates SV-Gutachten","E-Mail / elektronisch","Zeuge (unabhängig)","LG-Entscheidung","Parteivernehmung §445 ZPO","Zeuge (parteinah)","Indizien (kumulativ)","Negative Tatsache"];
 const WEIGHTS = {"Gesetzliche Grundlage / Normtext":10,"BGH/BVerfG Entscheidung (einschlägig)":9.5,"Notarielle Beurkundung":9.5,"Öffentliche Urkunde §415 ZPO":9,"BGH-Entscheidung (übertragbar)":8.5,"Gerichtliches SV-Gutachten":8.5,"OLG-Entscheidung (gleiches BL)":7.5,"Private Urkunde §416 ZPO":7.5,"Augenscheinsbeweis":7,"Privates SV-Gutachten":6.5,"E-Mail / elektronisch":6,"Zeuge (unabhängig)":6,"LG-Entscheidung":5,"Parteivernehmung §445 ZPO":4,"Zeuge (parteinah)":3.5,"Indizien (kumulativ)":3.5,"Negative Tatsache":3};
 
@@ -177,6 +211,8 @@ export default function TabBeweise({ caseId }) {
   const [selectedArg, setSelectedArg] = useState(null);
   const [showAdd, setShowAdd] = useState(false);
   const [showRef, setShowRef] = useState(false);
+  const [showPara, setShowPara] = useState(false);
+  const [activePara, setActivePara] = useState(null);
   const [showLink, setShowLink] = useState(false);
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
 
@@ -412,7 +448,7 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
               </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-100 p-4">
+            <div className="bg-white rounded-xl border border-gray-100 p-4 space-y-3">
               <button onClick={() => setShowRef(!showRef)} className="flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-gray-700">
                 📖 Referenztabelle {showRef ? "ausblenden" : "anzeigen"}
                 {showRef ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
@@ -436,6 +472,40 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
                     ))}
                   </tbody>
                 </table>
+              )}
+            </div>
+
+            {/* Paragraphen-Referenz */}
+            <div className="bg-white rounded-xl border border-gray-100 p-4">
+              <button onClick={() => setShowPara(!showPara)} className="flex items-center gap-2 text-xs font-semibold text-gray-500 hover:text-gray-700 w-full text-left">
+                ⚖️ Paragraphen-Referenz (Zivil-, Öffentlich- & Strafrecht) {showPara ? "ausblenden" : "anzeigen"}
+                {showPara ? <ChevronUp className="w-3 h-3 ml-auto" /> : <ChevronDown className="w-3 h-3 ml-auto" />}
+              </button>
+              {showPara && (
+                <div className="mt-3 space-y-3">
+                  {/* Rechtsgebiet-Tabs */}
+                  <div className="flex gap-1 flex-wrap">
+                    {Object.keys(PARAGRAPHEN_REFERENZ).map(gebiet => (
+                      <button key={gebiet} onClick={() => setActivePara(activePara === gebiet ? null : gebiet)}
+                        className={`text-[10px] font-semibold px-2.5 py-1 rounded-lg border transition-all ${activePara === gebiet ? "bg-gray-900 text-white border-gray-900" : "bg-gray-50 text-gray-500 border-gray-200 hover:border-gray-400"}`}>
+                        {gebiet}
+                      </button>
+                    ))}
+                  </div>
+                  {activePara && (
+                    <div className="space-y-1.5">
+                      {PARAGRAPHEN_REFERENZ[activePara].map((p, i) => (
+                        <div key={i} className="flex gap-3 bg-gray-50 rounded-lg px-3 py-2 hover:bg-gray-100 transition-colors">
+                          <span className="text-[10px] font-mono font-bold text-blue-700 flex-shrink-0 w-28 pt-0.5">{p.para}</span>
+                          <div>
+                            <p className="text-xs font-semibold text-gray-800">{p.titel}</p>
+                            <p className="text-[10px] text-gray-500 leading-relaxed mt-0.5">{p.beschreibung}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           </>
