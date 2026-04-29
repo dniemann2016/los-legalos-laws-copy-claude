@@ -494,11 +494,6 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
                 <h3 className="font-semibold text-gray-900 mt-1">{selectedArgData.title}</h3>
               </div>
               <div className="flex items-center gap-2">
-                <Button size="sm" onClick={generateArgumentsFromEvidence} disabled={kiGenLoading || evidence.length === 0}
-                  className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-xl text-xs gap-1">
-                  {kiGenLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                  {kiGenLoading ? "KI analysiert…" : "KI-Argumente"}
-                </Button>
                 <Button size="sm" variant="outline" onClick={() => setShowLink(!showLink)}
                   className="rounded-xl text-xs gap-1 border-blue-200 text-blue-700 hover:bg-blue-50">
                   🔗 Verknüpfen {unlinkedEvidence.length > 0 && `(${unlinkedEvidence.length})`}
@@ -509,54 +504,62 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
               </div>
             </div>
 
-            {kiGenArgs && (
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente aus Beweisen</p>
-                  <div className="flex gap-2">
-                    {((kiGenArgs.eigene_argumente || []).length > 0 || (kiGenArgs.gegner_argumente || []).length > 0) && (
-                      <button onClick={addAllArgsFromEvidence} className="text-[10px] bg-emerald-700 text-white px-2 py-1 rounded hover:bg-emerald-800">
-                        <Check className="w-3 h-3 inline mr-1" /> Alle übernehmen
-                      </button>
-                    )}
-                    <button onClick={() => setKiGenArgs(null)} className="text-[10px] text-emerald-600 hover:text-emerald-800">Verwerfen</button>
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {[["EIGENE", kiGenArgs.eigene_argumente || [], "eigen"], ["GEGNER", kiGenArgs.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
-                    <div key={side}>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label} · {items.length}</p>
-                      {items.map((a, i) => (
-                        <div key={i} className="mb-2 bg-white rounded-lg border border-gray-100 p-2 text-xs">
-                          <div className="flex items-start gap-1">
-                            <div className="flex-1 min-w-0">
-                              <p className="font-semibold text-gray-800">{a.titel}</p>
-                              <p className="text-gray-600 mt-0.5 text-[10px]">{a.beschreibung}</p>
-                              {a.beweisreferenz && <p className="text-[9px] text-emerald-600 mt-0.5 italic">📌 {a.beweisreferenz}</p>}
-                            </div>
-                            <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                              <span className="text-[10px] text-gray-400">{a.staerke}/10</span>
-                              <button onClick={() => addArgFromEvidence(a, side)} className="text-[9px] border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-50">+</button>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {showLink && (
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-blue-700">🔗 Beweise Argumenten zuordnen</p>
-                  <Button size="sm" onClick={runKiSuggestions} disabled={kiSugLoading}
-                    className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs gap-1">
-                    {kiSugLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                    {kiSugLoading ? "KI analysiert…" : "KI-Zuordnung"}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" onClick={generateArgumentsFromEvidence} disabled={kiGenLoading || evidence.length === 0}
+                      className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs gap-1">
+                      {kiGenLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      {kiGenLoading ? "KI analysiert…" : "KI-Argumente"}
+                    </Button>
+                    <Button size="sm" onClick={runKiSuggestions} disabled={kiSugLoading}
+                      className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs gap-1">
+                      {kiSugLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                      {kiSugLoading ? "KI analysiert…" : "KI-Zuordnung"}
+                    </Button>
+                  </div>
                 </div>
+
+                {kiGenArgs && (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente aus Beweisen</p>
+                      <div className="flex gap-2">
+                        {((kiGenArgs.eigene_argumente || []).length > 0 || (kiGenArgs.gegner_argumente || []).length > 0) && (
+                          <button onClick={addAllArgsFromEvidence} className="text-[10px] bg-emerald-700 text-white px-2 py-1 rounded hover:bg-emerald-800">
+                            <Check className="w-3 h-3 inline mr-1" /> Alle übernehmen
+                          </button>
+                        )}
+                        <button onClick={() => setKiGenArgs(null)} className="text-[10px] text-emerald-600 hover:text-emerald-800">Verwerfen</button>
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      {[["EIGENE", kiGenArgs.eigene_argumente || [], "eigen"], ["GEGNER", kiGenArgs.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
+                        <div key={side}>
+                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label} · {items.length}</p>
+                          <div className="space-y-1">
+                            {items.map((a, i) => (
+                              <div key={i} className="bg-white rounded-lg border border-gray-100 p-2 text-xs">
+                                <div className="flex items-start gap-1">
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-gray-800 text-[10px]">{a.titel}</p>
+                                    {a.beweisreferenz && <p className="text-[9px] text-emerald-600 mt-0.5 italic">📌 {a.beweisreferenz}</p>}
+                                  </div>
+                                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                                    <span className="text-[9px] text-gray-400">{a.staerke}/10</span>
+                                    <button onClick={() => addArgFromEvidence(a, side)} className="text-[9px] border border-gray-200 rounded px-1.5 py-0.5 hover:bg-gray-50">+</button>
+                                  </div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
                 {unlinkedEvidence.length === 0 && (
                   <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">✓ Alle Beweise sind Argumenten zugeordnet.</p>
