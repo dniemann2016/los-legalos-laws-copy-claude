@@ -254,8 +254,6 @@ export default function TabBeweise({ caseId }) {
   const [activePara, setActivePara] = useState(null);
   const [showLink, setShowLink] = useState(false);
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
-  const [kiGenArgs, setKiGenArgs] = useState(null);
-  const [kiGenLoading, setKiGenLoading] = useState(false);
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -338,124 +336,14 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
   };
 
   const applyAllSuggestions = async () => {
-    const entries = Object.entries(pendingAssignments);
-    for (let i = 0; i < entries.length; i++) {
-      const [evId, argId] = entries[i];
-      await base44.entities.Evidence.update(evId, { argument_id: argId });
-      if (i < entries.length - 1) await new Promise(r => setTimeout(r, 300));
-    }
+    await Promise.all(
+      Object.entries(pendingAssignments).map(([evId, argId]) =>
+        base44.entities.Evidence.update(evId, { argument_id: argId })
+      )
+    );
     setKiSuggestions(null);
-    setPendingAssignments({});
-    load();
-  };
-
-  const generateArgumentsFromEvidence = async () => {
-    if (evidence.length === 0) return;
-    setKiGenLoading(true);
-    const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Rechtsanwalt. Basierend auf den folgenden Beweismitteln, generiere PRÄZISE ARGUMENTE die exakt zu diesen Beweisen passen.
-
-BEWEISE (aus den Dokumenten):
-${evidence.map(e => `- ${e.title} (${e.type}): ${e.description || ''}`).join('\n')}
-
-AUFGABE:
-1. Generiere MAX 60 konkrete Argumente (eigen & gegner), die DIREKT aus diesen Beweisen ableitbar sind
-2. Jedes Argument MUSS eine konkrete Beweisreferenz haben
-3. Fokus: Was sagen diese Beweise juristisch aus? Welche Schlüsse folgen daraus?
-4. Für jedes: Titel, Beschreibung (bezogen auf den Beweis), Stärke 1-10
-
-WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          eigene_argumente: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                titel: { type: "string" },
-                beschreibung: { type: "string" },
-                staerke: { type: "number" },
-                beweisreferenz: { type: "string" }
-              }
-            }
-          },
-          gegner_argumente: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                titel: { type: "string" },
-                beschreibung: { type: "string" },
-                staerke: { type: "number" },
-                beweisreferenz: { type: "string" }
-              }
-            }
-          }
-        }
-      }
-    });
-    setKiGenArgs(result);
-    setKiGenLoading(false);
-  };
-
-  const addArgFromEvidence = async (arg, side) => {
-    if (!arg.titel || !arg.titel.trim()) return;
-    // Finde passende Beweise basierend auf Beweisreferenz
-    const linkedEvidenceIds = arg.beweisreferenz
-      ? evidence
-          .filter(e => 
-            e.title?.includes(arg.beweisreferenz) || 
-            e.description?.includes(arg.beweisreferenz) ||
-            arg.beweisreferenz.includes(e.title)
-          )
-          .map(e => e.id)
-      : [];
-    
-    await base44.entities.Argument.create({
-      case_id: caseId,
-      title: arg.titel.trim(),
-      description: `${arg.beschreibung || ''}\n[Basierend auf: ${arg.beweisreferenz || ''}]`,
-      side,
-      strength: arg.staerke || 5,
-      type: "Rechtsargument",
-      evidence_ids: linkedEvidenceIds
-    });
-    load();
-  };
-
-  const addAllArgsFromEvidence = async () => {
-    if (!kiGenArgs) return;
-    const all = [
-      ...(kiGenArgs.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
-      ...(kiGenArgs.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
-    ].filter(a => a.titel && a.titel.trim());
-
-    for (const a of all) {
-      // Finde passende Beweise basierend auf Beweisreferenz
-      const linkedEvidenceIds = a.beweisreferenz
-        ? evidence
-            .filter(e => 
-              e.title?.includes(a.beweisreferenz) || 
-              e.description?.includes(a.beweisreferenz) ||
-              a.beweisreferenz.includes(e.title)
-            )
-            .map(e => e.id)
-        : [];
-
-      await base44.entities.Argument.create({
-        case_id: caseId,
-        title: a.titel.trim(),
-        description: `${a.beschreibung || ''}\n[Basierend auf: ${a.beweisreferenz || ''}]`,
-        side: a.side,
-        strength: a.staerke || 5,
-        type: "Rechtsargument",
-        evidence_ids: linkedEvidenceIds
-      });
-      await new Promise(r => setTimeout(r, 300));
-    }
-    setKiGenArgs(null);
-    load();
+      setPendingAssignments({});
+      load();
   };
 
   const selectedArgData = args.find(a => a.id === selectedArg);
@@ -508,58 +396,12 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
               <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <p className="text-xs font-semibold text-blue-700">🔗 Beweise Argumenten zuordnen</p>
-                  <div className="flex gap-2">
-                    <Button size="sm" onClick={generateArgumentsFromEvidence} disabled={kiGenLoading || evidence.length === 0}
-                      className="bg-emerald-700 hover:bg-emerald-800 text-white rounded-lg text-xs gap-1">
-                      {kiGenLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      {kiGenLoading ? "KI analysiert…" : "KI-Argumente"}
-                    </Button>
-                    <Button size="sm" onClick={runKiSuggestions} disabled={kiSugLoading}
-                      className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs gap-1">
-                      {kiSugLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-                      {kiSugLoading ? "KI analysiert…" : "KI-Zuordnung"}
-                    </Button>
-                  </div>
+                  <Button size="sm" onClick={runKiSuggestions} disabled={kiSugLoading}
+                    className="bg-violet-600 hover:bg-violet-700 text-white rounded-lg text-xs gap-1">
+                    {kiSugLoading ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
+                    {kiSugLoading ? "KI analysiert…" : "KI-Zuordnung"}
+                  </Button>
                 </div>
-
-                {kiGenArgs && (
-                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 space-y-3">
-                    <div className="flex items-center justify-between">
-                      <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente aus Beweisen</p>
-                      <div className="flex gap-2">
-                        {((kiGenArgs.eigene_argumente || []).length > 0 || (kiGenArgs.gegner_argumente || []).length > 0) && (
-                          <button onClick={addAllArgsFromEvidence} className="text-[10px] bg-emerald-700 text-white px-2 py-1 rounded hover:bg-emerald-800">
-                            <Check className="w-3 h-3 inline mr-1" /> Alle übernehmen
-                          </button>
-                        )}
-                        <button onClick={() => setKiGenArgs(null)} className="text-[10px] text-emerald-600 hover:text-emerald-800">Verwerfen</button>
-                      </div>
-                    </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      {[["EIGENE", kiGenArgs.eigene_argumente || [], "eigen"], ["GEGNER", kiGenArgs.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
-                        <div key={side}>
-                          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label} · {items.length}</p>
-                          <div className="space-y-1">
-                            {items.map((a, i) => (
-                              <div key={i} className="bg-white rounded-lg border border-gray-100 p-2 text-xs">
-                                <div className="flex items-start gap-1">
-                                  <div className="flex-1 min-w-0">
-                                    <p className="font-semibold text-gray-800 text-[10px]">{a.titel}</p>
-                                    {a.beweisreferenz && <p className="text-[9px] text-emerald-600 mt-0.5 italic">📌 {a.beweisreferenz}</p>}
-                                  </div>
-                                  <div className="flex flex-col items-end gap-1 flex-shrink-0">
-                                    <span className="text-[9px] text-gray-400">{a.staerke}/10</span>
-                                    <button onClick={() => addArgFromEvidence(a, side)} className="text-[9px] border border-gray-200 rounded px-1.5 py-0.5 hover:bg-gray-50">+</button>
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
 
                 {unlinkedEvidence.length === 0 && (
                   <p className="text-xs text-green-700 bg-green-50 rounded-lg px-3 py-2">✓ Alle Beweise sind Argumenten zugeordnet.</p>

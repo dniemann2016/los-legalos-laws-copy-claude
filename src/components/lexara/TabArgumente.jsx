@@ -364,10 +364,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           source: "Vertrag",
           weight: ev.gewicht || 5
         });
-        if (evEntity?.id) {
-          evidenceMap[ev.titel] = evEntity.id;
-        }
-        await new Promise(r => setTimeout(r, 500));
+        evidenceMap[ev.titel] = evEntity?.id || evEntity;
       }
     }
     
@@ -384,7 +381,6 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: linkedEvidenceIds
       });
-      await new Promise(r => setTimeout(r, 500));
     }
     setExtracted(null);
     loadAll(true);
@@ -492,10 +488,10 @@ NICHT aufnehmen: generische Backup-Normen, theoretisch anwendbare aber tangentia
 Ziel: Umfassend ALLE fallentscheidenden Paragraphen sammeln, nicht nur die Top 5. Für jede Norm: Paragraph, Gesetz, Kurztitel, kurze direkte Relevanz (1-2 Sätze).
 
 AUFGABE 2 — EIGENE ARGUMENTE:
-Generiere MINDESTENS 50-100 starke eigene Argumente basierend auf den identifizierten Normen und Beweisen — sofern tauglich als Beweise, sonst weniger. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
+Generiere 3-5 starke eigene Argumente basierend auf den identifizierten Normen. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
 
 AUFGABE 3 — GEGNERARGUMENTE:
-Generiere MINDESTENS 30-50 zu erwartende Gegenargumente — sofern tauglich als Beweise, sonst weniger. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
+Generiere 2-4 zu erwartende Gegenargumente. Für jedes: Titel, Beschreibung (2-3 Sätze), Stärke 1-10.
 
 AUFGABE 4 — ALLE POTENZIELLEN BEWEISE (umfassend — mindestens 50):
 Identifiziere ALLE möglichen Beweise für diesen Fall — mindestens 50 wenn vorhanden, sonst weniger:
@@ -582,10 +578,9 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
   };
 
   const takeKiArg = async (a, side) => {
-    if (!a.titel || !a.titel.trim()) return;
     await base44.entities.Argument.create({
       case_id: caseId,
-      title: a.titel.trim(),
+      title: a.titel,
       description: a.beschreibung || "",
       side,
       strength: a.staerke || 5,
@@ -601,12 +596,11 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
     const all = [
       ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
-    ].filter(a => a.titel && a.titel.trim());
-    
+    ];
     for (const a of all) {
       await base44.entities.Argument.create({
         case_id: caseId,
-        title: a.titel.trim(),
+        title: a.titel,
         description: a.beschreibung || "",
         side: a.side,
         strength: a.staerke || 5,
@@ -614,7 +608,6 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
         paragraphs: a.paragraphen || [],
         evidence_ids: []
       });
-      await new Promise(r => setTimeout(r, 500));
     }
     setKiGenResult(null);
     loadAll(true);
