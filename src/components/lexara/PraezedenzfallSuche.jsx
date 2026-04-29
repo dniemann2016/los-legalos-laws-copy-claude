@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 
 export default function PraezedenzfallSuche({ caseId, caseData, onImport }) {
   const [results, setResults] = useState([]);
+  const [paragraphen, setParagraphen] = useState([]);
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(null);
   const [imported, setImported] = useState({});
@@ -20,12 +21,13 @@ export default function PraezedenzfallSuche({ caseId, caseData, onImport }) {
   const search = async (query) => {
     setLoading(true);
     setResults([]);
+    setParagraphen([]);
     setSearched(false);
     try {
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein juristischer Rechtsrechercheur spezialisiert auf deutsches Recht.
+        prompt: `Du bist ein erfahrener Fachanwalt und recherchierst Rechtsprechung und einschlägige Normen für deinen Mandanten. Sprich direkt wie ein Anwalt — keine akademischen Einleitungen, klare Aussagen.
 
-Suche nach AKTUELLEN und RELEVANTEN Gerichtsurteilen und Präzedenzfällen für folgenden Fall:
+Recherchiere für folgenden Fall:
 
 Rechtsgebiet: ${rechtsgebiet}
 Instanz: ${instanz}
@@ -33,21 +35,30 @@ Gericht: ${gericht}
 Zentrale Rechtsfrage: ${rechtsfrage}
 ${query ? `\nZusätzliche Suchanfrage: ${query}` : ""}
 
-Finde 5-8 konkrete, gut belegbare Urteile (Bundesgericht, Oberlandesgerichte, Europäischer Gerichtshof wenn relevant).
-Bevorzuge Urteile der letzten 10 Jahre (2015-2024), aber beachte auch ältere Leitentscheidungen.
+AUFGABE 1 — EINSCHLÄGIGE PARAGRAPHEN:
+Identifiziere die 4-7 wichtigsten Rechtsnormen (§§) die auf diesen Fall direkt anwendbar sind. Für jede Norm erkläre in 1-2 Sätzen als Anwalt WARUM genau diese Norm hier greift — nicht abstrakt, sondern bezogen auf den konkreten Sachverhalt.
 
-Für jedes Urteil gib an:
-- Aktenzeichen und Gericht
-- Datum
-- Leitsatz (kurze Kernaussage)
-- Warum es für diesen Fall relevant ist
-- Ob es die eigene Position stärkt oder die gegnerische
-- Wie stark es als Präzedenzfall einzuordnen ist (1-10)
-- Welche Argumente/Beweis-Typen es unterstützt`,
+AUFGABE 2 — PRÄZEDENZFÄLLE:
+Finde 5-8 konkrete, gut belegbare Urteile (BGH, OLG, BVerfG, EuGH wenn relevant). Bevorzuge Urteile der letzten 10 Jahre, beachte auch ältere Leitentscheidungen.
+
+Für jedes Urteil: Aktenzeichen, Gericht, Datum, Leitsatz, Relevanz, ob es uns oder den Gegner stärkt, Stärke 1-10, welche Argumenttypen es stützt.`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
           properties: {
+            paragraphen: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  norm: { type: "string" },
+                  gesetz: { type: "string" },
+                  titel: { type: "string" },
+                  warum_relevant: { type: "string" },
+                  bedeutung: { type: "string", enum: ["stärkt_uns", "gefährdet_uns", "neutral"] }
+                }
+              }
+            },
             urteile: {
               type: "array",
               items: {
@@ -73,6 +84,7 @@ Für jedes Urteil gib an:
         model: "gemini_3_flash"
       });
       setResults(result.urteile || []);
+      setParagraphen(result.paragraphen || []);
       setSearched(true);
       if (result.suchstrategie) setSuchInfo({ strategie: result.suchstrategie, luecke: result.lucken_hinweis });
     } catch (e) {
@@ -185,6 +197,48 @@ Für jedes Urteil gib an:
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Suchstrategie</p>
           <p className="text-xs text-gray-600">{suchInfo.strategie}</p>
           {suchInfo.luecke && <p className="text-[10px] text-amber-600">⚠️ {suchInfo.luecke}</p>}
+        </div>
+      )}
+
+      {/* Paragraphen-Sektion — erscheint ÜBER den Urteilen */}
+      {paragraphen.length > 0 && (
+        <div className="bg-white rounded-xl border border-blue-200 p-4 space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-base">⚖️</span>
+            <div>
+              <p className="text-xs font-bold text-blue-900">Einschlägige Rechtsnormen</p>
+              <p className="text-[10px] text-blue-600 mt-0.5">Die KI hat diese §§ speziell für diesen Fall identifiziert — mit anwaltlicher Begründung warum sie hier greifen</p>
+            </div>
+          </div>
+          <div className="space-y-2">
+            {paragraphen.map((p, i) => {
+              const bdColor = p.bedeutung === "stärkt_uns"
+                ? "border-green-200 bg-green-50"
+                : p.bedeutung === "gefährdet_uns"
+                  ? "border-red-200 bg-red-50"
+                  : "border-gray-200 bg-gray-50";
+              const tagColor = p.bedeutung === "stärkt_uns"
+                ? "bg-green-100 text-green-700"
+                : p.bedeutung === "gefährdet_uns"
+                  ? "bg-red-100 text-red-700"
+                  : "bg-gray-100 text-gray-500";
+              const tagLabel = p.bedeutung === "stärkt_uns" ? "stärkt uns" : p.bedeutung === "gefährdet_uns" ? "Risiko" : "neutral";
+              return (
+                <div key={i} className={`rounded-lg border p-3 ${bdColor}`}>
+                  <div className="flex items-start gap-2">
+                    <span className="text-xs font-mono font-bold text-blue-800 flex-shrink-0 pt-0.5 min-w-[90px]">{p.norm} {p.gesetz}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap mb-1">
+                        {p.titel && <span className="text-xs font-semibold text-gray-800">{p.titel}</span>}
+                        <span className={`text-[9px] px-1.5 py-0.5 rounded font-semibold ${tagColor}`}>{tagLabel}</span>
+                      </div>
+                      <p className="text-[11px] text-gray-700 leading-relaxed">{p.warum_relevant}</p>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
       )}
 
