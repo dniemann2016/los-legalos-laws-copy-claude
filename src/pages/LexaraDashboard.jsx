@@ -208,27 +208,30 @@ export default function LexaraDashboard() {
 
   const loadData = async () => {
     setLoading(true);
-    const [cs, args, evs, pers, deadlines, folds] = await Promise.all([
-      base44.entities.Case.list("-created_date"),
-      base44.entities.Argument.filter({}),
-      base44.entities.Evidence.filter({}),
-      base44.entities.Person.filter({}),
-      base44.entities.Deadline.filter({}),
-      base44.entities.CaseFolder.list("-created_date"),
-    ]);
-    setCases(cs);
-    setFolders(folds);
-    const counts = {};
-    cs.forEach(c => {
-      counts[c.id] = {
-        args:      args.filter(a => a.case_id === c.id).length,
-        evidence:  evs.filter(e => e.case_id === c.id).length,
-        persons:   pers.filter(p => p.case_id === c.id).length,
-        deadlines: deadlines.filter(d => d.case_id === c.id).length,
-      };
-    });
-    setCaseCounts(counts);
-    setLoading(false);
+    try {
+      const [cs, args, evs, pers, deadlines, folds] = await Promise.all([
+        base44.entities.Case.list("-created_date").catch(() => []),
+        base44.entities.Argument.filter({}).catch(() => []),
+        base44.entities.Evidence.filter({}).catch(() => []),
+        base44.entities.Person.filter({}).catch(() => []),
+        base44.entities.Deadline.filter({}).catch(() => []),
+        base44.entities.CaseFolder.list("-created_date").catch(() => []),
+      ]);
+      setCases(cs);
+      setFolders(folds);
+      const counts = {};
+      cs.forEach(c => {
+        counts[c.id] = {
+          args:      args.filter(a => a.case_id === c.id).length,
+          evidence:  evs.filter(e => e.case_id === c.id).length,
+          persons:   pers.filter(p => p.case_id === c.id).length,
+          deadlines: deadlines.filter(d => d.case_id === c.id).length,
+        };
+      });
+      setCaseCounts(counts);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleCreate = async () => {
