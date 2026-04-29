@@ -477,7 +477,9 @@ Prozessziel: ${caseData?.prozessziel || ""}
 Instanz: ${caseData?.instanz || ""}
 Gericht: ${caseData?.gericht || ""}
 
-Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.`,
+Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.
+
+Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete Beweismittel, die dieses Argument belegen könnten. Nur wenn ein Beweis wirklich sinnvoll und typisch für diesen Argumenttyp ist – keine generischen Platzhalter. Falls kein geeigneter Beweis existiert, lass das Array leer.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -489,7 +491,19 @@ Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: 
                 titel: { type: "string" },
                 beschreibung: { type: "string" },
                 staerke: { type: "number" },
-                paragraphen: { type: "array", items: { type: "string" } }
+                paragraphen: { type: "array", items: { type: "string" } },
+                beweise: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      titel: { type: "string" },
+                      beschreibung: { type: "string" },
+                      typ: { type: "string" },
+                      gewicht: { type: "number" }
+                    }
+                  }
+                }
               }
             }
           },
@@ -513,6 +527,20 @@ Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: 
   };
 
   const takeKiArg = async (a, side) => {
+    // Erstelle zuerst Beweise (falls vorhanden)
+    const evidenceIds = [];
+    if (side === "eigen" && (a.beweise || []).length > 0) {
+      for (const ev of a.beweise) {
+        const created = await base44.entities.Evidence.create({
+          case_id: caseId,
+          title: ev.titel,
+          description: ev.beschreibung || "",
+          type: ev.typ || "Dokument",
+          weight: ev.gewicht || 5,
+        });
+        if (created?.id) evidenceIds.push(created.id);
+      }
+    }
     await base44.entities.Argument.create({
       case_id: caseId,
       title: a.titel,
@@ -521,6 +549,7 @@ Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: 
       strength: a.staerke || 5,
       type: "Rechtsargument",
       paragraphs: a.paragraphen || [],
+      evidence_ids: evidenceIds,
     });
     loadAll(true);
   };
@@ -532,6 +561,19 @@ Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: 
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
     ];
     for (const a of all) {
+      const evidenceIds = [];
+      if (a.side === "eigen" && (a.beweise || []).length > 0) {
+        for (const ev of a.beweise) {
+          const created = await base44.entities.Evidence.create({
+            case_id: caseId,
+            title: ev.titel,
+            description: ev.beschreibung || "",
+            type: ev.typ || "Dokument",
+            weight: ev.gewicht || 5,
+          });
+          if (created?.id) evidenceIds.push(created.id);
+        }
+      }
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel,
@@ -540,6 +582,7 @@ Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: 
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
+        evidence_ids: evidenceIds,
       });
     }
     setKiGenResult(null);
@@ -608,6 +651,17 @@ Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: 
                           <div className="flex flex-wrap gap-1 mt-1">
                             {a.paragraphen.map((p, pi) => (
                               <span key={pi} className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">{p}</span>
+                            ))}
+                          </div>
+                        )}
+                        {side === "eigen" && (a.beweise || []).length > 0 && (
+                          <div className="mt-1.5">
+                            <p className="text-[9px] font-semibold text-gray-400 mb-0.5">Beweise:</p>
+                            {a.beweise.map((ev, ei) => (
+                              <div key={ei} className="text-[9px] text-gray-500 flex items-start gap-1">
+                                <span className="text-green-500 flex-shrink-0">📄</span>
+                                <span>{ev.titel}</span>
+                              </div>
                             ))}
                           </div>
                         )}
