@@ -583,6 +583,8 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
     setKiGenerating(false);
   };
 
+  const [takingAllKi, setTakingAllKi] = useState(false);
+
   const takeKiArg = async (a, side) => {
     if (!a.titel || !a.titel.trim()) return;
     await base44.entities.Argument.create({
@@ -597,8 +599,6 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
     });
     loadAll(true);
   };
-
-  const [takingAllKi, setTakingAllKi] = useState(false);
 
   const takeAllKiArgumente = async () => {
     if (!kiGenResult || takingAllKi) return; // Verhindere doppelte Ausführung
