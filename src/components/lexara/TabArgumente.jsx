@@ -622,8 +622,11 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       return;
     }
 
-    // KI-Analyse: Vergleiche Arguments gegen Dokumentbeweise
-    const allEvidence = evidence.map(e => `${e.title}: ${e.description || ""}`).join("\n");
+    // KI-Analyse: Vergleiche Arguments gegen Dokumentbeweise + description für inhaltliche Bezüge
+    const allEvidence = evidence
+      .map(e => `[${e.type || "Beweis"}] ${e.title}\nBeschreibung: ${e.description || ""}\nQuelle: ${e.source || "Dokument"}`)
+      .join("\n---\n");
+    
     if (!allEvidence.trim()) {
       // Keine Beweise vorhanden — nur auf evidence_ids prüfen
       const confirmed = window.confirm(
@@ -639,25 +642,30 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       return;
     }
 
-    // KI prüft, ob Arguments wirklich ohne Dokumentbezug sind
+    // KI prüft inhaltliche Bezüge: Titel + Beschreibung gegen Evidence
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein Rechtsanwalt. Analysiere diese Arguments und prüfe, ob sie wirklich KEINEN Bezug zu den verfügbaren Dokumentbeweisen haben.
+      prompt: `Du bist ein Rechtsanwalt. Prüfe SORGFÄLTIG, ob diese Arguments einen inhaltlichen Bezug zu den verfügbaren Dokumentbeweisen haben.
 
-VERFÜGBARE BEWEISE AUS DOKUMENTEN:
+VERFÜGBARE DOKUMENTBEWEISE:
 ${allEvidence}
 
-ARGUMENTS (ohne explizite Dokumentverkettung):
-${withoutEvidence.map(a => `• ${a.title}\n  ${a.description || ""}`).join("\n\n")}
+ARGUMENTS ZU PRÜFEN (ohne explizite evidence_ids):
+${withoutEvidence.map(a => `ARGUMENT: ${a.title}\nBeschreibung: ${a.description || "-"}\nTyp: ${a.type || "-"}`).join("\n\n===\n\n")}
 
-Gib eine Liste der Arguments zurück, die DEFINITIV gelöscht werden sollten (weil kein erkennbarer inhaltlicher Bezug zu den Dokumenten). Argumentiere kurz pro gelöschtem Argument.`,
+ANALYSE:
+- Prüfe INHALT der Arguments gegen INHALT der Beweise (nicht nur Keywords)
+- Ein Argument mit Bezug zu Vertragsklauseln gehört zu Evidence vom Typ "Klausel"
+- Ein Argument zu Unterschriften gehört zu Evidence vom Typ "Unterschrift"
+- Wenn ein Argument KEINE erkennbare Verbindung hat → zur Löschung kandidieren
+
+Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positives, sondern nur klare Orphans).`,
       response_json_schema: {
         type: "object",
         properties: {
           zu_loeschen: {
             type: "array",
             items: { type: "object", properties: { titel: { type: "string" }, grund: { type: "string" } } }
-          },
-          warnung: { type: "string" }
+          }
         }
       }
     });
