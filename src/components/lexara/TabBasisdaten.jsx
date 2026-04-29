@@ -44,6 +44,12 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
     const timer = setTimeout(async () => {
       setSaving(true);
       try {
+        const user = await base44.auth.me();
+        if (!user) {
+          console.warn('Auto-save: Kein Benutzer authentifiziert');
+          setSaving(false);
+          return;
+        }
         const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
         const payload = { ...form, ki_berater_result };
         console.log('Speichere Fall:', caseId, payload);
