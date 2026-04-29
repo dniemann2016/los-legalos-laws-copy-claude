@@ -675,8 +675,8 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
             <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente</p>
             <div className="flex gap-2">
               {((kiGenResult.eigene_argumente || []).length > 0 || (kiGenResult.gegner_argumente || []).length > 0) && (
-                <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
-                  <Check className="w-3 h-3" /> Alle übernehmen
+                <Button size="sm" onClick={takeAllKiArgumente} disabled={takingAllKi} className="bg-emerald-700 text-white text-xs gap-1">
+                  {takingAllKi ? "…" : <><Check className="w-3 h-3" /> Alle übernehmen</>}
                 </Button>
               )}
               <button onClick={() => setKiGenResult(null)} className="text-emerald-500 hover:text-emerald-700 text-xs">Verwerfen</button>

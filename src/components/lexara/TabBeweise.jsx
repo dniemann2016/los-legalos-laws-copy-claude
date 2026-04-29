@@ -429,7 +429,7 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
     const all = [
       ...(kiGenArgs.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
       ...(kiGenArgs.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
-    ].filter(a => a.titel && a.titel.trim());
+    ].filter(a => a.titel && a.titel.trim()).slice(0, 19);
 
     for (const a of all) {
       // Finde passende Beweise basierend auf Beweisreferenz
