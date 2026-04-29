@@ -1,21 +1,31 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { AlertTriangle, CheckCircle, RefreshCw, Loader2, Zap, AlertCircle } from "lucide-react";
+import { CheckCircle, Loader2, Zap, AlertCircle, ChevronDown, ChevronRight, Check, Info, BookOpen, Lightbulb } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const SEVERITY_CONFIG = {
-  kritisch: { color: "bg-red-50 border-red-200 text-red-700", icon: "🔴", label: "Kritisch" },
-  hoch: { color: "bg-orange-50 border-orange-200 text-orange-700", icon: "🟠", label: "Hoch" },
-  mittel: { color: "bg-yellow-50 border-yellow-200 text-yellow-700", icon: "🟡", label: "Mittel" },
-  niedrig: { color: "bg-blue-50 border-blue-200 text-blue-700", icon: "🔵", label: "Niedrig" },
+  kritisch: { label: "Kritisch", dot: "#1C1C1E", weight: 700 },
+  hoch:     { label: "Hoch",     dot: "#636366", weight: 600 },
+  mittel:   { label: "Mittel",   dot: "#8E8E93", weight: 500 },
+  niedrig:  { label: "Niedrig",  dot: "#AEAEB2", weight: 400 },
 };
 
 const WARNING_TYPE_LABELS = {
-  diskrepanz: "Diskrepanz",
-  fehlender_beleg: "Fehlender Beleg",
-  veraltete_rspr: "Veraltete Rechtsprechung",
-  unterstuetzung_fehlt: "Unterstützung fehlt",
-  widerspruch: "Widerspruch",
+  diskrepanz:          "Diskrepanz",
+  fehlender_beleg:     "Fehlender Beleg",
+  veraltete_rspr:      "Veraltete Rechtsprechung",
+  unterstuetzung_fehlt:"Unterstützung fehlt",
+  widerspruch:         "Widerspruch",
+};
+
+const SF = { fontFamily: "-apple-system,'SF Pro Text','Helvetica Neue',Arial,sans-serif" };
+const C = {
+  label:  "#1C1C1E",
+  label2: "#636366",
+  label3: "#AEAEB2",
+  sep:    "rgba(0,0,0,0.08)",
+  card:   "#FFFFFF",
+  bg:     "#F4F4F4",
 };
 
 export default function ComplianceChecker({ caseId, caseData }) {
@@ -26,19 +36,14 @@ export default function ComplianceChecker({ caseId, caseData }) {
   const [filter, setFilter] = useState("all");
   const [lastCheck, setLastCheck] = useState(null);
 
-  useEffect(() => {
-    loadWarnings();
-  }, [caseId]);
+  useEffect(() => { loadWarnings(); }, [caseId]);
 
   const loadWarnings = async () => {
     setLoading(true);
-    const data = await base44.entities.CaseWarning.filter({
-      case_id: caseId,
-      resolved: false,
-    });
+    const data = await base44.entities.CaseWarning.filter({ case_id: caseId, resolved: false });
     setWarnings(data.sort((a, b) => {
-      const severityOrder = { kritisch: 0, hoch: 1, mittel: 2, niedrig: 3 };
-      return severityOrder[a.severity] - severityOrder[b.severity];
+      const o = { kritisch: 0, hoch: 1, mittel: 2, niedrig: 3 };
+      return o[a.severity] - o[b.severity];
     }));
     setLoading(false);
   };
@@ -46,11 +51,11 @@ export default function ComplianceChecker({ caseId, caseData }) {
   const runCompliance = async () => {
     setChecking(true);
     try {
-      const response = await base44.functions.invoke("checkCaseCompliance", { caseId });
+      await base44.functions.invoke("checkCaseCompliance", { caseId });
       setLastCheck(new Date());
       await loadWarnings();
     } catch (error) {
-      console.error("Compliance-Prüfung fehler:", error);
+      console.error("Compliance-Prüfung Fehler:", error);
     }
     setChecking(false);
   };
@@ -63,177 +68,208 @@ export default function ComplianceChecker({ caseId, caseData }) {
     await loadWarnings();
   };
 
-  const filteredWarnings =
-    filter === "all" ? warnings : warnings.filter((w) => w.severity === filter);
-
-  const criticalCount = warnings.filter((w) => w.severity === "kritisch").length;
-  const highCount = warnings.filter((w) => w.severity === "hoch").length;
+  const filteredWarnings = filter === "all" ? warnings : warnings.filter(w => w.severity === filter);
+  const criticalCount = warnings.filter(w => w.severity === "kritisch").length;
+  const highCount     = warnings.filter(w => w.severity === "hoch").length;
 
   if (loading) {
     return (
-      <div className="flex justify-center py-8">
-        <div className="w-5 h-5 border-2 border-gray-200 border-t-gray-800 rounded-full animate-spin" />
+      <div style={{ display:"flex", justifyContent:"center", padding:"40px 0" }}>
+        <div style={{ width:20, height:20, border:"2px solid rgba(0,0,0,0.1)", borderTopColor:"#1C1C1E", borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
       </div>
     );
   }
 
   return (
-    <div className="space-y-5">
-      {/* Header mit Run-Button */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-700 text-white rounded-xl p-5">
-        <div className="flex items-start justify-between mb-3">
-          <div>
-            <p className="text-xs text-gray-400 uppercase tracking-widest mb-1">KI-Compliance-Prüfung</p>
-            <h3 className="text-lg font-bold">Fall gegen Rechtsprechung prüfen</h3>
-          </div>
-          <Button
-            onClick={runCompliance}
-            disabled={checking}
-            className="bg-white text-gray-900 hover:bg-gray-100 gap-2"
-            size="sm"
-          >
-            {checking ? (
-              <>
-                <Loader2 className="w-4 h-4 animate-spin" /> Prüfe...
-              </>
-            ) : (
-              <>
-                <Zap className="w-4 h-4" /> Scan starten
-              </>
-            )}
-          </Button>
-        </div>
-        <p className="text-xs text-gray-300 mb-2">
-          Analysiert Ihre Argumente, Beweise und Fristen gegen aktuelle Rechtsprechung und erkennt Lücken.
-        </p>
-        {lastCheck && (
-          <p className="text-[10px] text-gray-400">
-            Letzte Prüfung: {new Date(lastCheck).toLocaleString("de-DE")}
+    <div style={{ ...SF, display:"flex", flexDirection:"column", gap:16 }}>
+
+      {/* Header */}
+      <div style={{
+        background: C.card, border:`1px solid ${C.sep}`, borderRadius:16,
+        padding:"18px 20px", display:"flex", alignItems:"flex-start", justifyContent:"space-between",
+        boxShadow:"0 1px 4px rgba(0,0,0,0.06)",
+      }}>
+        <div>
+          <p style={{ fontSize:9.5, fontWeight:700, color:C.label3, textTransform:"uppercase", letterSpacing:"0.1em", marginBottom:4 }}>
+            KI-Compliance-Prüfung
           </p>
-        )}
+          <h3 style={{ fontSize:15, fontWeight:700, color:C.label, letterSpacing:"-0.02em", margin:0, marginBottom:4 }}>
+            Fall gegen Rechtsprechung prüfen
+          </h3>
+          <p style={{ fontSize:11.5, color:C.label2, margin:0, lineHeight:1.5, maxWidth:420 }}>
+            Analysiert Argumente, Beweise und Fristen gegen aktuelle Rechtsprechung und erkennt Lücken.
+          </p>
+          {lastCheck && (
+            <p style={{ fontSize:10, color:C.label3, marginTop:6 }}>
+              Letzte Prüfung: {new Date(lastCheck).toLocaleString("de-DE")}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={runCompliance}
+          disabled={checking}
+          style={{
+            display:"flex", alignItems:"center", gap:6, padding:"8px 16px",
+            background: C.label, color:"#fff", border:"none", borderRadius:10,
+            fontSize:12, fontWeight:600, cursor: checking ? "not-allowed" : "pointer",
+            opacity: checking ? 0.6 : 1, flexShrink:0,
+          }}
+        >
+          {checking
+            ? <><Loader2 style={{ width:13, height:13, animation:"spin 0.8s linear infinite" }} /> Prüfe…</>
+            : <><Zap style={{ width:13, height:13 }} /> Scan starten</>
+          }
+        </button>
       </div>
 
       {/* Summary */}
       {warnings.length > 0 && (
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-          <div className="bg-white border border-gray-200 rounded-lg p-3">
-            <p className="text-xs text-gray-500 font-semibold mb-1">INSGESAMT</p>
-            <p className="text-2xl font-bold text-gray-900">{warnings.length}</p>
-          </div>
-          {criticalCount > 0 && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-              <p className="text-xs text-red-600 font-semibold mb-1">KRITISCH</p>
-              <p className="text-2xl font-bold text-red-700">{criticalCount}</p>
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(100px,1fr))", gap:10 }}>
+          {[
+            { label:"Insgesamt", value: warnings.length },
+            criticalCount > 0 && { label:"Kritisch", value: criticalCount },
+            highCount > 0      && { label:"Hoch",     value: highCount },
+            { label:"Offen",    value: warnings.filter(w => !w.resolved).length },
+          ].filter(Boolean).map((item, i) => (
+            <div key={i} style={{
+              background: C.card, border:`1px solid ${C.sep}`, borderRadius:12,
+              padding:"12px 14px", boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
+            }}>
+              <p style={{ fontSize:9.5, fontWeight:700, color:C.label3, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>
+                {item.label}
+              </p>
+              <p style={{ fontSize:22, fontWeight:700, color:C.label, margin:0, letterSpacing:"-0.03em" }}>
+                {item.value}
+              </p>
             </div>
-          )}
-          {highCount > 0 && (
-            <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-              <p className="text-xs text-orange-600 font-semibold mb-1">HOCH</p>
-              <p className="text-2xl font-bold text-orange-700">{highCount}</p>
-            </div>
-          )}
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-            <p className="text-xs text-blue-600 font-semibold mb-1">GELÖST</p>
-            <p className="text-2xl font-bold text-blue-700">0</p>
-          </div>
+          ))}
         </div>
       )}
 
       {/* Filter */}
       {warnings.length > 0 && (
-        <div className="flex gap-2 flex-wrap bg-white p-3 rounded-lg border border-gray-200">
-          {["all", "kritisch", "hoch", "mittel", "niedrig"].map((sev) => (
-            <button
-              key={sev}
-              onClick={() => setFilter(sev)}
-              className={`text-xs px-3 py-1.5 rounded-full font-medium transition-all ${
-                filter === sev
-                  ? "bg-gray-900 text-white"
-                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-              }`}
-            >
+        <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+          {["all", "kritisch", "hoch", "mittel", "niedrig"].map(sev => (
+            <button key={sev} onClick={() => setFilter(sev)} style={{
+              padding:"5px 12px", borderRadius:8, fontSize:11.5, fontWeight:600,
+              border: filter === sev ? `1px solid ${C.label}` : `1px solid ${C.sep}`,
+              background: filter === sev ? C.label : "rgba(0,0,0,0.03)",
+              color: filter === sev ? "#fff" : C.label2,
+              cursor:"pointer", transition:"all 0.14s",
+            }}>
               {sev === "all" ? "Alle" : SEVERITY_CONFIG[sev].label}
             </button>
           ))}
         </div>
       )}
 
-      {/* Warnings */}
+      {/* Warnings list */}
       {filteredWarnings.length === 0 ? (
-        <div className="bg-green-50 border border-green-200 rounded-xl p-6 text-center">
-          <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
-          <p className="text-sm font-semibold text-green-800 mb-1">Keine Warnungen</p>
-          <p className="text-xs text-green-700">
+        <div style={{
+          background: C.card, border:`1px solid ${C.sep}`, borderRadius:14,
+          padding:"32px 24px", textAlign:"center", boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
+        }}>
+          <CheckCircle style={{ width:28, height:28, color:C.label3, margin:"0 auto 10px" }} />
+          <p style={{ fontSize:13, fontWeight:600, color:C.label, marginBottom:4 }}>Keine Warnungen</p>
+          <p style={{ fontSize:11.5, color:C.label2 }}>
             {warnings.length === 0
               ? "Führen Sie eine Compliance-Prüfung durch, um Lücken zu erkennen."
               : "Alle gefilterten Warnungen wurden behoben."}
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {filteredWarnings.map((warning) => {
-            const config = SEVERITY_CONFIG[warning.severity];
+        <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
+          {filteredWarnings.map((warning, idx) => {
+            const sev = SEVERITY_CONFIG[warning.severity] || SEVERITY_CONFIG.niedrig;
+            const expanded = expandedId === warning.id;
             return (
-              <div
-                key={warning.id}
-                className={`border rounded-lg overflow-hidden transition-all ${config.color}`}
-              >
-                <button
-                  onClick={() =>
-                    setExpandedId(expandedId === warning.id ? null : warning.id)
-                  }
-                  className="w-full text-left p-4 hover:opacity-80 transition-opacity"
-                >
-                  <div className="flex items-start gap-3">
-                    <span className="text-lg">{config.icon}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm mb-0.5">{warning.title}</p>
-                      <p className="text-xs opacity-75">{warning.element_title}</p>
-                    </div>
-                    <div className="flex items-center gap-2 flex-shrink-0">
-                      <span className="text-xs font-bold px-2 py-1 rounded bg-white/30">
-                        {WARNING_TYPE_LABELS[warning.warning_type] || warning.warning_type}
-                      </span>
-                      <span className="text-lg">
-                        {expandedId === warning.id ? "▼" : "▶"}
-                      </span>
-                    </div>
+              <div key={warning.id} style={{
+                background: C.card, border:`1px solid ${C.sep}`, borderRadius:13,
+                overflow:"hidden", boxShadow:"0 1px 3px rgba(0,0,0,0.05)",
+              }}>
+                {/* Row header */}
+                <button onClick={() => setExpandedId(expanded ? null : warning.id)} style={{
+                  width:"100%", textAlign:"left", padding:"13px 16px",
+                  background:"transparent", border:"none", cursor:"pointer",
+                  display:"flex", alignItems:"center", gap:12,
+                }}>
+                  {/* Severity dot */}
+                  <div style={{
+                    width:8, height:8, borderRadius:"50%", flexShrink:0,
+                    background: sev.dot, opacity: 0.75 + (0 - ["kritisch","hoch","mittel","niedrig"].indexOf(warning.severity)) * 0.05,
+                  }} />
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <p style={{ fontSize:13, fontWeight:sev.weight, color:C.label, margin:0, lineHeight:1.3 }}>
+                      {warning.title}
+                    </p>
+                    {warning.element_title && (
+                      <p style={{ fontSize:11, color:C.label3, margin:0, marginTop:2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+                        {warning.element_title}
+                      </p>
+                    )}
+                  </div>
+                  <div style={{ display:"flex", alignItems:"center", gap:8, flexShrink:0 }}>
+                    <span style={{
+                      fontSize:10, fontWeight:600, color:C.label2, padding:"3px 8px",
+                      border:`1px solid ${C.sep}`, borderRadius:6, background:"rgba(0,0,0,0.03)",
+                    }}>
+                      {WARNING_TYPE_LABELS[warning.warning_type] || warning.warning_type}
+                    </span>
+                    <span style={{ fontSize:11, fontWeight:600, color:C.label3, minWidth:16 }}>
+                      {sev.label}
+                    </span>
+                    {expanded
+                      ? <ChevronDown style={{ width:14, height:14, color:C.label3 }} />
+                      : <ChevronRight style={{ width:14, height:14, color:C.label3 }} />
+                    }
                   </div>
                 </button>
 
-                {expandedId === warning.id && (
-                  <div className={`border-t border-current/20 p-4 bg-white/40 space-y-3`}>
+                {/* Expanded detail */}
+                {expanded && (
+                  <div style={{ borderTop:`1px solid ${C.sep}`, padding:"14px 16px", display:"flex", flexDirection:"column", gap:12, background:"rgba(0,0,0,0.015)" }}>
                     {warning.description && (
                       <div>
-                        <p className="text-xs font-semibold opacity-75 mb-1">Beschreibung</p>
-                        <p className="text-sm">{warning.description}</p>
+                        <p style={{ fontSize:10, fontWeight:700, color:C.label3, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:5 }}>Beschreibung</p>
+                        <p style={{ fontSize:12.5, color:C.label, lineHeight:1.6, margin:0 }}>{warning.description}</p>
                       </div>
                     )}
 
                     {warning.suggestion && (
-                      <div className="bg-white/60 rounded-lg p-3">
-                        <p className="text-xs font-semibold opacity-75 mb-1">💡 Empfohlene Maßnahme</p>
-                        <p className="text-sm">{warning.suggestion}</p>
+                      <div style={{
+                        background: C.card, border:`1px solid ${C.sep}`, borderRadius:10, padding:"10px 12px",
+                        display:"flex", gap:10, alignItems:"flex-start",
+                      }}>
+                        <Lightbulb style={{ width:13, height:13, color:C.label2, flexShrink:0, marginTop:1 }} />
+                        <div>
+                          <p style={{ fontSize:10, fontWeight:700, color:C.label2, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Empfohlene Maßnahme</p>
+                          <p style={{ fontSize:12.5, color:C.label, lineHeight:1.55, margin:0 }}>{warning.suggestion}</p>
+                        </div>
                       </div>
                     )}
 
                     {warning.rspr_reference && (
-                      <div>
-                        <p className="text-xs font-semibold opacity-75 mb-1">📚 Rechtsprechungs-Referenz</p>
-                        <p className="text-sm font-mono">{warning.rspr_reference}</p>
+                      <div style={{ display:"flex", gap:10, alignItems:"flex-start" }}>
+                        <BookOpen style={{ width:12, height:12, color:C.label3, flexShrink:0, marginTop:2 }} />
+                        <div>
+                          <p style={{ fontSize:10, fontWeight:700, color:C.label3, textTransform:"uppercase", letterSpacing:"0.08em", marginBottom:4 }}>Rechtsprechungs-Referenz</p>
+                          <p style={{ fontSize:12, color:C.label2, fontFamily:"'SF Mono','Menlo',monospace", margin:0 }}>{warning.rspr_reference}</p>
+                        </div>
                       </div>
                     )}
 
-                    <div className="flex gap-2 pt-2">
-                      <button
-                        onClick={() => resolveWarning(warning.id)}
-                        className="flex-1 px-3 py-2 bg-white/80 rounded text-sm font-medium hover:bg-white transition-all"
-                      >
-                        ✓ Behoben
+                    <div style={{ display:"flex", gap:8, paddingTop:4 }}>
+                      <button onClick={() => resolveWarning(warning.id)} style={{
+                        flex:1, padding:"8px 12px", borderRadius:9, fontSize:12, fontWeight:600,
+                        border:`1px solid ${C.sep}`, background: C.label, color:"#fff", cursor:"pointer",
+                        display:"flex", alignItems:"center", justifyContent:"center", gap:5,
+                      }}>
+                        <Check style={{ width:12, height:12 }} /> Als behoben markieren
                       </button>
-                      <button
-                        className="flex-1 px-3 py-2 bg-white/30 rounded text-sm font-medium hover:bg-white/50 transition-all"
-                      >
+                      <button style={{
+                        flex:1, padding:"8px 12px", borderRadius:9, fontSize:12, fontWeight:600,
+                        border:`1px solid ${C.sep}`, background:"rgba(0,0,0,0.03)", color:C.label2, cursor:"pointer",
+                      }}>
                         Mehr erfahren
                       </button>
                     </div>
@@ -245,19 +281,28 @@ export default function ComplianceChecker({ caseId, caseData }) {
         </div>
       )}
 
-      {/* Info */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-        <div className="flex items-start gap-2">
-          <AlertCircle className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
-          <div className="text-sm text-blue-800">
-            <p className="font-semibold mb-1">Wie die Prüfung funktioniert:</p>
-            <ul className="text-xs space-y-1 opacity-85">
-              <li>• Argumente ohne Beweise prüfen</li>
-              <li>• Gegensätzliche Argumente mit ähnlicher Stärke erkennen</li>
-              <li>• KI-Analyse gegen aktuelle Rechtsprechung</li>
-              <li>• Fehlende Fristen und schwache Beweise identifizieren</li>
-            </ul>
-          </div>
+      {/* Info footer */}
+      <div style={{
+        background: C.card, border:`1px solid ${C.sep}`, borderRadius:13,
+        padding:"13px 16px", display:"flex", gap:10, alignItems:"flex-start",
+        boxShadow:"0 1px 3px rgba(0,0,0,0.04)",
+      }}>
+        <Info style={{ width:13, height:13, color:C.label3, flexShrink:0, marginTop:1 }} />
+        <div>
+          <p style={{ fontSize:11.5, fontWeight:600, color:C.label, marginBottom:4 }}>Wie die Prüfung funktioniert</p>
+          <ul style={{ margin:0, padding:0, listStyle:"none", display:"flex", flexDirection:"column", gap:3 }}>
+            {[
+              "Argumente ohne Beweise prüfen",
+              "Gegensätzliche Argumente mit ähnlicher Stärke erkennen",
+              "KI-Analyse gegen aktuelle Rechtsprechung",
+              "Fehlende Fristen und schwache Beweise identifizieren",
+            ].map((t, i) => (
+              <li key={i} style={{ fontSize:11, color:C.label2, display:"flex", alignItems:"center", gap:6 }}>
+                <div style={{ width:3, height:3, borderRadius:"50%", background:C.label3, flexShrink:0 }} />
+                {t}
+              </li>
+            ))}
+          </ul>
         </div>
       </div>
     </div>
