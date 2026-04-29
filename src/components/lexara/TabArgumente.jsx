@@ -599,6 +599,25 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
   };
 
   const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
+
+  const cleanupWithoutEvidence = async () => {
+    const withoutEvidence = args.filter(a => !a.evidence_ids || a.evidence_ids.length === 0);
+    if (withoutEvidence.length === 0) {
+      alert("✓ Alle Argumente haben Dokumentbelege.");
+      return;
+    }
+    const confirmed = window.confirm(
+      `${withoutEvidence.length} Argumente ohne Dokumentbelege löschen?\n\n${withoutEvidence.map(a => `• ${a.title}`).join("\n")}`
+    );
+    if (confirmed) {
+      for (const arg of withoutEvidence) {
+        await base44.entities.Argument.delete(arg.id);
+      }
+      await load(true);
+      alert(`✓ ${withoutEvidence.length} Argumente gelöscht.`);
+    }
+  };
+
   const filtered = args.filter(a => filter === "all" || a.side === filter);
 
   const linkedEvidenceForArg = (argId) => {
@@ -615,16 +634,19 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
             className={`px-3 py-1 rounded-full text-xs border transition-all ${filter === f ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>{l}</button>
         ))}
         <div className="ml-auto flex gap-2">
-          <Button size="sm" onClick={rateBatch} disabled={batchRating || args.length === 0} className="bg-violet-600 text-white rounded-xl text-xs gap-1">
+           <Button size="sm" onClick={rateBatch} disabled={batchRating || args.length === 0} className="bg-violet-600 text-white rounded-xl text-xs gap-1">
             {batchRating ? "Bewerte..." : "⭐ Alle bewerten"}
-          </Button>
-          <Button size="sm" onClick={generateKiArgumente} disabled={kiGenerating} className="bg-emerald-700 text-white rounded-xl text-xs gap-1">
-           {kiGenerating ? <><RefreshCw className="w-3 h-3 animate-spin" /> KI generiert…</> : <><Sparkles className="w-3 h-3" /> KI-Argumente (max. 19)</>}
-          </Button>
-          <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1">
+           </Button>
+           <Button size="sm" onClick={generateKiArgumente} disabled={kiGenerating} className="bg-emerald-700 text-white rounded-xl text-xs gap-1">
+            {kiGenerating ? <><RefreshCw className="w-3 h-3 animate-spin" /> KI generiert…</> : <><Sparkles className="w-3 h-3" /> KI-Argumente (max. 19)</>}
+           </Button>
+           <Button size="sm" onClick={cleanupWithoutEvidence} className="bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs gap-1">
+            🗑️ Ohne Belege löschen
+           </Button>
+           <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1">
             <Plus className="w-3 h-3" /> Argument
-          </Button>
-        </div>
+           </Button>
+         </div>
       </div>
 
       {kiGenResult && (
