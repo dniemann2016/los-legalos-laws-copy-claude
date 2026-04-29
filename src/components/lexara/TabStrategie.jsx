@@ -81,7 +81,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
     const inputSummary = `Fall: ${caseData?.fallname||""} | Rechtsgebiet: ${caseData?.rechtsgebiet||""} | Instanz: ${caseData?.instanz||""} | Zentrale Frage: ${caseData?.zentrale_rechtsfrage||""} | Eigene Argumente: ${eigenA.length} | Gegnerargumente: ${gegnerA.length} | Beweise: ${evidence.length} | Fristen: ${deadlines.length}`;
 
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein hochrangiger Prozessrechtsspezialist und strategischer Berater auf Senior-Partner-Niveau. Du analysierst ausschließlich nach juristischer Methodik: Anspruchsgrundlage → Tatbestandsprüfung → Rechtsfolge. Zitiere stets konkrete §§ (BGB, ZPO, StGB, StPO, VwGO, GG) und einschlägige BGH/BVerfG-Rechtsprechung mit Aktenzeichen wo bekannt.
+      prompt: `Du bist ein erfahrener Prozessanwalt auf Senior-Partner-Niveau und sprichst direkt wie ein Anwalt — nicht im Gutachterstil. Gib klare Einschätzungen, konkrete Empfehlungen und belege sie mit den relevanten §§ und BGH/BVerfG-Urteilen. Keine Einleitungen wie 'Zunächst ist zu prüfen'. Direkt auf den Punkt.
 
 Fall: ${caseData?.fallname || ""}
 Rechtsgebiet: ${caseData?.rechtsgebiet || ""} | Instanz: ${caseData?.instanz || ""}
@@ -97,12 +97,12 @@ BEWEISE: ${evidence.slice(0,10).map(e=>`${e.title} (${e.type||""}, ${e.weight||5
 FRISTEN: ${deadlines.length} gesamt, ${deadlines.filter(d=>d.status==="versaeumt").length} versäumt
 Richter-Klägerquote: ${caseData?.richter_klaeger_rate || 50}%
 
-Deine juristische Analyse muss enthalten:
-1. ERFOLGSWAHRSCHEINLICHKEIT: Juristische Begründung mit Normbezug (§§) und Rspr. (BGH/BVerfG). Prüfe: Anspruch entstanden? Nicht erloschen? Durchsetzbar?
-2. DIE 3 STÄRKSTEN GEGENARGUMENTE der Gegenseite mit konkreter Rechtsnorm und Gefahrengrad (hoch/mittel/niedrig).
-3. DIE 2 KRITISCHSTEN SCHWACHSTELLEN unserer Position mit juristischer Begründung (welche Norm, welches Tatbestandsmerkmal ist schwach?).
-4. STRATEGISCHE GESAMTEMPFEHLUNG: Klage, Vergleich oder Aufgabe — mit juristischer Begründung und Normbezug.
-5. JURISTISCHE GEGENMASSSNAHMEN: Alle prozessualen und materiell-rechtlichen Mittel zur Stärkung der eigenen Position: Widerklage (§ 33 ZPO), Schadensersatz (§§ 249 ff. BGB), einstweilige Verfügung (§§ 935 ff. ZPO), Prozesskostensicherheit (§ 110 ZPO), Beweisanträge (§ 244 StPO / § 356 ZPO), Befangenheitsantrag (§ 42 ZPO), Aussetzung (§ 148 ZPO), Aufrechnung (§ 387 BGB), Streitverkündung (§ 72 ZPO). Nenne für jede Maßnahme die Rechtsgrundlage.`,
+Deine anwaltliche Analyse muss enthalten:
+1. ERFOLGSWAHRSCHEINLICHKEIT: Klare Zahl mit kurzer anwaltlicher Begründung — welche §§ und welche BGH-Rspr. stützen oder gefährden unsere Position.
+2. DIE 3 STÄRKSTEN GEGENARGUMENTE der Gegenseite — mit der konkreten Norm auf die sich der Gegner stützen wird und dem Gefahrengrad (hoch/mittel/niedrig).
+3. DIE 2 KRITISCHSTEN SCHWACHSTELLEN unserer Position — direkte Aussage: "Hier liegt das Problem, weil §X uns nicht schützt / das Tatbestandsmerkmal fehlt."
+4. STRATEGISCHE GESAMTEMPFEHLUNG: Klare Aussage: Klagen, Vergleich anstreben oder aufgeben — mit anwaltlicher Begründung und Normbezug.
+5. JURISTISCHE GEGENMASSSNAHMEN: Alle prozessualen und materiell-rechtlichen Mittel zur Stärkung unserer Position (z.B. Widerklage § 33 ZPO, einstweilige Verfügung §§ 935 ff. ZPO, Prozesskostensicherheit § 110 ZPO, Befangenheitsantrag § 42 ZPO, Streitverkündung § 72 ZPO, Aufrechnung § 387 BGB). Für jede Maßnahme: Rechtsgrundlage + konkretes Ziel.`,
       response_json_schema: {
         type: "object",
         properties: {

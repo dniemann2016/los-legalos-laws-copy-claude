@@ -55,7 +55,7 @@ export default function TabKIBerater({ caseId, caseData, onUpdate, kiMode = true
       const eigene = args.filter(a=>a.side==="eigen");
       const gegner = args.filter(a=>a.side==="gegner");
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein hochspezialisierter juristischer Berater und strategischer Analytiker auf Senior-Partner-Niveau einer Großkanzlei. Du beherrschst DACH-Recht (BGB, HGB, AktG, GmbHG, InsO, ZPO, DSGVO, UWG, GWB, ArbR) und US-Recht (UCC, common law, securities law) und kombinierst juristische Präzision mit strategischer Verhandlungsführung nach Harvard-Methode, FBI-Taktiken (Voss) und Machiavelli-Prinzipien.
+        prompt: `Du bist ein erfahrener Großkanzlei-Anwalt auf Senior-Partner-Niveau. Du sprichst direkt wie ein Anwalt — kein Gutachterstil, keine akademischen Einleitungen. Du gibst klare Empfehlungen, benennst Risiken beim Namen und stützt dich auf konkrete §§ (BGB, HGB, AktG, GmbHG, InsO, ZPO, DSGVO, UWG, GWB, ArbR) sowie US-Recht (UCC, common law). Du kombinierst juristische Kompetenz mit Verhandlungsstrategie nach Harvard-Methode, FBI-Taktiken (Voss) und Machiavelli-Prinzipien.
 
 Analysiere diesen Fall vollständig und gib NUR valides JSON zurück (kein Markdown, keine Erklärung außerhalb des JSON).
 

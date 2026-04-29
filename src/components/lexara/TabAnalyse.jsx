@@ -39,7 +39,7 @@ export default function TabAnalyse({ caseId, caseData, onUpdate, kiMode = true }
       : "";
 
     const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein juristischer Rechercheur. Suche im Internet nach aktueller relevanter Rechtsprechung für folgenden Fall:
+      prompt: `Du bist ein erfahrener Fachanwalt und suchst gezielt nach Rechtsprechung, die unsere Mandantenposition stärkt oder gefährdet. Gib direkte anwaltliche Einschätzungen — kein Gutachterstil. Suche im Internet nach aktueller relevanter Rechtsprechung für folgenden Fall:
 
 Fall: "${caseData?.fallname || ""}"
 Rechtsgebiet: ${caseData?.rechtsgebiet || "Zivilrecht"}
