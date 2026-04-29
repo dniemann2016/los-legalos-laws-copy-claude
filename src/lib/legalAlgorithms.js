@@ -560,28 +560,30 @@ export function computeBreakEven({ caseData = {} }) {
   // Jedes Szenario hat einen höheren Gesamtwert als reiner Streitwert
   // und verändert die Schwelle entsprechend nach oben.
 
-  const schadensersatzMultiplikator = 2.5; // inkl. immaterieller Schaden, entgangener Gewinn
-  const svSchadensersatz = sv * schadensersatzMultiplikator;
+  // Schadensersatz: realistisch ~30–40% Break-Even
+  // Effektiver Gesamtwert nur moderat höher (Gerichte kürzen oft stark)
+  const svSchadensersatz = sv * 1.4;
   const beSchadensersatz = Math.round(clamp(gesamtKosten / (svSchadensersatz + gesamtKosten)) * 100);
 
-  const verzugsMultiplikator = 1.15; // Verzugszinsen 8% p.a. über ~2 Jahre
-  const svVerzug = sv * verzugsMultiplikator;
+  // Verzugszinsen: leicht erhöhter Wert, ~40–50% Break-Even
+  const svVerzug = sv * 1.08; // ~8% über ~1 Jahr realistisch
   const beVerzug = Math.round(clamp(gesamtKosten / (svVerzug + gesamtKosten)) * 100);
 
-  // Verfassungsklage / Grundrechtsklage: Kein direkter Geldbetrag,
-  // aber präzedenzwert = strategischer Wert (konservativ: 3× Streitwert)
-  const verfassungsWert = sv * 3;
+  // Verfassungsbeschwerde: kein direkter Geldbetrag, strategischer Wert ~1.2×
+  // → Break-Even bleibt eher bei 40–50%
+  const verfassungsWert = sv * 1.2;
   const beVerfassung = Math.round(clamp(gesamtKosten / (verfassungsWert + gesamtKosten)) * 100);
 
-  // Sammelklage / Verbandsklage: Wenn mehrere Betroffene → Gesamtstreitwert steigt
-  const sammmelwert = sv * 5;
+  // Sammelklage: Gesamtstreitwert steigt, aber auch Kosten teilen sich
+  // Netto-Vorteil moderat → Break-Even ca. 30–40%
+  const sammmelwert = sv * 2.0;
   const beSammel = Math.round(clamp(gesamtKosten / (sammmelwert + gesamtKosten)) * 100);
 
   const zusatzoptionen = [
     {
       titel: "Schadensersatz (inkl. immateriell & entgangener Gewinn)",
       symbol: "💰",
-      beschreibung: `Neben dem Streitwert können materieller Schaden, entgangener Gewinn und ggf. immaterieller Schaden (Schmerzensgeld) geltend gemacht werden. Effektiver Gesamtwert ca. ${schadensersatzMultiplikator}× Streitwert = ${svSchadensersatz.toLocaleString("de-DE")} €.`,
+      beschreibung: `Neben dem Streitwert können materieller Schaden, entgangener Gewinn und ggf. immaterieller Schaden (Schmerzensgeld) geltend gemacht werden. Effektiver Gesamtwert ca. 1.4× Streitwert = ${svSchadensersatz.toLocaleString("de-DE")} €.`,
       break_even_pct: beSchadensersatz,
       basis: `${svSchadensersatz.toLocaleString("de-DE")} €`,
       rechtsgrundlage: "§§ 249 ff. BGB, § 253 BGB",
