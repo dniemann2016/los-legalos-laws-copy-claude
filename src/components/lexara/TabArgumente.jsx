@@ -470,6 +470,11 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
     const result = await base44.integrations.Core.InvokeLLM({
       prompt: `Du bist ein erfahrener Rechtsanwalt. Führe eine UMFASSENDE juristische Gesamtanalyse durch für folgenden Fall:
 
+WICHTIG — VALIDIERUNG & DUPLIKAT-ERKENNUNG:
+- Prüfe alle generierten Argumente/Beweise auf Duplikate und Überschneidungen
+- Erkenne wenn etwas logisch falsch, widersprüchlich oder fehl am Platz ist
+- Benachrichtige wenn Qualitätsprobleme gefunden werden (vor der Rückgabe)
+
 Fall: ${caseData?.fallname || ""}
 Rechtsgebiet: ${caseData?.rechtsgebiet || ""}
 Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
@@ -581,6 +586,7 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
       strength: a.staerke || 5,
       type: "Rechtsargument",
       paragraphs: a.paragraphen || [],
+      evidence_ids: []
     });
     loadAll(true);
   };
@@ -600,6 +606,7 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
+        evidence_ids: []
       });
     }
     setKiGenResult(null);
