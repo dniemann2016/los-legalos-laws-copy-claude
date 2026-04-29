@@ -371,6 +371,38 @@ Gib eine JSON mit:
                   💡 <strong>Einfach erklärt:</strong> Der Break-Even-Punkt beantwortet die Frage: „Ab wann lohnt sich dieser Rechtsstreit finanziell?" Da bei einem <strong>Sieg alle Kosten vom Gegner erstattet</strong> werden, ist die Schwelle viel niedriger als ohne Erstattung. Erst wenn die Erfolgschance unter {breakEven?.break_even_pct}% fällt, wäre der Rechtsstreit im Durchschnitt ein Verlustgeschäft. Liegt unsere Prognose darüber, ist die Klage wirtschaftlich klar sinnvoll. {breakEven?.empfehlung}
                 </p>
               </div>
+
+              {/* Zusätzliche Klageoptions-Szenarien */}
+              {(breakEven?.zusatzoptionen || []).length > 0 && (
+                <div className="mt-3 pt-3 border-t border-gray-100">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">
+                    ⚡ Zusätzliche Klageoptions-Szenarien (erhöhen den wirtschaftlichen Wert)
+                  </p>
+                  <div className="space-y-2">
+                    {breakEven.zusatzoptionen.map((opt, i) => (
+                      <div key={i} className="border border-gray-100 rounded-xl p-3 bg-gray-50 hover:bg-white transition-colors">
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-semibold text-gray-800">
+                              {opt.symbol} {opt.titel}
+                            </p>
+                            <p className="text-[10px] text-gray-500 mt-0.5 leading-relaxed">{opt.beschreibung}</p>
+                            <p className="text-[9px] font-mono text-gray-400 mt-1">{opt.rechtsgrundlage}</p>
+                          </div>
+                          <div className="flex-shrink-0 text-right">
+                            <p className="text-lg font-bold text-green-600">{opt.break_even_pct}%</p>
+                            <p className="text-[9px] text-gray-400">Break-Even</p>
+                            <p className="text-[9px] text-gray-400 mt-0.5">{opt.basis}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-[9px] text-gray-400 mt-2 text-center">
+                    * Niedrigerer Break-Even = wirtschaftlich vorteilhafter. Bei Schadensersatz, Zinsen, Verfassungs- oder Sammelklage sinkt die Mindest-Erfolgsquote deutlich.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>

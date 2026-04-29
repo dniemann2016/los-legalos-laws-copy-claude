@@ -556,6 +556,62 @@ export function computeBreakEven({ caseData = {} }) {
   const breakEvenP = gesamtKosten / (sv + gesamtKosten);
   const breakEvenPct = Math.round(clamp(breakEvenP) * 100);
 
+  // ── Zusätzliche Klageoptions-Szenarien ───────────────────────────────────
+  // Jedes Szenario hat einen höheren Gesamtwert als reiner Streitwert
+  // und verändert die Schwelle entsprechend nach oben.
+
+  const schadensersatzMultiplikator = 2.5; // inkl. immaterieller Schaden, entgangener Gewinn
+  const svSchadensersatz = sv * schadensersatzMultiplikator;
+  const beSchadensersatz = Math.round(clamp(gesamtKosten / (svSchadensersatz + gesamtKosten)) * 100);
+
+  const verzugsMultiplikator = 1.15; // Verzugszinsen 8% p.a. über ~2 Jahre
+  const svVerzug = sv * verzugsMultiplikator;
+  const beVerzug = Math.round(clamp(gesamtKosten / (svVerzug + gesamtKosten)) * 100);
+
+  // Verfassungsklage / Grundrechtsklage: Kein direkter Geldbetrag,
+  // aber präzedenzwert = strategischer Wert (konservativ: 3× Streitwert)
+  const verfassungsWert = sv * 3;
+  const beVerfassung = Math.round(clamp(gesamtKosten / (verfassungsWert + gesamtKosten)) * 100);
+
+  // Sammelklage / Verbandsklage: Wenn mehrere Betroffene → Gesamtstreitwert steigt
+  const sammmelwert = sv * 5;
+  const beSammel = Math.round(clamp(gesamtKosten / (sammmelwert + gesamtKosten)) * 100);
+
+  const zusatzoptionen = [
+    {
+      titel: "Schadensersatz (inkl. immateriell & entgangener Gewinn)",
+      symbol: "💰",
+      beschreibung: `Neben dem Streitwert können materieller Schaden, entgangener Gewinn und ggf. immaterieller Schaden (Schmerzensgeld) geltend gemacht werden. Effektiver Gesamtwert ca. ${schadensersatzMultiplikator}× Streitwert = ${svSchadensersatz.toLocaleString("de-DE")} €.`,
+      break_even_pct: beSchadensersatz,
+      basis: `${svSchadensersatz.toLocaleString("de-DE")} €`,
+      rechtsgrundlage: "§§ 249 ff. BGB, § 253 BGB",
+    },
+    {
+      titel: "Verzugszinsen & Prozesszinsen",
+      symbol: "📈",
+      beschreibung: `Gesetzliche Verzugszinsen (§ 288 BGB: 5% über Basiszins, bei Unternehmen 9%) laufen ab Mahnung / Rechtshängigkeit. Bei 2 Jahren Verfahren erhöht sich der Gesamtanspruch auf ca. ${svVerzug.toLocaleString("de-DE")} €.`,
+      break_even_pct: beVerzug,
+      basis: `${svVerzug.toLocaleString("de-DE")} €`,
+      rechtsgrundlage: "§ 288 BGB, § 291 BGB",
+    },
+    {
+      titel: "Verfassungsbeschwerde / Grundrechtsklage",
+      symbol: "⚖️",
+      beschreibung: `Bei Grundrechtsverletzungen kann ein Präzedenzurteil (BVerfG) strategisch weitaus wertvoller sein als der reine Streitwert. Der Nicht-monetäre Strategiewert wird hier konservativ mit 3× Streitwert bewertet.`,
+      break_even_pct: beVerfassung,
+      basis: `Strategiewert ca. ${verfassungsWert.toLocaleString("de-DE")} €`,
+      rechtsgrundlage: "Art. 93 Abs. 1 Nr. 4a GG, §§ 90 ff. BVerfGG",
+    },
+    {
+      titel: "Sammelklage / Verbandsklage (mehrere Betroffene)",
+      symbol: "👥",
+      beschreibung: `Wenn mehrere Mandanten oder Verbraucher betroffen sind, kann der Gesamtstreitwert gebündelt werden. Bei 5 Mitklägern steigt das Gesamtvolumen auf ca. ${sammmelwert.toLocaleString("de-DE")} €, die Einzelkosten sinken.`,
+      break_even_pct: beSammel,
+      basis: `Gesamtstreitwert ca. ${sammmelwert.toLocaleString("de-DE")} €`,
+      rechtsgrundlage: "§ 606 ZPO (Musterfeststellungsklage), VDuG",
+    },
+  ];
+
   return {
     break_even_pct: breakEvenPct,
     gesamtkosten: Math.round(gesamtKosten),
@@ -571,6 +627,7 @@ export function computeBreakEven({ caseData = {} }) {
       : breakEvenPct > 40
         ? "Klage sinnvoll bei >50% Erfolgschance."
         : "✅ Kostenstruktur günstig – Klage wirtschaftlich.",
+    zusatzoptionen,
   };
 }
 
