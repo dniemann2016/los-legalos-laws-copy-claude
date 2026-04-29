@@ -624,13 +624,18 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
     }
     setDetectingDuplicates(true);
     try {
+      // Kurze Zusammenfassung für große Listen
+      const argsList = args.length > 20 
+        ? args.map((a, i) => `${i + 1}. ${a.title}`).join("\n")
+        : args.map((a, i) => `${i + 1}. ${a.title}${a.description ? ` — ${a.description.substring(0, 60)}` : ""}`).join("\n");
+      
       const result = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein Rechtsanwalt. Finde ÄHNLICHE oder DOPPELTE Argumente in dieser Liste. Berücksichtige Paraphrasierungen, leicht unterschiedliche Formulierungen und inhaltliche Überlappungen.
+        prompt: `Finde ÄHNLICHE oder DOPPELTE Argumente. Paraphrasierungen und Formulierungsvarianten zählen.
 
 ARGUMENTE:
-${args.map((a, i) => `${i + 1}. [${a.side === "eigen" ? "EIGEN" : "GEGNER"}] ${a.title}\n   ${a.description || ""}`).join("\n\n")}
+${argsList}
 
-Gib GRUPPEN ähnlicher Arguments zurück (mindestens 2 pro Gruppe). Pro Gruppe: welche Argument-Nummern sind ähnlich, Begründung, und welche sollte BEHALTEN werden (beste Version).`,
+Gib NUR Gruppen ähnlicher Arguments zurück (min. 2 pro Gruppe). JSON: nummern[], grund (kurz), zu_behalten (Nummer).`,
         response_json_schema: {
           type: "object",
           properties: {
@@ -639,9 +644,9 @@ Gib GRUPPEN ähnlicher Arguments zurück (mindestens 2 pro Gruppe). Pro Gruppe: 
               items: {
                 type: "object",
                 properties: {
-                  nummern: { type: "array", items: { type: "integer" }, description: "1-basierte Indizes der ähnlichen Arguments" },
+                  nummern: { type: "array", items: { type: "integer" } },
                   grund: { type: "string" },
-                  zu_behalten: { type: "integer", description: "Index des Arguments das behalten werden sollte" }
+                  zu_behalten: { type: "integer" }
                 }
               }
             }
@@ -657,7 +662,7 @@ Gib GRUPPEN ähnlicher Arguments zurück (mindestens 2 pro Gruppe). Pro Gruppe: 
       }
     } catch (e) {
       console.error("Duplikat-Erkennung fehler:", e);
-      alert("Fehler bei Duplikat-Erkennung");
+      alert("Fehler bei Duplikat-Erkennung: " + (e?.message || "Versuche später erneut"));
     } finally {
       setDetectingDuplicates(false);
     }
