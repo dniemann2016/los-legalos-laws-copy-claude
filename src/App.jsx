@@ -26,14 +26,21 @@ import { useUserProfile } from './hooks/useUserProfile';
 // Add page imports here
 
 const AuthenticatedApp = () => {
-  const { isLoadingPublicSettings } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError } = useAuth();
 
-  if (isLoadingPublicSettings) {
+  if (isLoadingPublicSettings || isLoadingAuth) {
     return (
       <div className="fixed inset-0 flex items-center justify-center">
         <div className="w-8 h-8 border-4 border-muted border-t-foreground rounded-full animate-spin" />
       </div>
     );
+  }
+
+  if (authError?.type === 'user_not_registered') {
+    return <UserNotRegisteredError />;
+  }
+  if (authError?.type === 'auth_required') {
+    // MVP: open access, skip login
   }
 
   return (

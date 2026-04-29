@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle, Folder } from "lucide-react";
+import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle, LogIn, Folder } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
 import FolderOrganizer, { AssignFolderDropdown } from "@/components/lexara/FolderOrganizer";
@@ -191,7 +191,7 @@ function KpiChip({ icon: Icon, label, value, accent }) {
 
 /* ── Main ─────────────────────────────────────────── */
 export default function LexaraDashboard() {
-  const { isLoadingAuth } = useAuth();
+  const { isAuthenticated, isLoadingAuth, navigateToLogin } = useAuth();
   const [cases, setCases]         = useState([]);
   const [search, setSearch]       = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -204,7 +204,7 @@ export default function LexaraDashboard() {
   const [selectedFolder, setSelectedFolder] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  useEffect(() => { loadData(); }, []);
+  useEffect(() => { if (isAuthenticated) loadData(); }, [isAuthenticated]);
 
   const loadData = async () => {
     setLoading(true);
@@ -266,6 +266,26 @@ export default function LexaraDashboard() {
   if (isLoadingAuth) return (
     <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center" }}>
       <div style={{ width:26, height:26, border:"3px solid rgba(0,0,0,0.08)", borderTopColor:C.emerald, borderRadius:"50%", animation:"spin 0.8s linear infinite" }} />
+    </div>
+  );
+
+  if (!isAuthenticated) return (
+    <div style={{ minHeight:"100vh", background:C.bg, display:"flex", alignItems:"center", justifyContent:"center", ...SF }}>
+      <div style={{ background:C.card, border:`1px solid ${C.separator}`, borderRadius:22, padding:44, textAlign:"center", maxWidth:340, boxShadow:C.shadow }}>
+        <div style={{ width:52, height:52, background:C.emeraldDim, borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 18px" }}>
+          <Scale style={{ width:24, height:24, color:C.emerald }} />
+        </div>
+        <h2 style={{ fontSize:17, fontWeight:700, color:C.label, marginBottom:8, letterSpacing:"-0.025em" }}>Anmeldung erforderlich</h2>
+        <p style={{ fontSize:12.5, color:C.label2, marginBottom:26, lineHeight:1.6 }}>Um Fälle zu verwalten, bitte anmelden.</p>
+        <button onClick={navigateToLogin} style={{
+          width:"100%", background:C.emerald, color:"#fff", fontSize:13, fontWeight:600,
+          padding:"11px", borderRadius:12, border:"none", cursor:"pointer",
+          display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+          boxShadow:`0 4px 16px rgba(29,185,84,0.35)`,
+        }}>
+          <LogIn style={{ width:15, height:15 }} /> Jetzt anmelden
+        </button>
+      </div>
     </div>
   );
 

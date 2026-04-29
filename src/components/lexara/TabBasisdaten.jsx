@@ -39,32 +39,6 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
     });
   }, [caseId]);
 
-  // Auto-save with debounce
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      setSaving(true);
-      try {
-        const user = await base44.auth.me();
-        if (!user) {
-          console.warn('Auto-save: Kein Benutzer authentifiziert');
-          setSaving(false);
-          return;
-        }
-        const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
-        const payload = { ...form, ki_berater_result };
-        console.log('Speichere Fall:', caseId, payload);
-        const result = await base44.entities.Case.update(caseId, payload);
-        console.log('Fall gespeichert:', result);
-        onUpdate(result);
-      } catch (error) {
-        console.error('Auto-save Fehler:', error);
-      } finally {
-        setSaving(false);
-      }
-    }, 2000);
-    return () => clearTimeout(timer);
-  }, [form, rechtsgebietMeta]);
-
   const handleSave = async () => {
     setSaving(true);
     const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
@@ -169,11 +143,11 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
       </div>
       )}
 
-      {saving && (
-        <div className="flex justify-end">
-          <p className="text-xs text-gray-400">Speichern...</p>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving} className="bg-gray-900 text-white rounded-xl px-6">
+          {saving ? "Speichern..." : "Falldaten speichern"}
+        </Button>
+      </div>
 
       {showFragebogen && (
         <FallAbschlussFragebogen

@@ -243,12 +243,6 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
   useEffect(() => { loadAll(); }, [caseId]);
 
-  const loadArgs = async (notify = false) => {
-    const args = await base44.entities.Argument.filter({ case_id: caseId });
-    setArgs(args);
-    if (notify) onCountChange && onCountChange();
-  };
-
   const loadAll = async (notify = false) => {
     const [args, evs] = await Promise.all([
       base44.entities.Argument.filter({ case_id: caseId }),
@@ -258,6 +252,8 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
     setEvidence(evs);
     if (notify) onCountChange && onCountChange();
   };
+
+  const load = loadAll;
 
   const handleExtract = async () => {
     if (extractMode === "ki" && !dsgvo) { setExtractError("Bitte DSGVO-Hinweis akzeptieren"); return; }
@@ -359,7 +355,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
     if (!extracted) return;
     try {
       const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
-
+      
       // Erstelle Beweise aus dem Dokument
       const evidenceMap = {};
       if (extracted.beweise && Array.isArray(extracted.beweise)) {
@@ -375,7 +371,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           evidenceMap[ev.titel] = evEntity?.id || evEntity;
         }
       }
-
+      
       // Erstelle Argumente und verlinke Beweise
       for (const a of all) {
         const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
@@ -390,11 +386,8 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           evidence_ids: linkedEvidenceIds
         });
       }
-      // Lösche das Extraktions-Panel UND stelle sicher, dass es nicht neu geladen wird
+      // Lösche das Extraktions-Panel
       setExtracted(null);
-      setShowExtraction(false);
-      setFiles([]);
-      setText("");
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen all:", e);
@@ -428,24 +421,14 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
-      // Entferne das Argument aus der Extraktions-Liste LOKAL (SOFORT)
+      // Entferne das Argument aus der Extraktions-Liste
       setExtracted(prev => {
         if (!prev) return null;
         const key = side === "eigen" ? "eigene_argumente" : "gegenseite_argumente";
-        const updated = {
-          ...prev,
-          [key]: (prev[key] || []).filter(x => x.titel !== a.titel)
-        };
-        // Wenn beide Arrays leer sind → Extraktions-Panel schließen
-        if ((updated.eigene_argumente || []).length === 0 && (updated.gegenseite_argumente || []).length === 0) {
-          setShowExtraction(false);
-          setFiles([]);
-          setText("");
-          return null;
-        }
+        const updated = { ...prev };
+        updated[key] = (updated[key] || []).filter(x => x.titel !== a.titel);
         return updated;
       });
-      // Reload nur Arguments, NICHT extracted (extracted wird separat über setState aktualisiert)
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
@@ -667,10 +650,10 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
     await base44.entities.Argument.create({ case_id: caseId, ...newArg });
     setNewArg({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
     setShowAdd(false);
-    await loadAll(true);
+    await load(true);
   };
 
-  const del = async (id) => { await base44.entities.Argument.delete(id); loadAll(true); };
+  const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
 
   const detectDuplicates = async () => {
     if (args.length < 2) {
@@ -747,7 +730,7 @@ Gib NUR Gruppen ähnlicher Arguments zurück (min. 2 pro Gruppe). JSON: nummern[
           console.warn(`Argument ${id} konnte nicht gelöscht werden:`, e);
         }
       }
-      await loadAll(true);
+      await load(true);
       setDuplicates(null);
       alert(`✓ ${deleted} doppelte Argumente gelöscht.`);
     }
@@ -774,7 +757,7 @@ Gib NUR Gruppen ähnlicher Arguments zurück (min. 2 pro Gruppe). JSON: nummern[
         for (const arg of withoutEvidence) {
           await base44.entities.Argument.delete(arg.id);
         }
-        await loadAll(true);
+        await load(true);
         alert(`✓ ${withoutEvidence.length} Argumente gelöscht.`);
       }
       return;
@@ -833,7 +816,7 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
           }
         }
       }
-      await loadAll(true);
+      await load(true);
       if (deleted > 0) alert(`✓ ${deleted} Argumente gelöscht (KI-basiert).`);
     }
   };
