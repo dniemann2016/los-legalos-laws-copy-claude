@@ -598,15 +598,17 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
     loadAll(true);
   };
 
+  const [takingAllKi, setTakingAllKi] = useState(false);
+
   const takeAllKiArgumente = async () => {
-    if (!kiGenResult || batchRating) return; // Verhindere doppelte Ausführung
+    if (!kiGenResult || takingAllKi) return; // Verhindere doppelte Ausführung
     
     const all = [
       ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
     ].filter(a => a.titel && a.titel.trim());
     
-    setBatchRating(true);
+    setTakingAllKi(true);
     for (let i = 0; i < all.length; i++) {
       const a = all[i];
       try {
@@ -625,7 +627,7 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
       }
       if (i < all.length - 1) await new Promise(r => setTimeout(r, 1000));
     }
-    setBatchRating(false);
+    setTakingAllKi(false);
     setKiGenResult(null);
     loadAll(true);
   };
