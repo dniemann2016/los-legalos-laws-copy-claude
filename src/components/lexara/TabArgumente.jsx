@@ -1031,8 +1031,9 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
             {extracted && (
               <div className="space-y-4 mt-2">
                 {extracted.zusammenfassung && <p className="text-xs text-gray-600 italic border-l-2 border-gray-300 pl-3">{extracted.zusammenfassung}</p>}
-                <div className="flex justify-end">
+                <div className="flex justify-end gap-2">
                   <Button size="sm" onClick={takeAll} className="bg-green-700 text-white hover:bg-green-800 text-xs">✓ Alle übernehmen</Button>
+                  <button onClick={() => { setExtracted(null); setFiles([]); setText(""); }} className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">Verwerfen</button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {[["EIGENE ARGUMENTE", extracted.eigene_argumente || [], "eigen"], ["GEGENSEITE", extracted.gegenseite_argumente || [], "gegner"]].map(([label, items, side]) => (
