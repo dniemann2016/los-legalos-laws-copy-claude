@@ -479,6 +479,8 @@ Gericht: ${caseData?.gericht || ""}
 
 Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.
 
+WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu generieren, gib leere Arrays zurück und erkläre den Grund in "keine_argumente_begruendung".
+
 Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete Beweismittel, die dieses Argument belegen könnten. Nur wenn ein Beweis wirklich sinnvoll und typisch für diesen Argumenttyp ist – keine generischen Platzhalter. Falls kein geeigneter Beweis existiert, lass das Array leer.`,
       response_json_schema: {
         type: "object",
@@ -518,7 +520,8 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
                 paragraphen: { type: "array", items: { type: "string" } }
               }
             }
-          }
+          },
+          keine_argumente_begruendung: { type: "string" }
         }
       }
     });
@@ -631,12 +634,19 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente</p>
             <div className="flex gap-2">
-              <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
-                <Check className="w-3 h-3" /> Alle übernehmen
-              </Button>
+              {((kiGenResult.eigene_argumente || []).length > 0 || (kiGenResult.gegner_argumente || []).length > 0) && (
+                <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
+                  <Check className="w-3 h-3" /> Alle übernehmen
+                </Button>
+              )}
               <button onClick={() => setKiGenResult(null)} className="text-emerald-500 hover:text-emerald-700 text-xs">Verwerfen</button>
             </div>
           </div>
+          {kiGenResult.keine_argumente_begruendung && (kiGenResult.eigene_argumente || []).length === 0 && (kiGenResult.gegner_argumente || []).length === 0 && (
+            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
+              <p className="text-xs text-amber-800">⚠️ {kiGenResult.keine_argumente_begruendung}</p>
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             {[["EIGENE ARGUMENTE", kiGenResult.eigene_argumente || [], "eigen"], ["GEGNERARGUMENTE", kiGenResult.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
               <div key={side}>
