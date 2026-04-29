@@ -548,9 +548,12 @@ export function computeBreakEven({ caseData = {} }) {
 
   const gesamtKosten = eigeneKosten + gegnerKosten + svKosten + reiseKosten + gerichtkosten;
 
-  // Erwartungswert: P × Streitwert - P × 0 - (1-P) × Gesamtkosten - eigeneKosten = 0
-  // P × (Streitwert + Gesamtkosten) = Gesamtkosten + eigeneKosten
-  const breakEvenP = (gesamtKosten + eigeneKosten) / (sv + gesamtKosten);
+  // Erwartungswert mit Kostenerstattung bei Sieg:
+  // Bei Sieg (P):    + Streitwert + Gesamtkosten erstattet (außer eigene Anwaltskosten bleiben meist anteilig)
+  // Bei Niederlage (1-P): - eigeneKosten - gegnerKosten - Gerichtskosten - SV/Reise
+  // E[Gewinn] = P × (Streitwert + gesamtKosten) - gesamtKosten = 0
+  // → P_min = gesamtKosten / (Streitwert + gesamtKosten)
+  const breakEvenP = gesamtKosten / (sv + gesamtKosten);
   const breakEvenPct = Math.round(clamp(breakEvenP) * 100);
 
   return {
@@ -561,8 +564,8 @@ export function computeBreakEven({ caseData = {} }) {
     gerichtkosten: Math.round(gerichtkosten),
     svKosten,
     reiseKosten,
-    formel: `P_min = (Gesamtkosten + eigene Kosten) / (Streitwert + Gesamtkosten) = ${gesamtKosten.toFixed(0)} / ${(sv + gesamtKosten).toFixed(0)} = ${breakEvenPct}%`,
-    erklaerung: `Ein Rechtsstreit ist wirtschaftlich sinnvoll, wenn die Erfolgswahrscheinlichkeit über ${breakEvenPct}% liegt.`,
+    formel: `P_min = Gesamtkosten / (Streitwert + Gesamtkosten) = ${gesamtKosten.toFixed(0)} / ${(sv + gesamtKosten).toFixed(0)} = ${breakEvenPct}% (inkl. Kostenerstattung bei Sieg)`,
+    erklaerung: `Bei Sieg werden alle Kosten vom Gegner erstattet. Daher ist die Break-Even-Schwelle deutlich niedriger: Ein Rechtsstreit lohnt sich bereits ab ${breakEvenPct}% Erfolgswahrscheinlichkeit.`,
     empfehlung: breakEvenPct > 60
       ? "⚠️ Hohes Kostenrisiko. Vergleich dringend erwägen."
       : breakEvenPct > 40
