@@ -372,7 +372,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         }
       }
       
-      // Erstelle Argumente und verlinke Beweise, dann lösche Original
+      // Erstelle Argumente und verlinke Beweise
       for (const a of all) {
         const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
         await base44.entities.Argument.create({
@@ -386,11 +386,12 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           evidence_ids: linkedEvidenceIds
         });
       }
+      // Lösche das Extraktions-Panel
       setExtracted(null);
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen all:", e);
-      alert("Fehler beim Übernehmen der Argumente");
+      alert("Fehler beim Übernehmen der Argumente: " + e.message);
     }
   };
 
@@ -420,12 +421,12 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
-      // Lösche das Original-Argument nach Übernehmen
-      // (Es wurde als Beweis übernommen, daher nicht mehr nötig)
+      // Setze extracted auf null um das Panel zu löschen
+      setExtracted(null);
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
-      alert("Fehler beim Übernehmen des Arguments");
+      alert("Fehler beim Übernehmen des Arguments: " + e.message);
     }
   };
 
@@ -582,10 +583,18 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
+      // Entferne das Argument aus der KI-Liste
+      setKiGenResult(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          [side === "eigen" ? "eigene_argumente" : "gegner_argumente"]: (prev[side === "eigen" ? "eigene_argumente" : "gegner_argumente"] || []).filter(x => x.titel !== a.titel)
+        };
+      });
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
-      alert("Fehler beim Übernehmen des Arguments");
+      alert("Fehler beim Übernehmen des Arguments: " + e.message);
     }
   };
 
@@ -621,11 +630,12 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
           evidence_ids: evidenceIds,
         });
       }
+      // Lösche das KI-Panel nach erfolgreichem Übernehmen
       setKiGenResult(null);
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen KI-Arguments:", e);
-      alert("Fehler beim Übernehmen der KI-Argumente");
+      alert("Fehler beim Übernehmen der KI-Argumente: " + e.message);
     }
   };
 
