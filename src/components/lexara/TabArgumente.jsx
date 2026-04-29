@@ -621,15 +621,66 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       alert("✓ Alle Argumente haben Dokumentbelege.");
       return;
     }
+
+    // KI-Analyse: Vergleiche Arguments gegen Dokumentbeweise
+    const allEvidence = evidence.map(e => `${e.title}: ${e.description || ""}`).join("\n");
+    if (!allEvidence.trim()) {
+      // Keine Beweise vorhanden — nur auf evidence_ids prüfen
+      const confirmed = window.confirm(
+        `${withoutEvidence.length} Argumente ohne Dokumentbelege löschen?\n\n${withoutEvidence.map(a => `• ${a.title}`).join("\n")}`
+      );
+      if (confirmed) {
+        for (const arg of withoutEvidence) {
+          await base44.entities.Argument.delete(arg.id);
+        }
+        await load(true);
+        alert(`✓ ${withoutEvidence.length} Argumente gelöscht.`);
+      }
+      return;
+    }
+
+    // KI prüft, ob Arguments wirklich ohne Dokumentbezug sind
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein Rechtsanwalt. Analysiere diese Arguments und prüfe, ob sie wirklich KEINEN Bezug zu den verfügbaren Dokumentbeweisen haben.
+
+VERFÜGBARE BEWEISE AUS DOKUMENTEN:
+${allEvidence}
+
+ARGUMENTS (ohne explizite Dokumentverkettung):
+${withoutEvidence.map(a => `• ${a.title}\n  ${a.description || ""}`).join("\n\n")}
+
+Gib eine Liste der Arguments zurück, die DEFINITIV gelöscht werden sollten (weil kein erkennbarer inhaltlicher Bezug zu den Dokumenten). Argumentiere kurz pro gelöschtem Argument.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          zu_loeschen: {
+            type: "array",
+            items: { type: "object", properties: { titel: { type: "string" }, grund: { type: "string" } } }
+          },
+          warnung: { type: "string" }
+        }
+      }
+    });
+
+    const toDelete = (result?.zu_loeschen || []).filter(item =>
+      withoutEvidence.some(a => a.title === item.titel)
+    );
+
+    if (toDelete.length === 0) {
+      alert("✓ KI hat festgestellt: Alle Arguments haben erkennbaren Dokumentbezug. Keine Löschung.");
+      return;
+    }
+
     const confirmed = window.confirm(
-      `${withoutEvidence.length} Argumente ohne Dokumentbelege löschen?\n\n${withoutEvidence.map(a => `• ${a.title}`).join("\n")}`
+      `KI empfiehlt: ${toDelete.length} von ${withoutEvidence.length} Arguments löschen\n\n${toDelete.map(a => `• ${a.titel}\n  Grund: ${a.grund}`).join("\n\n")}`
     );
     if (confirmed) {
-      for (const arg of withoutEvidence) {
-        await base44.entities.Argument.delete(arg.id);
+      for (const item of toDelete) {
+        const arg = withoutEvidence.find(a => a.title === item.titel);
+        if (arg) await base44.entities.Argument.delete(arg.id);
       }
       await load(true);
-      alert(`✓ ${withoutEvidence.length} Argumente gelöscht.`);
+      alert(`✓ ${toDelete.length} Argumente gelöscht (KI-basiert).`);
     }
   };
 
