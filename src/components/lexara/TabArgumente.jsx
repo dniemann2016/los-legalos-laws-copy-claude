@@ -3,6 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Plus, Upload, X, RefreshCw, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useKIProtokoll } from "@/hooks/useKIProtokoll";
+import { toast } from "sonner";
 
 function ScoreBar({ value, max = 10, color = "bg-green-500" }) {
   return (
@@ -374,9 +375,13 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       
       // Erstelle Argumente NUR wenn sie KEINE Beweise mitbringen
       // (Argumente die zu Beweisen werden, werden nicht als Argument gespeichert)
+      const konvertiert = [];
       for (const a of all) {
         const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
-        if (linkedEvidenceIds.length > 0) continue; // Argument wurde zu Beweis(en) → nicht als Argument speichern
+        if (linkedEvidenceIds.length > 0) {
+          konvertiert.push(a.titel);
+          continue; // Argument wurde zu Beweis(en) → nicht als Argument speichern
+        }
         await base44.entities.Argument.create({
           case_id: caseId,
           title: a.titel,
@@ -385,6 +390,12 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           strength: a.staerke || 5,
           type: "Rechtsargument",
           paragraphs: a.paragraphen || []
+        });
+      }
+      if (konvertiert.length > 0) {
+        toast.success(`${konvertiert.length} Argument(e) → Beweis konvertiert`, {
+          description: `Bitte Beweisliste prüfen: ${konvertiert.slice(0, 3).join(", ")}${konvertiert.length > 3 ? "…" : ""}`,
+          duration: 6000,
         });
       }
       // Lösche das Extraktions-Panel
@@ -414,6 +425,10 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       }
       // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern
       if (evidenceIds.length > 0) {
+        toast.success(`Argument → Beweis konvertiert: "${a.titel}"`, {
+          description: `${evidenceIds.length} Beweis(e) erstellt. Bitte Beweisliste prüfen.`,
+          duration: 6000,
+        });
         setExtracted(prev => {
           if (!prev) return null;
           const key = side === "eigen" ? "eigene_argumente" : "gegenseite_argumente";
@@ -593,6 +608,10 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       }
       // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern
       if (evidenceIds.length > 0) {
+        toast.success(`Argument → Beweis konvertiert: "${a.titel}"`, {
+          description: `${evidenceIds.length} Beweis(e) erstellt. Bitte Beweisliste prüfen.`,
+          duration: 6000,
+        });
         setKiGenResult(prev => {
           if (!prev) return null;
           return {
@@ -634,6 +653,7 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
         ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
         ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
       ];
+      const konvertiert = [];
       for (const a of all) {
         const evidenceIds = [];
         if (a.side === "eigen" && (a.beweise || []).length > 0) {
@@ -649,7 +669,10 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
           }
         }
         // Wenn Argument zu Beweis(en) wurde → NICHT als Argument speichern
-        if (evidenceIds.length > 0) continue;
+        if (evidenceIds.length > 0) {
+          konvertiert.push(a.titel);
+          continue;
+        }
         await base44.entities.Argument.create({
           case_id: caseId,
           title: a.titel,
@@ -658,6 +681,12 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
           strength: a.staerke || 5,
           type: "Rechtsargument",
           paragraphs: a.paragraphen || [],
+        });
+      }
+      if (konvertiert.length > 0) {
+        toast.success(`${konvertiert.length} Argument(e) → Beweis konvertiert`, {
+          description: `Bitte Beweisliste prüfen: ${konvertiert.slice(0, 3).join(", ")}${konvertiert.length > 3 ? "…" : ""}`,
+          duration: 6000,
         });
       }
       // Lösche das KI-Panel nach erfolgreichem Übernehmen
