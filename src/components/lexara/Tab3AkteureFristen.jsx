@@ -4,7 +4,7 @@ import TabFristen from "./TabFristen";
 
 const SUB_TABS = ["👥 Personen & Beteiligte", "⏰ Fristen & Termine"];
 
-export default function Tab3AkteureFristen({ caseId, onCountChange, kiMode, activeSub }) {
+export default function Tab3AkteureFristen({ caseId, caseData, onCountChange, kiMode, activeSub }) {
   const [sub, setSub] = useState(activeSub || 0);
   return (
     <div className="space-y-4">
@@ -17,7 +17,7 @@ export default function Tab3AkteureFristen({ caseId, onCountChange, kiMode, acti
         ))}
       </div>
       <div className={sub === 0 ? "" : "hidden"}><TabPersonen caseId={caseId} onCountChange={onCountChange} kiMode={kiMode} /></div>
-      <div className={sub === 1 ? "" : "hidden"}><TabFristen caseId={caseId} onCountChange={onCountChange} /></div>
+      <div className={sub === 1 ? "" : "hidden"}><TabFristen caseId={caseId} caseData={caseData} onCountChange={onCountChange} /></div>
     </div>
   );
 }

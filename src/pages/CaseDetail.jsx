@@ -291,7 +291,7 @@ export default function CaseDetail() {
         <p className="text-[10px] font-medium uppercase tracking-widest mb-4" style={{ color: "#bbb", letterSpacing: "0.08em" }}>Schritt {activeTab} von 9</p>
         {activeTab===1 && <Tab1Fallerfassung caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} onDataImport={loadCase} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===2 && <Tab2SubstanzCore caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
-        {activeTab===3 && <Tab3AkteureFristen caseId={caseId} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
+        {activeTab===3 && <Tab3AkteureFristen caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===4 && <Tab3Gegneranalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===5 && <Tab4RechtlicheAnalyse caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===6 && <TabStrategiePrognose caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} kiMode={kiMode} activeSub={activeSub} />}

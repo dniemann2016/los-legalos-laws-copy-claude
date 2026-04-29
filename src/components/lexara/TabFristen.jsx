@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Plus, Trash2, Check, X, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Trash2, Check, X, ChevronDown, ChevronUp, Sparkles, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const FRIST_TYPES = ["Berufungsfrist","Berufungsbegründung","Revisionsfrist","Klagebegründung","Schriftsatzfrist","Widerspruch Mahnbescheid","Einspruch Versäumnisurteil","eV-Antragsfrist","Verjährungsfrist","Klagefrist KSchG","BR-Anzeige §102 BetrVG","Vollstreckungsfristen","Sonstige"];
@@ -17,11 +17,13 @@ function FristDot({ days, status }) {
   return <div className="w-2 h-2 rounded-full bg-red-500" />;
 }
 
-export default function TabFristen({ caseId, onCountChange }) {
+export default function TabFristen({ caseId, onCountChange, caseData }) {
   const [fristen, setFristen] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
   const [showRef, setShowRef] = useState(false);
   const [form, setForm] = useState(EMPTY);
+  const [kiAnalyzing, setKiAnalyzing] = useState(false);
+  const [kiResult, setKiResult] = useState(null);
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -42,6 +44,113 @@ export default function TabFristen({ caseId, onCountChange }) {
   const updateStatus = async (id, status) => { await base44.entities.Deadline.update(id, { status }); load(false); };
   const del = async (id) => { await base44.entities.Deadline.delete(id); load(true); };
 
+  const runKIFristenErkennung = async () => {
+    setKiAnalyzing(true);
+    setKiResult(null);
+    // Lade Falldaten + Dokumente + Argumente
+    const [docs, args, caseArr] = await Promise.all([
+      base44.entities.Document.filter({ case_id: caseId }),
+      base44.entities.Argument.filter({ case_id: caseId }),
+      base44.entities.Case.filter({ id: caseId }),
+    ]);
+    const fallData = caseArr[0] || caseData || {};
+
+    const sachverhalt = [
+      fallData.prozessziel,
+      fallData.zentrale_rechtsfrage,
+      fallData.rechtsgebiet,
+      ...docs.map(d => d.ai_summary || d.description || d.title),
+      ...args.map(a => a.title + ": " + (a.description || "")),
+    ].filter(Boolean).join("\n");
+
+    const today = new Date().toISOString().slice(0, 10);
+
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Straf- und Verfassungsrechtsanwalt in Deutschland. Analysiere den folgenden Sachverhalt und erkenne ALLE relevanten Fristen — insbesondere:
+- Beschwerde gegen Durchsuchungsbeschluss (§ 304 StPO: 2 Wochen, ABER: nachträgliche Überprüfung jederzeit möglich; bei erledigten Maßnahmen: Feststellungsantrag ohne Frist)
+- Verfassungsbeschwerde (§ 93 Abs. 1 BVerfGG: 1 Monat nach Zustellung, sonst 1 Jahr nach der Verletzung)
+- Grundrechtseingriffe (Art. 13 GG Unverletzlichkeit der Wohnung, Art. 2 Abs. 1 GG, Art. 103 GG)
+- Rechtsmittelfristen (Berufung, Revision, Einspruch, Widerspruch)
+- Strafprozessuale Fristen (§§ 112ff. StPO Untersuchungshaft, § 116a StPO, § 115 StPO Vorführung)
+- Zivilrechtliche Verjährungsfristen (§§ 195ff. BGB)
+- Verwaltungsrechtliche Fristen (Widerspruch 1 Monat, Anfechtungsklage 1 Monat)
+- DSGVO-Fristen (Art. 77 DSGVO Beschwerde bei Aufsichtsbehörde)
+- Sonstige erkannte rechtlich relevante Fristen
+
+Erkennung von Verfassungsverstößen: Prüfe explizit ob Grundrechtsverletzungen vorliegen (Art. 13, 2, 1, 103, 104 GG) und ob eine Verfassungsbeschwerde aussichtsreich wäre.
+
+Sachverhalt:
+${sachverhalt || "Strafverfahren / Durchsuchung"}
+
+Fallname: ${fallData.fallname || ""}
+Rechtsgebiet: ${fallData.rechtsgebiet || "Strafrecht"}
+Heute: ${today}
+
+Erstelle für jede erkannte Frist einen Eintrag mit konkretem Datum (berechne ab heute falls kein Ausgangsdatum bekannt). Wenn kein genaues Ausgangsdatum bekannt, nimm heute als Start und vermerke es in der Beschreibung.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          fristen: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                frist_type: { type: "string" },
+                paragraph: { type: "string" },
+                due_date: { type: "string" },
+                beschreibung: { type: "string" },
+                prioritaet: { type: "string" },
+                verfassungsrelevanz: { type: "boolean" }
+              }
+            }
+          },
+          verfassungsverstoss_erkannt: { type: "boolean" },
+          verfassungsverstoss_begruendung: { type: "string" },
+          empfehlung: { type: "string" }
+        }
+      },
+      model: "claude_sonnet_4_6"
+    });
+
+    setKiResult(result);
+    setKiAnalyzing(false);
+  };
+
+  const importKIFrist = async (frist) => {
+    await base44.entities.Deadline.create({
+      case_id: caseId,
+      title: frist.title,
+      frist_type: frist.frist_type || "Sonstige",
+      paragraph: frist.paragraph || "",
+      due_date: frist.due_date,
+      responsible: "",
+      side: "Eigene",
+      status: "offen",
+      prognoseabzug: frist.prioritaet === "kritisch" ? "–50% bis –100%" : "",
+    });
+    load(true);
+  };
+
+  const importAllKIFristen = async () => {
+    if (!kiResult?.fristen?.length) return;
+    for (const f of kiResult.fristen) {
+      await base44.entities.Deadline.create({
+        case_id: caseId,
+        title: f.title,
+        frist_type: f.frist_type || "Sonstige",
+        paragraph: f.paragraph || "",
+        due_date: f.due_date,
+        responsible: "",
+        side: "Eigene",
+        status: "offen",
+        prognoseabzug: f.prioritaet === "kritisch" ? "–50% bis –100%" : "",
+      });
+    }
+    setKiResult(null);
+    load(true);
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -53,7 +162,13 @@ export default function TabFristen({ caseId, onCountChange }) {
             ))}
           </div>
         </div>
-        <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1"><Plus className="w-3 h-3" /> Frist</Button>
+        <div className="flex gap-2">
+          <Button size="sm" variant="outline" onClick={runKIFristenErkennung} disabled={kiAnalyzing}
+            className="rounded-xl text-xs gap-1 border-violet-200 text-violet-700 hover:bg-violet-50">
+            <Sparkles className="w-3 h-3" /> {kiAnalyzing ? "KI analysiert…" : "KI-Fristen erkennen"}
+          </Button>
+          <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1"><Plus className="w-3 h-3" /> Frist</Button>
+        </div>
       </div>
 
       {showAdd && (
@@ -77,6 +192,58 @@ export default function TabFristen({ caseId, onCountChange }) {
             <Button size="sm" onClick={save} className="bg-gray-900 text-white rounded-lg text-xs">Frist speichern</Button>
             <Button size="sm" variant="outline" onClick={()=>setShowAdd(false)} className="rounded-lg text-xs">Abbrechen</Button>
           </div>
+        </div>
+      )}
+
+      {/* KI-Ergebnis */}
+      {kiResult && (
+        <div className="bg-violet-50 border border-violet-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-semibold text-violet-800">🤖 KI-Fristenerkennung — {kiResult.fristen?.length || 0} Fristen erkannt</p>
+            <button onClick={() => setKiResult(null)} className="text-violet-400 hover:text-violet-700"><X className="w-4 h-4" /></button>
+          </div>
+
+          {kiResult.verfassungsverstoss_erkannt && (
+            <div className="bg-red-50 border border-red-200 rounded-lg p-3">
+              <p className="text-xs font-bold text-red-700 flex items-center gap-1 mb-1">
+                <AlertTriangle className="w-3.5 h-3.5" /> ⚠️ Verfassungsverstoß erkannt!
+              </p>
+              <p className="text-xs text-red-600">{kiResult.verfassungsverstoss_begruendung}</p>
+            </div>
+          )}
+
+          {kiResult.empfehlung && (
+            <div className="bg-white border border-violet-100 rounded-lg p-3">
+              <p className="text-[10px] font-semibold text-violet-500 uppercase mb-1">KI-Empfehlung</p>
+              <p className="text-xs text-gray-700">{kiResult.empfehlung}</p>
+            </div>
+          )}
+
+          <div className="space-y-2">
+            {(kiResult.fristen || []).map((f, i) => (
+              <div key={i} className={`bg-white border rounded-lg p-3 flex items-start justify-between gap-3 ${f.verfassungsrelevanz ? "border-red-200" : "border-violet-100"}`}>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap mb-0.5">
+                    {f.verfassungsrelevanz && <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold">VERFASSUNG</span>}
+                    {f.prioritaet === "kritisch" && <span className="text-[9px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded font-bold">KRITISCH</span>}
+                    <span className="text-xs font-semibold text-gray-900">{f.title}</span>
+                    {f.paragraph && <span className="text-[10px] bg-gray-100 text-gray-500 rounded px-1.5 py-0.5">{f.paragraph}</span>}
+                  </div>
+                  {f.beschreibung && <p className="text-[11px] text-gray-500 mt-0.5">{f.beschreibung}</p>}
+                  <p className="text-[10px] text-gray-400 mt-0.5">Fällig: <strong>{f.due_date ? new Date(f.due_date).toLocaleDateString("de-DE") : "—"}</strong></p>
+                </div>
+                <Button size="sm" onClick={() => importKIFrist(f)} className="bg-violet-600 text-white rounded-lg text-[10px] px-2 py-1 h-auto flex-shrink-0">
+                  + Import
+                </Button>
+              </div>
+            ))}
+          </div>
+
+          {kiResult.fristen?.length > 0 && (
+            <Button onClick={importAllKIFristen} className="w-full bg-violet-700 text-white rounded-lg text-xs gap-1">
+              <Check className="w-3 h-3" /> Alle {kiResult.fristen.length} Fristen importieren
+            </Button>
+          )}
         </div>
       )}
 
