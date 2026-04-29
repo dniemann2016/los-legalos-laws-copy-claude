@@ -256,12 +256,6 @@ export default function TabBeweise({ caseId }) {
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
 
   useEffect(() => { load(); }, [caseId]);
-  
-  // Refresh jede 2 Sekunden um Sync mit Argumente-Tab zu halten
-  useEffect(() => {
-    const interval = setInterval(load, 2000);
-    return () => clearInterval(interval);
-  }, [caseId]);
 
   const load = async () => {
     const [a, e] = await Promise.all([

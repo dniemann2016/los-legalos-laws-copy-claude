@@ -243,12 +243,6 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
   useEffect(() => { loadAll(); }, [caseId]);
 
-  // Refresh jede 2 Sekunden um Sync mit Beweise-Tab zu halten
-  useEffect(() => {
-    const interval = setInterval(() => loadAll(false), 2000);
-    return () => clearInterval(interval);
-  }, [caseId]);
-
   const loadAll = async (notify = false) => {
     const [args, evs] = await Promise.all([
       base44.entities.Argument.filter({ case_id: caseId }),
@@ -378,7 +372,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         }
       }
       
-      // Erstelle Argumente und verlinke Beweise
+      // Erstelle Argumente und verlinke Beweise, dann lösche Original
       for (const a of all) {
         const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
         await base44.entities.Argument.create({
@@ -426,7 +420,8 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
-      // Lade nach Erstellung neu UND SCHLIESSE NICHT automatisch
+      // Lösche das Original-Argument nach Übernehmen
+      // (Es wurde als Beweis übernommen, daher nicht mehr nötig)
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
