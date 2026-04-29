@@ -424,10 +424,10 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       // Entferne das Argument aus der Extraktions-Liste
       setExtracted(prev => {
         if (!prev) return null;
-        return {
-          ...prev,
-          [side === "eigen" ? "eigene_argumente" : "gegenseite_argumente"]: (prev[side === "eigen" ? "eigene_argumente" : "gegenseite_argumente"] || []).filter(x => x.titel !== a.titel)
-        };
+        const key = side === "eigen" ? "eigene_argumente" : "gegenseite_argumente";
+        const updated = { ...prev };
+        updated[key] = (updated[key] || []).filter(x => x.titel !== a.titel);
+        return updated;
       });
       await loadAll(true);
     } catch (e) {
