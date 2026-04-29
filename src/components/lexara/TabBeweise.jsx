@@ -342,7 +342,7 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
     for (let i = 0; i < entries.length; i++) {
       const [evId, argId] = entries[i];
       await base44.entities.Evidence.update(evId, { argument_id: argId });
-      if (i < entries.length - 1) await new Promise(r => setTimeout(r, 300));
+      if (i < entries.length - 1) await new Promise(r => setTimeout(r, 500));
     }
     setKiSuggestions(null);
     setPendingAssignments({});
@@ -452,7 +452,7 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
         type: "Rechtsargument",
         evidence_ids: linkedEvidenceIds
       });
-      await new Promise(r => setTimeout(r, 300));
+      await new Promise(r => setTimeout(r, 500));
     }
     setKiGenArgs(null);
     load();
