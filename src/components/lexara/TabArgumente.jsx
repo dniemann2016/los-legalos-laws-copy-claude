@@ -355,7 +355,8 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
     // Erstelle Beweise aus dem Dokument
     const evidenceMap = {};
     if (extracted.beweise && Array.isArray(extracted.beweise)) {
-      for (const ev of extracted.beweise) {
+      for (let i = 0; i < extracted.beweise.length; i++) {
+        const ev = extracted.beweise[i];
         const evEntity = await base44.entities.Evidence.create({
           case_id: caseId,
           title: ev.titel || "Beweis",
@@ -372,7 +373,8 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
     }
     
     // Erstelle Argumente und verlinke Beweise
-    for (const a of all) {
+    for (let ai = 0; ai < all.length; ai++) {
+      const a = all[ai];
       const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
       await base44.entities.Argument.create({
         case_id: caseId,
@@ -384,7 +386,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: linkedEvidenceIds
       });
-      await new Promise(r => setTimeout(r, 800));
+      if (ai < all.length - 1) await new Promise(r => setTimeout(r, 1000));
     }
     setExtracted(null);
     loadAll(true);
@@ -603,7 +605,8 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
     ].filter(a => a.titel && a.titel.trim());
     
-    for (const a of all) {
+    for (let i = 0; i < all.length; i++) {
+      const a = all[i];
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel.trim(),
@@ -614,7 +617,7 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
         paragraphs: a.paragraphen || [],
         evidence_ids: []
       });
-      await new Promise(r => setTimeout(r, 500));
+      if (i < all.length - 1) await new Promise(r => setTimeout(r, 1000));
     }
     setKiGenResult(null);
     loadAll(true);
