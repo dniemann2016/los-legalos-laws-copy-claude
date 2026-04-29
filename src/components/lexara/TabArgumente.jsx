@@ -243,6 +243,12 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 
   useEffect(() => { loadAll(); }, [caseId]);
 
+  const loadArgs = async (notify = false) => {
+    const args = await base44.entities.Argument.filter({ case_id: caseId });
+    setArgs(args);
+    if (notify) onCountChange && onCountChange();
+  };
+
   const loadAll = async (notify = false) => {
     const [args, evs] = await Promise.all([
       base44.entities.Argument.filter({ case_id: caseId }),
@@ -252,8 +258,6 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
     setEvidence(evs);
     if (notify) onCountChange && onCountChange();
   };
-
-  const load = loadAll;
 
   const handleExtract = async () => {
     if (extractMode === "ki" && !dsgvo) { setExtractError("Bitte DSGVO-Hinweis akzeptieren"); return; }
@@ -430,8 +434,8 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           [key]: (prev[key] || []).filter(x => x.titel !== a.titel)
         };
       });
-      // Reload Argumente OHNE extracted zu laden (damit es nicht überschrieben wird)
-      await load(true);
+      // Reload nur Arguments, NICHT extracted
+      await loadArgs(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
       alert("Fehler beim Übernehmen des Arguments: " + e.message);
@@ -652,10 +656,10 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
     await base44.entities.Argument.create({ case_id: caseId, ...newArg });
     setNewArg({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument" });
     setShowAdd(false);
-    await load(true);
+    await loadAll(true);
   };
 
-  const del = async (id) => { await base44.entities.Argument.delete(id); load(true); };
+  const del = async (id) => { await base44.entities.Argument.delete(id); loadAll(true); };
 
   const detectDuplicates = async () => {
     if (args.length < 2) {
@@ -732,7 +736,7 @@ Gib NUR Gruppen ähnlicher Arguments zurück (min. 2 pro Gruppe). JSON: nummern[
           console.warn(`Argument ${id} konnte nicht gelöscht werden:`, e);
         }
       }
-      await load(true);
+      await loadAll(true);
       setDuplicates(null);
       alert(`✓ ${deleted} doppelte Argumente gelöscht.`);
     }
@@ -759,7 +763,7 @@ Gib NUR Gruppen ähnlicher Arguments zurück (min. 2 pro Gruppe). JSON: nummern[
         for (const arg of withoutEvidence) {
           await base44.entities.Argument.delete(arg.id);
         }
-        await load(true);
+        await loadAll(true);
         alert(`✓ ${withoutEvidence.length} Argumente gelöscht.`);
       }
       return;
@@ -818,7 +822,7 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
           }
         }
       }
-      await load(true);
+      await loadAll(true);
       if (deleted > 0) alert(`✓ ${deleted} Argumente gelöscht (KI-basiert).`);
     }
   };
