@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
-import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle, LogIn } from "lucide-react";
+import { Search, Plus, X, Scale, TrendingUp, Clock, AlertCircle, LogIn, Folder } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/AuthContext";
+import FolderOrganizer, { AssignFolderDropdown } from "@/components/lexara/FolderOrganizer";
 
 /* ── Design tokens (SwiftUI / Apple HIG) ─────────── */
 const C = {
@@ -42,7 +43,7 @@ function PrognoseArc({ value = 0 }) {
 }
 
 /* ── Case card ────────────────────────────────────── */
-function CaseCard({ caseData, counts }) {
+function CaseCard({ caseData, counts, folders, onReload }) {
   const navigate = useNavigate();
   const total = 9;
   const done = [caseData.fallname, caseData.gericht, caseData.zentrale_rechtsfrage,
@@ -146,6 +147,17 @@ function CaseCard({ caseData, counts }) {
           </div>
         ))}
       </div>
+
+      {/* Ordner-Zuordnung */}
+      <div style={{ paddingInline:16, paddingBottom:12, borderTop:`1px solid ${C.separator}`, paddingTop:10 }}
+        onClick={e => e.stopPropagation()}>
+        <AssignFolderDropdown
+          caseId={caseData.id}
+          currentFolderId={caseData.folder_id}
+          folders={folders}
+          onAssigned={onReload}
+        />
+      </div>
     </div>
   );
 }
@@ -188,19 +200,24 @@ export default function LexaraDashboard() {
   const [newCase, setNewCase]     = useState({ fallname:"", aktenzeichen:"", rechtsgebiet:"", status:"Aktiv", instanz:"Erstinstanz" });
   const [caseCounts, setCaseCounts] = useState({});
   const [creating, setCreating]   = useState(false);
+  const [folders, setFolders]     = useState([]);
+  const [selectedFolder, setSelectedFolder] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
 
   useEffect(() => { if (isAuthenticated) loadData(); }, [isAuthenticated]);
 
   const loadData = async () => {
     setLoading(true);
-    const [cs, args, evs, pers, deadlines] = await Promise.all([
+    const [cs, args, evs, pers, deadlines, folds] = await Promise.all([
       base44.entities.Case.list("-created_date"),
       base44.entities.Argument.filter({}),
       base44.entities.Evidence.filter({}),
       base44.entities.Person.filter({}),
       base44.entities.Deadline.filter({}),
+      base44.entities.CaseFolder.list("-created_date"),
     ]);
     setCases(cs);
+    setFolders(folds);
     const counts = {};
     cs.forEach(c => {
       counts[c.id] = {
@@ -228,8 +245,15 @@ export default function LexaraDashboard() {
     const matchSearch = c.fallname?.toLowerCase().includes(search.toLowerCase()) ||
       c.aktenzeichen?.toLowerCase().includes(search.toLowerCase());
     const matchStatus = statusFilter === "all" || c.status === statusFilter;
-    return matchSearch && matchStatus;
+    const matchFolder = !selectedFolder || c.folder_id === selectedFolder;
+    return matchSearch && matchStatus && matchFolder;
   });
+
+  // Folder case counts
+  const folderCaseCounts = {
+    total: cases.length,
+    ...Object.fromEntries(folders.map(f => [f.id, cases.filter(c => c.folder_id === f.id).length])),
+  };
 
   const aktiv      = cases.filter(c => c.status === "Aktiv").length;
   const avgPrognose = cases.length ? Math.round(cases.reduce((s,c)=>s+(c.prognose||0),0)/cases.length) : 0;
@@ -274,6 +298,14 @@ export default function LexaraDashboard() {
         WebkitBackdropFilter:"blur(24px)",
       }}>
         <div style={{ maxWidth:1100, margin:"0 auto", padding:"14px 28px", display:"flex", alignItems:"center", gap:12 }}>
+          <button onClick={() => setSidebarOpen(o => !o)} title="Ordner ein-/ausblenden" style={{
+            width:32, height:32, borderRadius:9, border:`1px solid ${C.separator}`,
+            background: sidebarOpen ? "rgba(10,132,255,0.08)" : "rgba(0,0,0,0.04)",
+            color: sidebarOpen ? "#0A84FF" : C.label3,
+            display:"flex", alignItems:"center", justifyContent:"center", cursor:"pointer",
+          }}>
+            <Folder style={{ width:14, height:14 }} />
+          </button>
           <div style={{ marginRight:"auto" }}>
             <p style={{ fontSize:15, fontWeight:700, color:C.label, letterSpacing:"-0.025em" }}>Fallübersicht</p>
             <p style={{ fontSize:11, color:C.label3, marginTop:1 }}>{cases.length} Mandate verwaltet</p>
@@ -301,7 +333,30 @@ export default function LexaraDashboard() {
         </div>
       </div>
 
-      <div style={{ maxWidth:1100, margin:"0 auto", padding:"28px 28px 60px", display:"flex", flexDirection:"column", gap:24 }}>
+      <div style={{ maxWidth:1300, margin:"0 auto", padding:"28px 28px 60px", display:"flex", gap:24 }}>
+
+        {/* Ordner-Sidebar */}
+        {sidebarOpen && (
+          <div style={{
+            width: 220, flexShrink: 0, background: C.card, border: `1px solid ${C.separator}`,
+            borderRadius: 18, padding: "14px 10px", boxShadow: C.shadowSm,
+            height: "fit-content", position: "sticky", top: 80,
+          }}>
+            <p style={{ fontSize: 9.5, fontWeight: 700, color: C.label3, textTransform: "uppercase", letterSpacing: "0.1em", padding: "0 4px", marginBottom: 10 }}>
+              Ordner
+            </p>
+            <FolderOrganizer
+              folders={folders}
+              selectedFolderId={selectedFolder}
+              onSelectFolder={setSelectedFolder}
+              onFoldersChanged={loadData}
+              caseCounts={folderCaseCounts}
+            />
+          </div>
+        )}
+
+        {/* Main content */}
+        <div style={{ flex: 1, minWidth: 0, display: "flex", flexDirection: "column", gap: 24 }}>
 
         {/* KPIs */}
         {cases.length > 0 && (
@@ -340,7 +395,7 @@ export default function LexaraDashboard() {
         ) : filtered.length > 0 ? (
           <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(320px,1fr))", gap:18 }}>
             {filtered.map(c => (
-              <CaseCard key={c.id} caseData={c} counts={caseCounts[c.id] || { args:0, evidence:0, persons:0, deadlines:0 }} />
+              <CaseCard key={c.id} caseData={c} counts={caseCounts[c.id] || { args:0, evidence:0, persons:0, deadlines:0 }} folders={folders} onReload={loadData} />
             ))}
           </div>
         ) : (
@@ -356,6 +411,7 @@ export default function LexaraDashboard() {
             </p>
           </div>
         )}
+        </div>{/* end main content */}
       </div>
 
       {/* Create modal */}

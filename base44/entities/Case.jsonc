@@ -88,6 +88,14 @@
     "notes": {
       "type": "string",
       "title": "Fallnotizen"
+    },
+    "folder_id": {
+      "type": "string",
+      "title": "Ordner ID"
+    },
+    "mandant_name": {
+      "type": "string",
+      "title": "Mandant Name"
     }
   },
   "required": [
@@ -96,40 +104,13 @@
   "rls": {
     "create": {},
     "read": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "created_by": "{{user.email}}"
     },
     "update": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "created_by": "{{user.email}}"
     },
     "delete": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
+      "created_by": "{{user.email}}"
     }
   }
 }

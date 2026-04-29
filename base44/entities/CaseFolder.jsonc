@@ -1,0 +1,51 @@
+{
+  "name": "CaseFolder",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "title": "Ordnername"
+    },
+    "color": {
+      "type": "string",
+      "title": "Farbe"
+    },
+    "mandant_name": {
+      "type": "string",
+      "title": "Mandant (Person / Unternehmen)"
+    },
+    "mandant_email": {
+      "type": "string",
+      "title": "Mandant E-Mail"
+    },
+    "mandant_typ": {
+      "type": "string",
+      "title": "Mandant-Typ",
+      "enum": [
+        "Privatperson",
+        "Unternehmen",
+        "Beh\u00f6rde",
+        "Sonstiges"
+      ]
+    },
+    "description": {
+      "type": "string",
+      "title": "Beschreibung"
+    }
+  },
+  "required": [
+    "name"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "created_by": "{{user.email}}"
+    },
+    "update": {
+      "created_by": "{{user.email}}"
+    },
+    "delete": {
+      "created_by": "{{user.email}}"
+    }
+  }
+}
