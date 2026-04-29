@@ -39,6 +39,15 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
     });
   }, [caseId]);
 
+  // Auto-save with debounce
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
+      base44.entities.Case.update(caseId, { ...form, ki_berater_result }).then(updated => onUpdate(updated));
+    }, 1500);
+    return () => clearTimeout(timer);
+  }, [form, rechtsgebietMeta, caseId]);
+
   const handleSave = async () => {
     setSaving(true);
     const ki_berater_result = { ...(caseData?.ki_berater_result || {}), _rg_meta: rechtsgebietMeta };
@@ -143,11 +152,11 @@ export default function TabBasisdaten({ caseId, caseData, onUpdate }) {
       </div>
       )}
 
-      <div className="flex justify-end">
-        <Button onClick={handleSave} disabled={saving} className="bg-gray-900 text-white rounded-xl px-6">
-          {saving ? "Speichern..." : "Falldaten speichern"}
-        </Button>
-      </div>
+      {saving && (
+        <div className="flex justify-end">
+          <p className="text-xs text-gray-400">Speichern...</p>
+        </div>
+      )}
 
       {showFragebogen && (
         <FallAbschlussFragebogen
