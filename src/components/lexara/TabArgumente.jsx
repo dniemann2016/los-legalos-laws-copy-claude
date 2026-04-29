@@ -349,14 +349,13 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
   }
 
   const takeAll = async () => {
-    if (!extracted || extracting) return; // Verhindere doppelte Ausführung
+    if (!extracted) return;
     const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
     
     // Erstelle Beweise aus dem Dokument
     const evidenceMap = {};
     if (extracted.beweise && Array.isArray(extracted.beweise)) {
-      for (let i = 0; i < extracted.beweise.length; i++) {
-        const ev = extracted.beweise[i];
+      for (const ev of extracted.beweise) {
         const evEntity = await base44.entities.Evidence.create({
           case_id: caseId,
           title: ev.titel || "Beweis",
@@ -368,13 +367,12 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         if (evEntity?.id) {
           evidenceMap[ev.titel] = evEntity.id;
         }
-        await new Promise(r => setTimeout(r, 1500));
+        await new Promise(r => setTimeout(r, 500));
       }
     }
     
     // Erstelle Argumente und verlinke Beweise
-    for (let ai = 0; ai < all.length; ai++) {
-      const a = all[ai];
+    for (const a of all) {
       const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
       await base44.entities.Argument.create({
         case_id: caseId,
@@ -386,7 +384,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: linkedEvidenceIds
       });
-      if (ai < all.length - 1) await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 500));
     }
     setExtracted(null);
     loadAll(true);
@@ -583,8 +581,6 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
     setKiGenerating(false);
   };
 
-  const [takingAllKi, setTakingAllKi] = useState(false);
-
   const takeKiArg = async (a, side) => {
     if (!a.titel || !a.titel.trim()) return;
     await base44.entities.Argument.create({
@@ -601,33 +597,25 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
   };
 
   const takeAllKiArgumente = async () => {
-    if (!kiGenResult || takingAllKi) return; // Verhindere doppelte Ausführung
-    
+    if (!kiGenResult) return;
     const all = [
       ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
     ].filter(a => a.titel && a.titel.trim());
     
-    setTakingAllKi(true);
-    for (let i = 0; i < all.length; i++) {
-      const a = all[i];
-      try {
-        await base44.entities.Argument.create({
-          case_id: caseId,
-          title: a.titel.trim(),
-          description: a.beschreibung || "",
-          side: a.side,
-          strength: a.staerke || 5,
-          type: "Rechtsargument",
-          paragraphs: a.paragraphen || [],
-          evidence_ids: []
-        });
-      } catch (e) {
-        console.error("Fehler beim Erstellen des Arguments:", e);
-      }
-      if (i < all.length - 1) await new Promise(r => setTimeout(r, 1500));
+    for (const a of all) {
+      await base44.entities.Argument.create({
+        case_id: caseId,
+        title: a.titel.trim(),
+        description: a.beschreibung || "",
+        side: a.side,
+        strength: a.staerke || 5,
+        type: "Rechtsargument",
+        paragraphs: a.paragraphen || [],
+        evidence_ids: []
+      });
+      await new Promise(r => setTimeout(r, 500));
     }
-    setTakingAllKi(false);
     setKiGenResult(null);
     loadAll(true);
   };
@@ -675,8 +663,8 @@ WICHTIG: Falls Fallkontext unvollständig: gib leere Arrays zurück + Grund in "
             <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente</p>
             <div className="flex gap-2">
               {((kiGenResult.eigene_argumente || []).length > 0 || (kiGenResult.gegner_argumente || []).length > 0) && (
-                <Button size="sm" onClick={takeAllKiArgumente} disabled={takingAllKi} className="bg-emerald-700 text-white text-xs gap-1">
-                  {takingAllKi ? "…" : <><Check className="w-3 h-3" /> Alle übernehmen</>}
+                <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
+                  <Check className="w-3 h-3" /> Alle übernehmen
                 </Button>
               )}
               <button onClick={() => setKiGenResult(null)} className="text-emerald-500 hover:text-emerald-700 text-xs">Verwerfen</button>

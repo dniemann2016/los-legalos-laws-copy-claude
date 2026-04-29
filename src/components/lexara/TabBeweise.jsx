@@ -342,7 +342,7 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
     for (let i = 0; i < entries.length; i++) {
       const [evId, argId] = entries[i];
       await base44.entities.Evidence.update(evId, { argument_id: argId });
-      if (i < entries.length - 1) await new Promise(r => setTimeout(r, 1500));
+      if (i < entries.length - 1) await new Promise(r => setTimeout(r, 300));
     }
     setKiSuggestions(null);
     setPendingAssignments({});
@@ -359,7 +359,7 @@ BEWEISE (aus den Dokumenten):
 ${evidence.map(e => `- ${e.title} (${e.type}): ${e.description || ''}`).join('\n')}
 
 AUFGABE:
-1. Generiere MAX 40 konkrete Argumente (eigen & gegner), die DIREKT aus diesen Beweisen ableitbar sind
+1. Generiere MAX 60 konkrete Argumente (eigen & gegner), die DIREKT aus diesen Beweisen ableitbar sind
 2. Jedes Argument MUSS eine konkrete Beweisreferenz haben
 3. Fokus: Was sagen diese Beweise juristisch aus? Welche Schlüsse folgen daraus?
 4. Für jedes: Titel, Beschreibung (bezogen auf den Beweis), Stärke 1-10
@@ -429,7 +429,7 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
     const all = [
       ...(kiGenArgs.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
       ...(kiGenArgs.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
-    ].filter(a => a.titel && a.titel.trim()).slice(0, 19);
+    ].filter(a => a.titel && a.titel.trim());
 
     for (const a of all) {
       // Finde passende Beweise basierend auf Beweisreferenz
@@ -452,7 +452,7 @@ WICHTIG: Keine generischen Argumente — nur was aus DIESEN BEWEISEN folgt!`,
         type: "Rechtsargument",
         evidence_ids: linkedEvidenceIds
       });
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 300));
     }
     setKiGenArgs(null);
     load();
