@@ -359,7 +359,7 @@ BEWEISE (aus den Dokumenten):
 ${evidence.map(e => `- ${e.title} (${e.type}): ${e.description || ''}`).join('\n')}
 
 AUFGABE:
-1. Generiere MAX 60 konkrete Argumente (eigen & gegner), die DIREKT aus diesen Beweisen ableitbar sind
+1. Generiere MAX 40 konkrete Argumente (eigen & gegner), die DIREKT aus diesen Beweisen ableitbar sind
 2. Jedes Argument MUSS eine konkrete Beweisreferenz haben
 3. Fokus: Was sagen diese Beweise juristisch aus? Welche Schlüsse folgen daraus?
 4. Für jedes: Titel, Beschreibung (bezogen auf den Beweis), Stärke 1-10
