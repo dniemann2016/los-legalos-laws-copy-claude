@@ -336,14 +336,15 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
   };
 
   const applyAllSuggestions = async () => {
-    await Promise.all(
-      Object.entries(pendingAssignments).map(([evId, argId]) =>
-        base44.entities.Evidence.update(evId, { argument_id: argId })
-      )
-    );
+    const entries = Object.entries(pendingAssignments);
+    for (let i = 0; i < entries.length; i++) {
+      const [evId, argId] = entries[i];
+      await base44.entities.Evidence.update(evId, { argument_id: argId });
+      if (i < entries.length - 1) await new Promise(r => setTimeout(r, 300));
+    }
     setKiSuggestions(null);
-      setPendingAssignments({});
-      load();
+    setPendingAssignments({});
+    load();
   };
 
   const selectedArgData = args.find(a => a.id === selectedArg);
