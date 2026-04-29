@@ -530,20 +530,6 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
   };
 
   const takeKiArg = async (a, side) => {
-    // Erstelle zuerst Beweise (falls vorhanden)
-    const evidenceIds = [];
-    if (side === "eigen" && (a.beweise || []).length > 0) {
-      for (const ev of a.beweise) {
-        const created = await base44.entities.Evidence.create({
-          case_id: caseId,
-          title: ev.titel,
-          description: ev.beschreibung || "",
-          type: ev.typ || "Dokument",
-          weight: ev.gewicht || 5,
-        });
-        if (created?.id) evidenceIds.push(created.id);
-      }
-    }
     await base44.entities.Argument.create({
       case_id: caseId,
       title: a.titel,
@@ -552,7 +538,6 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       strength: a.staerke || 5,
       type: "Rechtsargument",
       paragraphs: a.paragraphen || [],
-      evidence_ids: evidenceIds,
     });
     loadAll(true);
   };
@@ -564,19 +549,6 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
     ];
     for (const a of all) {
-      const evidenceIds = [];
-      if (a.side === "eigen" && (a.beweise || []).length > 0) {
-        for (const ev of a.beweise) {
-          const created = await base44.entities.Evidence.create({
-            case_id: caseId,
-            title: ev.titel,
-            description: ev.beschreibung || "",
-            type: ev.typ || "Dokument",
-            weight: ev.gewicht || 5,
-          });
-          if (created?.id) evidenceIds.push(created.id);
-        }
-      }
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel,
@@ -585,7 +557,6 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
-        evidence_ids: evidenceIds,
       });
     }
     setKiGenResult(null);
@@ -661,17 +632,6 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
                           <div className="flex flex-wrap gap-1 mt-1">
                             {a.paragraphen.map((p, pi) => (
                               <span key={pi} className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">{p}</span>
-                            ))}
-                          </div>
-                        )}
-                        {side === "eigen" && (a.beweise || []).length > 0 && (
-                          <div className="mt-1.5">
-                            <p className="text-[9px] font-semibold text-gray-400 mb-0.5">Beweise:</p>
-                            {a.beweise.map((ev, ei) => (
-                              <div key={ei} className="text-[9px] text-gray-500 flex items-start gap-1">
-                                <span className="text-green-500 flex-shrink-0">📄</span>
-                                <span>{ev.titel}</span>
-                              </div>
                             ))}
                           </div>
                         )}
