@@ -229,7 +229,7 @@ export default function CaseDetail() {
           </div>
 
           {/* Main tab bar */}
-          <div className="flex overflow-x-auto" style={{ borderBottom: "1px solid rgba(0,0,0,0.07)", gap: 0, scrollbarWidth: "none" }}>
+          <div className="flex overflow-x-auto" style={{ borderBottom: "1px solid rgba(0,0,0,0.07)", gap: 0, scrollbarWidth: "thin", scrollbarColor: "#ccc transparent" }}>
             {TABS.map((tab,i) => (
               <button key={tab.id} onClick={() => switchTab(tab.id)}
                 className="flex items-center gap-1.5 whitespace-nowrap transition-all"
