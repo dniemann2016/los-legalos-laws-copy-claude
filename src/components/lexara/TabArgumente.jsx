@@ -479,15 +479,7 @@ Gericht: ${caseData?.gericht || ""}
 
 Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.
 
-ZUSÄTZLICH: Identifiziere ALLE potenziellen Beweise für diesen Fall (unabhängig von einzelnen Argumenten):
-- Dokumente (Verträge, Briefe, E-Mails, Rechnungen, etc.)
-- Personen/Zeugen (wer könnte aussagen?)
-- Gegenstände (physische Beweise)
-- Daten/Aufzeichnungen
-- Rechtsnormen & Rechtsprechung
-Für jeden Beweis: Titel, Typ, Beschreibung, geschätztes Gewicht (1-10).
-
-WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu generieren, gib leere Arrays zurück und erkläre den Grund in "keine_argumente_begruendung".`,
+Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete Beweismittel, die dieses Argument belegen könnten. Nur wenn ein Beweis wirklich sinnvoll und typisch für diesen Argumenttyp ist – keine generischen Platzhalter. Falls kein geeigneter Beweis existiert, lass das Array leer.`,
       response_json_schema: {
         type: "object",
         properties: {
@@ -499,7 +491,19 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
                 titel: { type: "string" },
                 beschreibung: { type: "string" },
                 staerke: { type: "number" },
-                paragraphen: { type: "array", items: { type: "string" } }
+                paragraphen: { type: "array", items: { type: "string" } },
+                beweise: {
+                  type: "array",
+                  items: {
+                    type: "object",
+                    properties: {
+                      titel: { type: "string" },
+                      beschreibung: { type: "string" },
+                      typ: { type: "string" },
+                      gewicht: { type: "number" }
+                    }
+                  }
+                }
               }
             }
           },
@@ -514,20 +518,7 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
                 paragraphen: { type: "array", items: { type: "string" } }
               }
             }
-          },
-          alle_potenziellen_beweise: {
-            type: "array",
-            items: {
-              type: "object",
-              properties: {
-                titel: { type: "string" },
-                typ: { type: "string" },
-                beschreibung: { type: "string" },
-                gewicht: { type: "number", minimum: 1, maximum: 10 }
-              }
-            }
-          },
-          keine_argumente_begruendung: { type: "string" }
+          }
         }
       }
     });
@@ -536,6 +527,20 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
   };
 
   const takeKiArg = async (a, side) => {
+    // Erstelle zuerst Beweise (falls vorhanden)
+    const evidenceIds = [];
+    if (side === "eigen" && (a.beweise || []).length > 0) {
+      for (const ev of a.beweise) {
+        const created = await base44.entities.Evidence.create({
+          case_id: caseId,
+          title: ev.titel,
+          description: ev.beschreibung || "",
+          type: ev.typ || "Dokument",
+          weight: ev.gewicht || 5,
+        });
+        if (created?.id) evidenceIds.push(created.id);
+      }
+    }
     await base44.entities.Argument.create({
       case_id: caseId,
       title: a.titel,
@@ -544,6 +549,7 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
       strength: a.staerke || 5,
       type: "Rechtsargument",
       paragraphs: a.paragraphen || [],
+      evidence_ids: evidenceIds,
     });
     loadAll(true);
   };
@@ -555,6 +561,19 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
       ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
     ];
     for (const a of all) {
+      const evidenceIds = [];
+      if (a.side === "eigen" && (a.beweise || []).length > 0) {
+        for (const ev of a.beweise) {
+          const created = await base44.entities.Evidence.create({
+            case_id: caseId,
+            title: ev.titel,
+            description: ev.beschreibung || "",
+            type: ev.typ || "Dokument",
+            weight: ev.gewicht || 5,
+          });
+          if (created?.id) evidenceIds.push(created.id);
+        }
+      }
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel,
@@ -563,6 +582,7 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
         strength: a.staerke || 5,
         type: "Rechtsargument",
         paragraphs: a.paragraphen || [],
+        evidence_ids: evidenceIds,
       });
     }
     setKiGenResult(null);
@@ -611,33 +631,12 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
           <div className="flex items-center justify-between">
             <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente</p>
             <div className="flex gap-2">
-              {((kiGenResult.eigene_argumente || []).length > 0 || (kiGenResult.gegner_argumente || []).length > 0) && (
-                <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
-                  <Check className="w-3 h-3" /> Alle übernehmen
-                </Button>
-              )}
+              <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
+                <Check className="w-3 h-3" /> Alle übernehmen
+              </Button>
               <button onClick={() => setKiGenResult(null)} className="text-emerald-500 hover:text-emerald-700 text-xs">Verwerfen</button>
             </div>
           </div>
-          {kiGenResult.keine_argumente_begruendung && (kiGenResult.eigene_argumente || []).length === 0 && (kiGenResult.gegner_argumente || []).length === 0 && (
-           <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-             <p className="text-xs text-amber-800">⚠️ {kiGenResult.keine_argumente_begruendung}</p>
-           </div>
-          )}
-          {(kiGenResult.alle_potenziellen_beweise || []).length > 0 && (
-           <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-             <p className="text-xs font-semibold text-blue-900 mb-2">📋 Identifizierte potenzielle Beweise ({kiGenResult.alle_potenziellen_beweise.length})</p>
-             <div className="grid grid-cols-2 gap-2">
-               {kiGenResult.alle_potenziellen_beweise.map((bew, i) => (
-                 <div key={i} className="text-[10px] bg-white rounded px-2 py-1.5 border border-blue-100">
-                   <p className="font-semibold text-gray-800">{bew.titel}</p>
-                   <p className="text-gray-600 mt-0.5">{bew.typ} · Gewicht {bew.gewicht}/10</p>
-                   {bew.beschreibung && <p className="text-gray-500 text-[9px] mt-0.5 line-clamp-2">{bew.beschreibung}</p>}
-                 </div>
-               ))}
-             </div>
-           </div>
-          )}
           <div className="grid grid-cols-2 gap-4">
             {[["EIGENE ARGUMENTE", kiGenResult.eigene_argumente || [], "eigen"], ["GEGNERARGUMENTE", kiGenResult.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
               <div key={side}>
@@ -652,6 +651,17 @@ WICHTIG: Falls der Fallkontext zu unvollständig ist um sinnvolle Argumente zu g
                           <div className="flex flex-wrap gap-1 mt-1">
                             {a.paragraphen.map((p, pi) => (
                               <span key={pi} className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">{p}</span>
+                            ))}
+                          </div>
+                        )}
+                        {side === "eigen" && (a.beweise || []).length > 0 && (
+                          <div className="mt-1.5">
+                            <p className="text-[9px] font-semibold text-gray-400 mb-0.5">Beweise:</p>
+                            {a.beweise.map((ev, ei) => (
+                              <div key={ei} className="text-[9px] text-gray-500 flex items-start gap-1">
+                                <span className="text-green-500 flex-shrink-0">📄</span>
+                                <span>{ev.titel}</span>
+                              </div>
                             ))}
                           </div>
                         )}

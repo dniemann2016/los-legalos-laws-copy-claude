@@ -41,9 +41,7 @@ Identifiziere die 4-7 wichtigsten Rechtsnormen (§§) die auf diesen Fall direkt
 AUFGABE 2 — PRÄZEDENZFÄLLE:
 Finde 5-8 konkrete, gut belegbare Urteile (BGH, OLG, BVerfG, EuGH wenn relevant). Bevorzuge Urteile der letzten 10 Jahre, beachte auch ältere Leitentscheidungen.
 
-Für jedes Urteil: Aktenzeichen, Gericht, Datum, Leitsatz, Relevanz, ob es uns oder den Gegner stärkt, Stärke 1-10, welche Argumenttypen es stützt.
-
-WICHTIG: Falls für diesen Fall keine einschlägigen Paragraphen identifizierbar sind (z.B. weil der Fallkontext zu vage ist), gib ein leeres Array für "paragraphen" zurück und erkläre den Grund in "keine_paragraphen_begruendung". Falls keine relevanten Urteile gefunden werden, gib ein leeres Array für "urteile" zurück und erkläre den Grund in "keine_urteile_begruendung".`,
+Für jedes Urteil: Aktenzeichen, Gericht, Datum, Leitsatz, Relevanz, ob es uns oder den Gegner stärkt, Stärke 1-10, welche Argumenttypen es stützt.`,
         add_context_from_internet: true,
         response_json_schema: {
           type: "object",
@@ -80,9 +78,7 @@ WICHTIG: Falls für diesen Fall keine einschlägigen Paragraphen identifizierbar
               }
             },
             suchstrategie: { type: "string" },
-            lucken_hinweis: { type: "string" },
-            keine_paragraphen_begruendung: { type: "string" },
-            keine_urteile_begruendung: { type: "string" }
+            lucken_hinweis: { type: "string" }
           }
         },
         model: "gemini_3_flash"
@@ -90,8 +86,6 @@ WICHTIG: Falls für diesen Fall keine einschlägigen Paragraphen identifizierbar
       setResults(result.urteile || []);
       setParagraphen(result.paragraphen || []);
       setSearched(true);
-      setKeineParaBegruendung(result.keine_paragraphen_begruendung || null);
-      setKeineUrteileBegruendung(result.keine_urteile_begruendung || null);
       if (result.suchstrategie) setSuchInfo({ strategie: result.suchstrategie, luecke: result.lucken_hinweis });
     } catch (e) {
       alert("Suche fehlgeschlagen: " + e.message);
@@ -100,8 +94,6 @@ WICHTIG: Falls für diesen Fall keine einschlägigen Paragraphen identifizierbar
   };
 
   const [suchInfo, setSuchInfo] = useState(null);
-  const [keineParaBegruendung, setKeineParaBegruendung] = useState(null);
-  const [keineUrteileBegruendung, setKeineUrteileBegruendung] = useState(null);
   const [importedPara, setImportedPara] = useState({});
   const [importingPara, setImportingPara] = useState(null);
 
@@ -238,17 +230,6 @@ WICHTIG: Falls für diesen Fall keine einschlägigen Paragraphen identifizierbar
           <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Suchstrategie</p>
           <p className="text-xs text-gray-600">{suchInfo.strategie}</p>
           {suchInfo.luecke && <p className="text-[10px] text-amber-600">⚠️ {suchInfo.luecke}</p>}
-        </div>
-      )}
-
-      {/* Keine Paragraphen gefunden */}
-      {searched && !loading && paragraphen.length === 0 && keineParaBegruendung && (
-        <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 flex items-start gap-3">
-          <span className="text-lg flex-shrink-0">⚖️</span>
-          <div>
-            <p className="text-xs font-semibold text-amber-800">Keine einschlägigen Rechtsnormen identifiziert</p>
-            <p className="text-[11px] text-amber-700 mt-1">{keineParaBegruendung}</p>
-          </div>
         </div>
       )}
 
@@ -432,12 +413,8 @@ WICHTIG: Falls für diesen Fall keine einschlägigen Paragraphen identifizierbar
       )}
 
       {searched && results.length === 0 && !loading && (
-        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-4 space-y-1">
-          <p className="text-xs font-semibold text-gray-500 text-center">Keine Präzedenzfälle gefunden</p>
-          {keineUrteileBegruendung
-            ? <p className="text-[11px] text-gray-500 text-center">{keineUrteileBegruendung}</p>
-            : <p className="text-[11px] text-gray-400 text-center">Versuche eine spezifischere Suchanfrage.</p>
-          }
+        <div className="bg-gray-50 border border-dashed border-gray-200 rounded-xl p-8 text-center text-xs text-gray-400">
+          Keine Präzedenzfälle gefunden. Versuche eine spezifischere Suchanfrage.
         </div>
       )}
     </div>
