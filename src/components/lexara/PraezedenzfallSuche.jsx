@@ -236,11 +236,25 @@ Für jedes Urteil: Aktenzeichen, Gericht, Datum, Leitsatz, Relevanz, ob es uns o
       {/* Paragraphen-Sektion — erscheint ÜBER den Urteilen */}
       {paragraphen.length > 0 && (
         <div className="bg-white rounded-xl border border-blue-200 p-4 space-y-3">
-          <div className="flex items-center gap-2">
-            <span className="text-base">⚖️</span>
-            <div>
-              <p className="text-xs font-bold text-blue-900">Einschlägige Rechtsnormen</p>
-              <p className="text-[10px] text-blue-600 mt-0.5">Die KI hat diese §§ speziell für diesen Fall identifiziert — mit anwaltlicher Begründung warum sie hier greifen</p>
+          <div className="flex items-start justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⚖️</span>
+              <div>
+                <p className="text-xs font-bold text-blue-900">Einschlägige Rechtsnormen</p>
+                <p className="text-[10px] text-blue-600 mt-0.5">Die KI hat diese §§ speziell für diesen Fall identifiziert — mit anwaltlicher Begründung warum sie hier greifen</p>
+              </div>
+            </div>
+            <div className="flex gap-1.5 flex-shrink-0">
+              <button
+                onClick={async () => { for (let i = 0; i < paragraphen.length; i++) await importParaAsArgument(paragraphen[i], i); }}
+                className="flex items-center gap-1 text-[9px] bg-gray-900 text-white px-2 py-1 rounded hover:bg-gray-800">
+                <Plus className="w-2.5 h-2.5" /> Alle als Argumente
+              </button>
+              <button
+                onClick={async () => { for (let i = 0; i < paragraphen.length; i++) await importParaAsEvidence(paragraphen[i], i); }}
+                className="flex items-center gap-1 text-[9px] border border-blue-300 text-blue-700 px-2 py-1 rounded hover:bg-blue-50">
+                <Plus className="w-2.5 h-2.5" /> Alle als Beweise
+              </button>
             </div>
           </div>
           <div className="space-y-2">
@@ -296,7 +310,21 @@ Für jedes Urteil: Aktenzeichen, Gericht, Datum, Leitsatz, Relevanz, ob es uns o
       {/* Results */}
       {results.length > 0 && (
         <div className="space-y-3">
-          <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{results.length} Präzedenzfälle gefunden</p>
+          <div className="flex items-center justify-between">
+            <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">{results.length} Präzedenzfälle gefunden</p>
+            <div className="flex gap-1.5">
+              <button
+                onClick={async () => { for (let i = 0; i < results.length; i++) await importAsArgument(results[i], i); }}
+                className="flex items-center gap-1 text-[9px] bg-gray-900 text-white px-2 py-1 rounded hover:bg-gray-800">
+                <Plus className="w-2.5 h-2.5" /> Alle als Argumente
+              </button>
+              <button
+                onClick={async () => { for (let i = 0; i < results.length; i++) await importAsEvidence(results[i], i); }}
+                className="flex items-center gap-1 text-[9px] border border-blue-300 text-blue-700 px-2 py-1 rounded hover:bg-blue-50">
+                <Plus className="w-2.5 h-2.5" /> Alle als Beweise
+              </button>
+            </div>
+          </div>
           {results.map((urteil, idx) => {
             const seite = SEITE_CONFIG[urteil.seite] || SEITE_CONFIG.neutral;
             const isExpanded = expanded === idx;
