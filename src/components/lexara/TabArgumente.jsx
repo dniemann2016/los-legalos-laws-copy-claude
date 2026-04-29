@@ -953,7 +953,9 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
               <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
                 <Check className="w-3 h-3" /> Alle übernehmen
               </Button>
-              <button onClick={() => setKiGenResult(null)} className="text-emerald-500 hover:text-emerald-700 text-xs">Verwerfen</button>
+              <Button size="sm" onClick={() => setKiGenResult(null)} className="bg-red-600 hover:bg-red-700 text-white text-xs gap-1">
+                <Trash2 className="w-3 h-3" /> Alle löschen
+              </Button>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -1086,7 +1088,9 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
                 {extracted.zusammenfassung && <p className="text-xs text-gray-600 italic border-l-2 border-gray-300 pl-3">{extracted.zusammenfassung}</p>}
                 <div className="flex justify-end gap-2">
                   <Button size="sm" onClick={takeAll} className="bg-green-700 text-white hover:bg-green-800 text-xs">✓ Alle übernehmen</Button>
-                  <button onClick={() => { setExtracted(null); setFiles([]); setText(""); }} className="text-xs px-3 py-1.5 border border-gray-200 rounded-lg hover:bg-gray-50">Verwerfen</button>
+                  <Button size="sm" onClick={() => { setExtracted(null); setFiles([]); setText(""); }} className="bg-red-600 hover:bg-red-700 text-white text-xs gap-1">
+                    <Trash2 className="w-3 h-3" /> Alle löschen
+                  </Button>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   {[["EIGENE ARGUMENTE", extracted.eigene_argumente || [], "eigen"], ["GEGENSEITE", extracted.gegenseite_argumente || [], "gegner"]].map(([label, items, side]) => (
