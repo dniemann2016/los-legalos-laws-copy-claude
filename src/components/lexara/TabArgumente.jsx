@@ -227,6 +227,8 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument", zeitpunkt: "", anmerkungen: "" });
   const [extractError, setExtractError] = useState(null);
   const [batchRating, setBatchRating] = useState(false);
+  const [kiGenerating, setKiGenerating] = useState(false);
+  const [kiGenResult, setKiGenResult] = useState(null);
   const { logKI } = useKIProtokoll(caseId);
   const [showExtraction, setShowExtraction] = useState(false);
   const [extractMode, setExtractMode] = useState("ki");
@@ -462,6 +464,88 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
     }
   };
 
+  const generateKiArgumente = async () => {
+    setKiGenerating(true);
+    setKiGenResult(null);
+    const result = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein erfahrener Rechtsanwalt. Generiere auf Basis des folgenden Fallkontexts die stärksten juristischen Argumente für unsere Seite UND die zu erwartenden Gegenargumente.
+
+Fall: ${caseData?.fallname || ""}
+Rechtsgebiet: ${caseData?.rechtsgebiet || ""}
+Zentrale Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
+Prozessziel: ${caseData?.prozessziel || ""}
+Instanz: ${caseData?.instanz || ""}
+Gericht: ${caseData?.gericht || ""}
+
+Generiere je 3-5 eigene Argumente und 2-4 Gegnerargumente. Für jedes Argument: Titel, Beschreibung (2-3 Sätze), Stärke 1-10, relevante Paragraphen.`,
+      response_json_schema: {
+        type: "object",
+        properties: {
+          eigene_argumente: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                beschreibung: { type: "string" },
+                staerke: { type: "number" },
+                paragraphen: { type: "array", items: { type: "string" } }
+              }
+            }
+          },
+          gegner_argumente: {
+            type: "array",
+            items: {
+              type: "object",
+              properties: {
+                titel: { type: "string" },
+                beschreibung: { type: "string" },
+                staerke: { type: "number" },
+                paragraphen: { type: "array", items: { type: "string" } }
+              }
+            }
+          }
+        }
+      }
+    });
+    setKiGenResult(result);
+    setKiGenerating(false);
+  };
+
+  const takeKiArg = async (a, side) => {
+    await base44.entities.Argument.create({
+      case_id: caseId,
+      title: a.titel,
+      description: a.beschreibung || "",
+      side,
+      strength: a.staerke || 5,
+      type: "Rechtsargument",
+      paragraphs: a.paragraphen || [],
+    });
+    loadAll(true);
+  };
+
+  const takeAllKiArgumente = async () => {
+    if (!kiGenResult) return;
+    const all = [
+      ...(kiGenResult.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
+      ...(kiGenResult.gegner_argumente || []).map(a => ({ ...a, side: "gegner" }))
+    ];
+    for (const a of all) {
+      await base44.entities.Argument.create({
+        case_id: caseId,
+        title: a.titel,
+        description: a.beschreibung || "",
+        side: a.side,
+        strength: a.staerke || 5,
+        type: "Rechtsargument",
+        paragraphs: a.paragraphen || [],
+      });
+    }
+    setKiGenResult(null);
+    loadAll(true);
+  };
+
   const addManual = async () => {
     if (!newArg.title.trim()) return;
     await base44.entities.Argument.create({ case_id: caseId, ...newArg });
@@ -490,11 +574,56 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
           <Button size="sm" onClick={rateBatch} disabled={batchRating || args.length === 0} className="bg-violet-600 text-white rounded-xl text-xs gap-1">
             {batchRating ? "Bewerte..." : "⭐ Alle bewerten"}
           </Button>
+          <Button size="sm" onClick={generateKiArgumente} disabled={kiGenerating} className="bg-emerald-700 text-white rounded-xl text-xs gap-1">
+            {kiGenerating ? <><RefreshCw className="w-3 h-3 animate-spin" /> KI generiert…</> : <><Sparkles className="w-3 h-3" /> Von KI hinzufügen</>}
+          </Button>
           <Button size="sm" onClick={() => setShowAdd(!showAdd)} className="bg-gray-900 text-white rounded-xl text-xs gap-1">
             <Plus className="w-3 h-3" /> Argument
           </Button>
         </div>
       </div>
+
+      {kiGenResult && (
+        <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <p className="text-xs font-bold text-emerald-900">✨ KI-generierte Argumente</p>
+            <div className="flex gap-2">
+              <Button size="sm" onClick={takeAllKiArgumente} className="bg-emerald-700 text-white text-xs gap-1">
+                <Check className="w-3 h-3" /> Alle übernehmen
+              </Button>
+              <button onClick={() => setKiGenResult(null)} className="text-emerald-500 hover:text-emerald-700 text-xs">Verwerfen</button>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            {[["EIGENE ARGUMENTE", kiGenResult.eigene_argumente || [], "eigen"], ["GEGNERARGUMENTE", kiGenResult.gegner_argumente || [], "gegner"]].map(([label, items, side]) => (
+              <div key={side}>
+                <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2">{label} · {items.length}</p>
+                {items.map((a, i) => (
+                  <div key={i} className="mb-2 bg-white rounded-lg border border-gray-100 p-2 text-xs">
+                    <div className="flex items-start gap-1">
+                      <div className="flex-1">
+                        <p className="font-semibold text-gray-800">{a.titel}</p>
+                        {a.beschreibung && <p className="text-gray-500 mt-0.5 text-[10px]">{a.beschreibung}</p>}
+                        {(a.paragraphen || []).length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {a.paragraphen.map((p, pi) => (
+                              <span key={pi} className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">{p}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex flex-col items-end gap-1 flex-shrink-0">
+                        <span className="text-[10px] text-gray-400">{a.staerke}/10</span>
+                        <button onClick={() => takeKiArg(a, side)} className="text-[9px] border border-gray-200 rounded px-2 py-0.5 hover:bg-gray-50 whitespace-nowrap">Übernehmen</button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {showAdd && (
         <div className="bg-gray-50 border border-gray-200 rounded-xl p-4 space-y-2">
