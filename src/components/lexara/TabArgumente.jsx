@@ -421,8 +421,14 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         paragraphs: a.paragraphen || [],
         evidence_ids: evidenceIds,
       });
-      // Setze extracted auf null um das Panel zu löschen
-      setExtracted(null);
+      // Entferne das Argument aus der Extraktions-Liste
+      setExtracted(prev => {
+        if (!prev) return null;
+        return {
+          ...prev,
+          [side === "eigen" ? "eigene_argumente" : "gegenseite_argumente"]: (prev[side === "eigen" ? "eigene_argumente" : "gegenseite_argumente"] || []).filter(x => x.titel !== a.titel)
+        };
+      });
       await loadAll(true);
     } catch (e) {
       console.error("Fehler beim Übernehmen:", e);
