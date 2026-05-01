@@ -1,3 +1,17 @@
+/**
+ * App.jsx — Haupt-Router
+ *
+ * Alle Seiten werden hier als Routen registriert.
+ * Layout: AppShell (Toolbar + Sidebar) wraps alle Routen via <Outlet>.
+ * Auth: AuthProvider stellt currentUser und isAuthenticated bereit.
+ *
+ * Neue Seite hinzufügen:
+ *   1. import MyPage from './pages/MyPage'
+ *   2. <Route path="/my-page" element={<MyPage />} /> innerhalb von <Route element={<AppShell />}>
+ *
+ * Architektur-Übersicht: siehe ARCHITECTURE.md
+ */
+
 import { Toaster } from "@/components/ui/toaster"
 import { Toaster as SonnerToaster } from "@/components/ui/sonner"
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -6,23 +20,28 @@ import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
-import Home from './pages/Home';
+
+// ── Layout ────────────────────────────────────────────────────────────────────
 import AppShell from './components/AppShell';
+import DsgvoBanner from './components/DsgvoBanner';
+
+// ── Seiten ────────────────────────────────────────────────────────────────────
+import Home from './pages/Home';
 import Modules from './pages/Modules';
-import LexaraDashboard from './pages/LexaraDashboard';
-import CaseDetail from './pages/CaseDetail';
-import Zeitleiste from './pages/Zeitleiste';
+import LexaraDashboard from './pages/LexaraDashboard';     // Fallübersicht
+import CaseDetail from './pages/CaseDetail';               // Falldetail (9 Reiter)
+import Zeitleiste from './pages/Zeitleiste';               // Globale Fristen
 import MandantenView from './pages/MandantenView';
-import RichterProfile from './pages/RichterProfile';
+import RichterProfile from './pages/RichterProfile';       // Richter & Beteiligte
 import PlattformAgent from './pages/PlattformAgent';
 import KanzleiCockpit from './pages/KanzleiCockpit';
-import FallAssistentChat from './pages/FallAssistentChat';
-import DsgvoBanner from './components/DsgvoBanner';
+import FallAssistentChat from './pages/FallAssistentChat'; // KI-Chat
 import KanzleiAnalytik from './pages/KanzleiAnalytik';
 import OnboardingSetup from './pages/OnboardingSetup';
 import Aufgaben from './pages/Aufgaben';
-import SunTzuMachiavel from './pages/SunTzuMachiavel';
-import Strategos from './pages/Strategos';
+import SunTzuMachiavel from './pages/SunTzuMachiavel';     // Strategische Analyse
+import Strategos from './pages/Strategos';                 // Strategos Enterprise
+
 import { useUserProfile } from './hooks/useUserProfile';
 // Add page imports here
 

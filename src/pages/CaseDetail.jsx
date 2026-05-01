@@ -1,19 +1,44 @@
+/**
+ * CaseDetail.jsx — Haupt-Fallansicht (9-Reiter-Struktur)
+ *
+ * URL: /lexara/case?id=<caseId>
+ *
+ * Reiter-Übersicht:
+ *   1  Fallakte           → Tab1Fallerfassung     (Basisdaten, Dokumente & KI-Analyse)
+ *   2  Substanz           → Tab2SubstanzCore       (Argumente, Beweise, Zeitstrahl)
+ *   3  Akteure & Fristen  → Tab3AkteureFristen     (Personen, Fristen)
+ *   4  Gegner             → Tab3Gegneranalyse      (Profil, KI-Berater, Verhaltenstracking)
+ *   5  Recht & Compliance → Tab4RechtlicheAnalyse  (Compliance, Kosten, Präzedenzfälle)
+ *   6  Strategie          → TabStrategiePrognose   (Strategie, Was-wäre-wenn, Risiko, Risikomatrix)
+ *   7  Simulation         → TabSimulationCockpit   (Verhandlung, Gesamtbewertung, Cockpit, Netzwerk)
+ *   8  Aktion             → Tab8Aktion             (Verhandlungsführung, Schriftsatz)
+ *   9  Abschluss          → TabAbschlussProtokoll  (Abschluss, KI-Protokoll, Zeitstrahl, Prognosen, Risiko)
+ *
+ * Navigation zwischen Reitern:
+ *   - Klick auf Tab-Bar oben
+ *   - Sidebar-Links dispatchen CustomEvent "lexara_goto_step"
+ *   - Zurück/Weiter-Buttons unten
+ */
+
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { ArrowLeft, ArrowRight, Check, Download } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+
+// ── Reiter-Komponenten (in Reihenfolge der 9 Schritte) ───────────────────────
 import Tab1Fallerfassung from "../components/lexara/Tab1Fallerfassung";
 import Tab2SubstanzCore from "../components/lexara/Tab2SubstanzCore";
 import Tab3AkteureFristen from "../components/lexara/Tab3AkteureFristen";
-import Tab3Gegneranalyse from "../components/lexara/Tab3Gegneranalyse";
-import Tab4RechtlicheAnalyse from "../components/lexara/Tab4RechtlicheAnalyse";
+import Tab3Gegneranalyse from "../components/lexara/Tab3Gegneranalyse";    // Reiter 4
+import Tab4RechtlicheAnalyse from "../components/lexara/Tab4RechtlicheAnalyse"; // Reiter 5
 import TabStrategiePrognose from "../components/lexara/TabStrategiePrognose";
 import TabSimulationCockpit from "../components/lexara/TabSimulationCockpit";
 import Tab8Aktion from "../components/lexara/Tab8Aktion";
 import TabAbschlussProtokoll from "../components/lexara/TabAbschlussProtokoll";
+
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
-// LEXARA — Anwalts-optimierte 9-Reiter-Struktur
+// ── Tab-Konfiguration ─────────────────────────────────────────────────────────
 // Arbeitslogik: Erfassen → Verstehen → Delegieren → Analysieren → Entscheiden → Handeln → Abschließen
 const TABS = [
   {id:1, label:"Fallakte",          subs:["Basisdaten","Dokumente & KI-Analyse"]},
