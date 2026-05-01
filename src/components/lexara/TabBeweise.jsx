@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import ComplianceStatusBadge from "./ComplianceStatusBadge";
 import { Plus, Trash2, ChevronDown, ChevronUp, Sparkles, RefreshCw, Pencil, Check, AlertTriangle, Link } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -175,6 +176,7 @@ function EvidenceCard({ ev, onDelete, onSave }) {
                       <AlertTriangle className="w-2.5 h-2.5" /> Δ {discrepancy.toFixed(1)}
                     </span>
                   )}
+                  <ComplianceStatusBadge item={ev} type="evidence" />
                 </div>
                 <div className="space-y-1.5 mb-2">
                   <div className="flex items-center gap-3">

@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { invokeLLM, uploadFile } from "@/lib/kiProvider";
+import ComplianceStatusBadge from "./ComplianceStatusBadge";
 import { Plus, Upload, X, RefreshCw, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useKIProtokoll } from "@/hooks/useKIProtokoll";
@@ -142,6 +143,7 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
                     <AlertTriangle className="w-2.5 h-2.5" /> Δ {discrepancy.toFixed(1)}
                   </span>
                 )}
+                <ComplianceStatusBadge item={arg} type="argument" />
               </div>
               <h4 className="font-medium text-gray-900 text-sm">{arg.title}</h4>
               {arg.description && <p className="text-xs text-gray-500 mt-0.5 line-clamp-2">{arg.description}</p>}

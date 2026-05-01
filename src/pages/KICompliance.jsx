@@ -4,10 +4,12 @@
  * Route: /ki-compliance
  */
 
-import { useState } from "react";
-import { Shield, CheckCircle, AlertTriangle, Info, Lock, Eye, Database, Scale, FileText, Bot, ChevronDown, ChevronUp } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Shield, CheckCircle, AlertTriangle, Info, Lock, Eye, Database, Scale, FileText, Bot, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { getComplianceStatus } from "@/components/lexara/ComplianceStatusBadge";
 
 const COMPLIANCE_CHECKS = [
   {
@@ -173,6 +175,129 @@ function AgentCard({ agent }) {
   );
 }
 
+function LiveCompliancePanel() {
+  const [cases, setCases] = useState([]);
+  const [args, setArgs] = useState([]);
+  const [evidence, setEvidence] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [expanded, setExpanded] = useState(null);
+
+  useEffect(() => {
+    const load = async () => {
+      setLoading(true);
+      const [cs, allArgs, allEvidence] = await Promise.all([
+        base44.entities.Case.list("-updated_date", 20),
+        base44.entities.Argument.list("-created_date", 200),
+        base44.entities.Evidence.list("-created_date", 200),
+      ]);
+      setCases(cs);
+      setArgs(allArgs);
+      setEvidence(allEvidence);
+      setLoading(false);
+    };
+    load();
+  }, []);
+
+  if (loading) return (
+    <div className="flex items-center justify-center py-10 bg-white border rounded-2xl" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      <RefreshCw className="w-4 h-4 animate-spin text-gray-400 mr-2" />
+      <span className="text-sm text-gray-400">Lade Fälle & Elemente…</span>
+    </div>
+  );
+
+  if (cases.length === 0) return (
+    <div className="text-center py-10 bg-white border rounded-2xl text-gray-400 text-sm" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+      Noch keine Fälle vorhanden.
+    </div>
+  );
+
+  return (
+    <div className="space-y-2">
+      {cases.map(c => {
+        const caseArgs = args.filter(a => a.case_id === c.id);
+        const caseEvidence = evidence.filter(e => e.case_id === c.id);
+        const argStatuses = caseArgs.map(a => getComplianceStatus(a, "argument"));
+        const evStatuses = caseEvidence.map(e => getComplianceStatus(e, "evidence"));
+        const allStatuses = [...argStatuses, ...evStatuses];
+        const konform = allStatuses.filter(s => s === "konform").length;
+        const pruefen = allStatuses.filter(s => s === "prüfen").length;
+        const ungeprueft = allStatuses.filter(s => s === "ungeprüft").length;
+        const total = allStatuses.length;
+        const score = total > 0 ? Math.round((konform / total) * 100) : null;
+        const isOpen = expanded === c.id;
+
+        return (
+          <div key={c.id} className="bg-white border rounded-xl overflow-hidden" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
+            <button onClick={() => setExpanded(isOpen ? null : c.id)}
+              className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs font-semibold text-gray-900 truncate">{c.fallname}</p>
+                <p className="text-[10px] text-gray-400">{c.rechtsgebiet || "–"} · {total} Elemente</p>
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                {score !== null && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${score === 100 ? "bg-emerald-100 text-emerald-700" : score >= 60 ? "bg-amber-100 text-amber-700" : "bg-red-100 text-red-700"}`}>
+                    {score}% konform
+                  </span>
+                )}
+                {pruefen > 0 && <span className="text-[10px] bg-amber-50 text-amber-600 border border-amber-200 rounded-full px-2 py-0.5">⚠ {pruefen} prüfen</span>}
+                {ungeprueft > 0 && <span className="text-[10px] bg-gray-100 text-gray-400 rounded-full px-2 py-0.5">? {ungeprueft} ausstehend</span>}
+                {total === 0 && <span className="text-[10px] text-gray-300">Keine Elemente</span>}
+                {isOpen ? <ChevronUp className="w-3.5 h-3.5 text-gray-400" /> : <ChevronDown className="w-3.5 h-3.5 text-gray-400" />}
+              </div>
+            </button>
+
+            {isOpen && total > 0 && (
+              <div className="border-t px-4 py-3 space-y-3" style={{ borderColor: "rgba(0,0,0,0.06)", background: "#fafafa" }}>
+                {caseArgs.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Argumente ({caseArgs.length})</p>
+                    <div className="space-y-1">
+                      {caseArgs.map(a => {
+                        const s = getComplianceStatus(a, "argument");
+                        return (
+                          <div key={a.id} className="flex items-center gap-2 text-xs">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s === "konform" ? "bg-emerald-500" : s === "prüfen" ? "bg-amber-500" : "bg-gray-300"}`} />
+                            <span className="flex-1 truncate text-gray-700">{a.title}</span>
+                            <span className={`text-[9px] font-semibold flex-shrink-0 ${s === "konform" ? "text-emerald-600" : s === "prüfen" ? "text-amber-600" : "text-gray-400"}`}>
+                              {s === "konform" ? "✓ Konform" : s === "prüfen" ? "⚠ Prüfen" : "? Ausstehend"}
+                            </span>
+                            <Link to={`/lexara/case?id=${c.id}`} className="text-[9px] text-blue-500 hover:text-blue-700 flex-shrink-0">→ Fall</Link>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+                {caseEvidence.length > 0 && (
+                  <div>
+                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1.5">Beweise ({caseEvidence.length})</p>
+                    <div className="space-y-1">
+                      {caseEvidence.map(e => {
+                        const s = getComplianceStatus(e, "evidence");
+                        return (
+                          <div key={e.id} className="flex items-center gap-2 text-xs">
+                            <span className={`w-2 h-2 rounded-full flex-shrink-0 ${s === "konform" ? "bg-emerald-500" : s === "prüfen" ? "bg-amber-500" : "bg-gray-300"}`} />
+                            <span className="flex-1 truncate text-gray-600">{e.title}</span>
+                            <span className={`text-[9px] font-semibold flex-shrink-0 ${s === "konform" ? "text-emerald-600" : s === "prüfen" ? "text-amber-600" : "text-gray-400"}`}>
+                              {s === "konform" ? "✓ Konform" : s === "prüfen" ? "⚠ Prüfen" : "? Ausstehend"}
+                            </span>
+                            <Link to={`/lexara/case?id=${c.id}`} className="text-[9px] text-blue-500 hover:text-blue-700 flex-shrink-0">→ Fall</Link>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function KICompliance() {
   const totalChecks = COMPLIANCE_CHECKS.reduce((s, g) => s + g.checks.length, 0);
   const okChecks = COMPLIANCE_CHECKS.reduce((s, g) => s + g.checks.filter(c => c.status === "ok").length, 0);
@@ -239,6 +364,17 @@ export default function KICompliance() {
               </div>
             );
           })}
+        </div>
+
+        {/* Live Compliance pro Fall */}
+        <div>
+          <h3 className="text-sm font-bold text-gray-900 mb-3 flex items-center gap-2">
+            <Shield className="w-4 h-4 text-blue-600" /> Datenschutz-Status: Argumente & Beweise je Fall
+          </h3>
+          <p className="text-xs text-gray-500 mb-3">
+            Zeigt auf einen Blick, welche Argumente und Beweise durch KI-Bewertung als DSGVO-konform (transparent, nachvollziehbar) gelten und welche noch ausstehend sind.
+          </p>
+          <LiveCompliancePanel />
         </div>
 
         {/* Compliance Checks */}
