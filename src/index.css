@@ -158,55 +158,55 @@ input, textarea, select {
 }
 
 /* ══════════════════════════════════════════════════════════════════
-   BUTTON-SYSTEM — Apple-inspiriert: transparent + farbiger Rand
-   Palette (gedämpft, nie grell):
-     Standard/Default  → Blau    #007AFF  (Apple systemBlue)
-     Destructive       → Rot     #FF3B30  (Apple systemRed)
-     Secondary/Outline → Grau    #636366  (Apple secondaryLabel)
-     Ghost / bare      → komplett transparent, kein Rand
-   Hintergrund: immer transparent (kein Weiß, kein Fill)
-   Hover: leichter Farb-Tint als Background (rgba der Randfarbe)
+   BUTTON-SYSTEM — Matte Neon-Palette
+   Jeder Button-Typ hat eine eigene gedämpfte Neonfarbe.
+   Hintergrund: transparent · Rand + Schrift: farbig · kein Weiß
+   ──────────────────────────────────────────────────────────────────
+     Standard/Default  → Matte Blau-Indigo  #5B7FBF
+     Destructive       → Matte Coral-Rot    #C0555A
+     Secondary/Outline → Matte Teal         #3D8E8A
+     Ghost / bare      → komplett transparent
    ══════════════════════════════════════════════════════════════════ */
 
-/* ── Basis: alle Buttons transparent mit Blau-Rand ── */
+/* ── Basis: alle Buttons → matte Indigo-Blau ── */
 button:not(.no-override) {
   background-color: transparent !important;
-  color: #007AFF !important;
-  border: 1px solid #007AFF !important;
+  color: #5B7FBF !important;
+  border: 1.5px solid #5B7FBF !important;
   box-shadow: none !important;
 }
 button:not(.no-override):hover:not(:disabled) {
-  background-color: rgba(0, 122, 255, 0.07) !important;
+  background-color: rgba(91, 127, 191, 0.09) !important;
 }
 button:not(.no-override):disabled {
   background-color: transparent !important;
   color: #AEAEB2 !important;
   border-color: #AEAEB2 !important;
-  opacity: 0.55 !important;
+  opacity: 0.5 !important;
 }
 
-/* ── Destructive (z.B. Löschen, Abmelden) → Apple Rot ── */
+/* ── Destructive → matte Coral-Rot ── */
 button.destructive:not(.no-override),
 button[data-variant="destructive"]:not(.no-override) {
-  color: #FF3B30 !important;
-  border-color: #FF3B30 !important;
+  color: #C0555A !important;
+  border-color: #C0555A !important;
 }
 button.destructive:not(.no-override):hover,
 button[data-variant="destructive"]:not(.no-override):hover {
-  background-color: rgba(255, 59, 48, 0.07) !important;
+  background-color: rgba(192, 85, 90, 0.09) !important;
 }
 
-/* ── Secondary / Outline → gedämpftes Grau ── */
+/* ── Secondary / Outline → matte Teal ── */
 button.secondary:not(.no-override),
 button[data-variant="secondary"]:not(.no-override),
 button[data-variant="outline"]:not(.no-override) {
-  color: #636366 !important;
-  border-color: #C7C7CC !important;
+  color: #3D8E8A !important;
+  border-color: #3D8E8A !important;
 }
 button.secondary:not(.no-override):hover,
 button[data-variant="secondary"]:not(.no-override):hover,
 button[data-variant="outline"]:not(.no-override):hover {
-  background-color: rgba(0, 0, 0, 0.04) !important;
+  background-color: rgba(61, 142, 138, 0.09) !important;
 }
 
 /* ── Ghost / Icon-Buttons → vollständig transparent, kein Rand ── */
@@ -219,7 +219,7 @@ button[style*="background: transparent"],
 button[style*="background:transparent"] {
   background-color: transparent !important;
   border: none !important;
-  color: #636366 !important;
+  color: #6B7280 !important;
   box-shadow: none !important;
 }
 button.ghost:not(.no-override):hover,

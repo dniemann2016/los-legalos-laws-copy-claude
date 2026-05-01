@@ -3,12 +3,14 @@ import TabVerhandlungssimulation from "./TabVerhandlungssimulation";
 import TabGesamtbewertung from "./TabGesamtbewertung";
 import TabCockpit from "./TabCockpit";
 import CaseInfluenceGraph from "./CaseInfluenceGraph";
+import SubstanzDiagramme from "./SubstanzDiagramme";
 
 const SUB_TABS = [
   "🎭 Verhandlungssimulation",
   "🏆 Gesamtbewertung & Prognose",
   "🎛️ Fall-Cockpit",
   "🕸️ Fallanalyse-Netzwerk",
+  "📊 Stärken-Analyse",
 ];
 
 export default function TabSimulationCockpit({ caseId, caseData, kiMode, activeSub }) {
@@ -27,6 +29,7 @@ export default function TabSimulationCockpit({ caseId, caseData, kiMode, activeS
       <div className={sub === 1 ? "" : "hidden"}><TabGesamtbewertung caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
       <div className={sub === 2 ? "" : "hidden"}><TabCockpit caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
       <div className={sub === 3 ? "" : "hidden"}><CaseInfluenceGraph caseId={caseId} /></div>
+      <div className={sub === 4 ? "" : "hidden"}><SubstanzDiagramme caseId={caseId} /></div>
     </div>
   );
 }
