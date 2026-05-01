@@ -16,12 +16,12 @@
     --popover:           0 0% 100%;
     --popover-foreground:0 0% 7%;
 
-    /* Primary: Emerald / MintGreen — single accent */
-    --primary:           152 68% 31%;   /* #17803D */
+    /* Primary: Neutral Anthrazit — Großkanzlei */
+    --primary:           0 0% 10%;      /* #1A1A1A — Anthrazit */
     --primary-foreground:0 0% 100%;
-    --accent:            152 68% 38%;
-    --accent-foreground: 0 0% 100%;
-    --ring:              152 68% 38%;
+    --accent:            0 0% 94%;      /* Hellgrau-Akzent */
+    --accent-foreground: 0 0% 10%;
+    --ring:              0 0% 40%;
 
     /* Destructive: Bordeaux / Weinrot */
     --destructive:       348 72% 40%;   /* #B81C3A */
@@ -39,10 +39,10 @@
     --swiftui-label:           #121212;
     --swiftui-label2:          #636366;   /* secondaryLabel */
     --swiftui-label3:          #AEAEB2;   /* tertiaryLabel */
-    --swiftui-emerald:         #1DB954;   /* primary accent */
-    --swiftui-emerald-dim:     rgba(29,185,84,0.12);
-    --swiftui-ocean:           #0A84FF;   /* links / info */
-    --swiftui-ocean-dim:       rgba(10,132,255,0.1);
+    --swiftui-emerald:         #1A1A1A;   /* primary accent — Anthrazit */
+    --swiftui-emerald-dim:     rgba(0,0,0,0.06);
+    --swiftui-ocean:           #1A1A1A;   /* links — Anthrazit */
+    --swiftui-ocean-dim:       rgba(0,0,0,0.07);
     --swiftui-spacegrey:       #636366;
     --swiftui-bordeaux:        #B81C3A;   /* destructive / warning */
     --swiftui-bordeaux-dim:    rgba(184,28,58,0.1);
@@ -82,7 +82,7 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Focus ring ── */
 *:focus-visible {
-  outline: 2px solid rgba(29,185,84,0.55) !important;
+  outline: 2px solid rgba(0,0,0,0.25) !important;
   outline-offset: 2px;
 }
 
@@ -105,9 +105,9 @@ h1, h2, h3, h4, h5, h6 {
 
 /* ── Navbar pill active ── */
 .nav-pill-active {
-  background: var(--swiftui-emerald-dim) !important;
-  color: #17803D !important;
-  border: 1px solid rgba(29,185,84,0.25) !important;
+  background: rgba(0,0,0,0.06) !important;
+  color: #1A1A1A !important;
+  border: 1px solid rgba(0,0,0,0.18) !important;
 }
 
 /* ── Section label caps ── */
@@ -152,9 +152,15 @@ input, textarea, select {
   transition-timing-function: cubic-bezier(0.4, 0.0, 0.2, 1);
 }
 
-/* ── Suppress old colour overrides ── */
-.bg-violet-100, .bg-emerald-100, .bg-blue-100, .bg-amber-100, .bg-red-100 {
+/* ── Suppress old colour overrides — neutralisiert für Großkanzlei-Design ── */
+.bg-violet-100, .bg-emerald-100, .bg-blue-100, .bg-amber-100 {
   background: rgba(0,0,0,0.04) !important;
+}
+
+/* ── Focus ring neutral ── */
+*:focus-visible {
+  outline: 2px solid rgba(0,0,0,0.3) !important;
+  outline-offset: 2px;
 }
 
 /* ── Animations ── */
