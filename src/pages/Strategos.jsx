@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { invokeLLM } from "@/lib/kiProvider";
 import { Plus, Trash2, ArrowLeft, ArrowRight, Check, Target, BookOpen, ChevronDown, ChevronUp, Sparkles, Wand2, GitCompare, Building2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import EnterpriseShell from "@/components/strategos/EnterpriseShell";
@@ -406,7 +407,7 @@ function Step2({ form, setForm, save, scenario }) {
 
   const generateOptions = async () => {
     setGenerating(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein erfahrener Stratege, Unternehmensberater und Rechtsanwalt für Wirtschaftsrecht. Analysiere den folgenden Sachverhalt und erarbeite konkrete, praxistaugliche Handlungsoptionen für Unternehmen und Mandanten.
 
 Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || scenario.szenario_typ}
@@ -628,7 +629,7 @@ function Step4({ form, setForm, save, scenario }) {
 
   const generateRisiken = async () => {
     setGenerating(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein Risiko-Experte, Senior-Anwalt und Unternehmensberater. Analysiere die folgenden Handlungsoptionen umfassend auf rechtliche, wirtschaftliche, steuerliche und reputationsbezogene Risiken für Unternehmen.
 
 Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || "Unternehmensrecht"}
@@ -768,7 +769,7 @@ function Step5({ form, setForm, save, scenario, loopholes, onLoadData }) {
 
   const generateLoopholes = async () => {
     setGenerating(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein Top-Experte für Gesetzeslücken, rechtliche Graubereiche und steuerliche Optimierungsmöglichkeiten für Unternehmen. Analysiere den Sachverhalt auf konkret ausnutzbare Lücken im deutschen/europäischen Recht.
 
 Szenario-Typ: ${SZENARIO_TYPEN[scenario.szenario_typ]?.label || "Unternehmensrecht"}
@@ -859,7 +860,7 @@ function Step6({ scenario, onSave }) {
     const manualRisiken = ki?.manual_risiken || [];
     const extraOptions = ki?.extra_options || [];
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein strategischer Senior-Partner, Unternehmensberater und Rechtsberater auf höchstem Niveau. Führe eine vollständige, schonungslose Gesamtanalyse für das Unternehmen durch.
 
 SZENARIO: ${scenario.title}
@@ -1045,7 +1046,7 @@ function ScenarioCompare({ scenarios, compareIds, setCompareIds }) {
   const runKILearning = async () => {
     if (!scA || !scB) return;
     setLoadingKI(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein lernender Strategieberater. Vergleiche zwei abgeschlossene Szenarien und leite daraus Lernerkenntnisse für zukünftige Strategien ab.
 
 SZENARIO 1: ${scA.title}

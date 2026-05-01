@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { invokeLLM } from "@/lib/kiProvider";
 import { RefreshCw, Info, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -54,7 +55,7 @@ export default function TabKIBerater({ caseId, caseData, onUpdate, kiMode = true
     try {
       const eigene = args.filter(a=>a.side==="eigen");
       const gegner = args.filter(a=>a.side==="gegner");
-      const res = await base44.integrations.Core.InvokeLLM({
+      const res = await invokeLLM({
         prompt: `Du bist ein erfahrener Großkanzlei-Anwalt auf Senior-Partner-Niveau. Du sprichst direkt wie ein Anwalt — kein Gutachterstil, keine akademischen Einleitungen. Du gibst klare Empfehlungen, benennst Risiken beim Namen und stützt dich auf konkrete §§ (BGB, HGB, AktG, GmbHG, InsO, ZPO, DSGVO, UWG, GWB, ArbR) sowie US-Recht (UCC, common law). Du kombinierst juristische Kompetenz mit Verhandlungsstrategie nach Harvard-Methode, FBI-Taktiken (Voss) und Machiavelli-Prinzipien.
 
 Analysiere diesen Fall vollständig und gib NUR valides JSON zurück (kein Markdown, keine Erklärung außerhalb des JSON).

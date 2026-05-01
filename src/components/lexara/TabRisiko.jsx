@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { invokeLLM } from "@/lib/kiProvider";
 import { RefreshCw, Sparkles, Calculator } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { computeVollanalyse } from "@/lib/legalAlgorithms";
@@ -49,7 +50,7 @@ export default function TabRisiko({ caseId, caseData, onUpdate }) {
     const offeneFristen = deadlines.filter(d => d.status === "offen");
     const ueberfaellig = deadlines.filter(d => d.status === "versaeumt");
 
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await invokeLLM({
       model: "gpt_5",
       prompt: `Du bist Rechtsprechungsexperte und lieferst NUR Informationen zu relevanter Rechtsprechung (BGH, OLG, BVerfG), Literaturhinweise und Taktikempfehlungen. KEINE Risikoberechnung - diese wurde bereits algorithmisch ermittelt.
 

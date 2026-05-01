@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
+import { uploadFile } from "@/lib/kiProvider";
 import { Upload, Loader2, X, Check, AlertCircle, FileText, Image, Film, File, ChevronDown, ChevronUp, RefreshCw, Info, ArrowRight } from "lucide-react";
 
 const FILE_ACCEPT = "*/*";
@@ -455,7 +456,7 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
 
   const uploadAndAnalyze = async (pending) => {
     setPendingFiles(prev => prev.map(p => p.id === pending.id ? { ...p, uploading: true } : p));
-    const uploadRes = await base44.integrations.Core.UploadFile({ file: pending.file });
+    const uploadRes = await uploadFile({ file: pending.file });
     const newDoc = await base44.entities.Document.create({
       case_id: caseId, title: pending.name,
       file_url: uploadRes.file_url, file_type: pending.file.type, description: "",

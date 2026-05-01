@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { invokeLLM } from "@/lib/kiProvider";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Save, User, Briefcase, Brain, Shield, ChevronDown, ChevronUp } from "lucide-react";
 
@@ -46,7 +47,7 @@ export default function GegnerProfilSimulation({ caseId, caseData, onUpdate }) {
 
   const runSimulation = async () => {
     setSimulating(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       model: "claude_sonnet_4_6",
       prompt: `Du bist ein erfahrener Prozessstratege und Psychologe. Analysiere die Gegenpartei und erstelle eine taktische Simulation.
 

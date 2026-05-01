@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
+import { invokeLLM } from "@/lib/kiProvider";
 import ArgumentEvidenceGraph from "./ArgumentEvidenceGraph";
 import WasWaereWennSimulation from "./WasWaereWennSimulation";
 import TimelineVisualization from "./TimelineVisualization";
@@ -80,7 +81,7 @@ export default function TabStrategie({ caseId, caseData, onUpdate, kiMode = true
 
     const inputSummary = `Fall: ${caseData?.fallname||""} | Rechtsgebiet: ${caseData?.rechtsgebiet||""} | Instanz: ${caseData?.instanz||""} | Zentrale Frage: ${caseData?.zentrale_rechtsfrage||""} | Eigene Argumente: ${eigenA.length} | Gegnerargumente: ${gegnerA.length} | Beweise: ${evidence.length} | Fristen: ${deadlines.length}`;
 
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein erfahrener Prozessanwalt auf Senior-Partner-Niveau und sprichst direkt wie ein Anwalt — nicht im Gutachterstil. Gib klare Einschätzungen, konkrete Empfehlungen und belege sie mit den relevanten §§ und BGH/BVerfG-Urteilen. Keine Einleitungen wie 'Zunächst ist zu prüfen'. Direkt auf den Punkt.
 
 Fall: ${caseData?.fallname || ""}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { base44 } from "@/api/base44Client";
+import { invokeLLM, uploadFile } from "@/lib/kiProvider";
 import { Plus, Upload, X, RefreshCw, Trash2, ChevronDown, ChevronUp, Sparkles, Pencil, Check, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useKIProtokoll } from "@/hooks/useKIProtokoll";
@@ -44,7 +45,7 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
 
   const kiWeight = async () => {
     setKiWeighting(true);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein erfahrener Rechtsanwalt. Bewerte die Stärke dieses Rechtsarguments im deutschen Zivilprozess.\nArgument: "${arg.title}"\nBeschreibung: "${arg.description || ""}"\nTyp: ${arg.type || "Rechtsargument"}, Seite: ${arg.side || "eigen"}\n\nGib eine Stärke (0-10) UND eine kurze juristische Begründung (2-3 Sätze) zurück.`,
       response_json_schema: {
         type: "object",
@@ -66,7 +67,7 @@ function ArgCard({ arg, onDelete, onSave, onKiWeight }) {
 
   const analyzeDiscrepancy = async () => {
     setAnalyzing(true);
-    const res = await base44.integrations.Core.InvokeLLM({
+    const res = await invokeLLM({
       prompt: `Analysiere die Diskrepanz zwischen manueller und KI-Bewertung dieses Rechtsarguments:\n\nArgument: "${arg.title}"\nBeschreibung: "${arg.description || ""}"\nManuelle Stärke: ${arg.strength || 5}/10\nKI-Stärke: ${arg.ki_strength}/10\nDiskrepanz: ${discrepancy.toFixed(1)} Punkte\n\nErkläre warum die Bewertungen abweichen und mache 3 konkrete Verbesserungsvorschläge, um das Argument zu stärken.`,
       response_json_schema: {
         type: "object",
@@ -266,10 +267,10 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
     try {
       let fileUrls = [];
       if (files.length > 0) {
-        const uploads = await Promise.all(files.map(f => base44.integrations.Core.UploadFile({ file: f })));
+        const uploads = await Promise.all(files.map(f => uploadFile({ file: f })));
         fileUrls = uploads.map(r => r.file_url);
       }
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeLLM({
         prompt: `Du bist ein erfahrener Rechtsanwalt. Analysiere diese Dokumente gründlich und extrahiere:
 1. EIGENE ARGUMENTE (welche Vertragsklauseln unterstützen unsere Position?)
 2. GEGENSEITE-ARGUMENTE (was könnte der Gegner argumentieren?)
@@ -458,7 +459,7 @@ ${args.map((a, i) => `${i + 1}. [${a.side === "eigen" ? "EIGEN" : "GEGNER"}] ${a
 
 Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berücksichtigung der Beweise).`;
 
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeLLM({
         prompt,
         response_json_schema: {
           type: "object",
@@ -512,7 +513,7 @@ Gib für jedes Argument ein JSON mit Stärke (0-10) und Begründung (unter Berü
   const generateKiArgumente = async () => {
     setKiGenerating(true);
     setKiGenResult(null);
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein erfahrener Rechtsanwalt. Generiere auf Basis des folgenden Fallkontexts die stärksten juristischen Argumente für unsere Seite UND die zu erwartenden Gegenargumente.
 
 Fall: ${caseData?.fallname || ""}
@@ -703,7 +704,7 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
         ? args.map((a, i) => `${i + 1}. ${a.title}`).join("\n")
         : args.map((a, i) => `${i + 1}. ${a.title}${a.description ? ` — ${a.description.substring(0, 60)}` : ""}`).join("\n");
       
-      const result = await base44.integrations.Core.InvokeLLM({
+      const result = await invokeLLM({
         prompt: `Finde ÄHNLICHE oder DOPPELTE Argumente. Paraphrasierungen und Formulierungsvarianten zählen.
 
 ARGUMENTE:
@@ -800,7 +801,7 @@ Gib NUR Gruppen ähnlicher Arguments zurück (min. 2 pro Gruppe). JSON: nummern[
     }
 
     // KI prüft inhaltliche Bezüge: Titel + Beschreibung gegen Evidence
-    const result = await base44.integrations.Core.InvokeLLM({
+    const result = await invokeLLM({
       prompt: `Du bist ein Rechtsanwalt. Prüfe SORGFÄLTIG, ob diese Arguments einen inhaltlichen Bezug zu den verfügbaren Dokumentbeweisen haben.
 
 VERFÜGBARE DOKUMENTBEWEISE:
