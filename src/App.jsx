@@ -41,6 +41,7 @@ import OnboardingSetup from './pages/OnboardingSetup';
 import Aufgaben from './pages/Aufgaben';
 import SunTzuMachiavel from './pages/SunTzuMachiavel';     // Strategische Analyse
 import Strategos from './pages/Strategos';                 // Strategos Enterprise
+import KICompliance from './pages/KICompliance';           // KI-Compliance Dokumentation
 
 import { useUserProfile } from './hooks/useUserProfile';
 // Add page imports here
@@ -82,6 +83,7 @@ const AuthenticatedApp = () => {
           <Route path="/aufgaben" element={<Aufgaben />} />
           <Route path="/strategic-analysis" element={<SunTzuMachiavel />} />
           <Route path="/strategos" element={<Strategos />} />
+          <Route path="/ki-compliance" element={<KICompliance />} />
           {/* Add your page Route elements here */}
           <Route path="*" element={<PageNotFound />} />
         </Route>

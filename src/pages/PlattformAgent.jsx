@@ -3,7 +3,7 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { getTByLanguage } from "../lib/jurisdictionConfig";
 import { useUserProfile } from "../hooks/useUserProfile";
-import { ArrowLeft, Bot, Send, Zap, TrendingUp, Target, ChevronRight } from "lucide-react";
+import { ArrowLeft, Bot, Send, Zap, TrendingUp, Target, ChevronRight, Shield } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 function MessageBubble({ message }) {
@@ -124,10 +124,16 @@ export default function PlattformAgent() {
               <span className="text-[10px] bg-emerald-100 text-emerald-700 rounded-full px-2 py-0.5 font-medium">KI-Agent</span>
             </div>
           </div>
-          <button onClick={() => startNewConversation(null)}
-            className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors">
-            {t.newSession}
-          </button>
+          <div className="flex items-center gap-2">
+            <Link to="/ki-compliance"
+              className="flex items-center gap-1.5 text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-1.5 rounded-lg hover:bg-emerald-100 transition-colors">
+              <Shield className="w-3.5 h-3.5" /> Compliance
+            </Link>
+            <button onClick={() => startNewConversation(null)}
+              className="text-xs bg-gray-900 text-white px-3 py-1.5 rounded-lg hover:bg-gray-700 transition-colors">
+              {t.newSession}
+            </button>
+          </div>
         </div>
       </div>
 
