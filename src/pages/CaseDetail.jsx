@@ -246,9 +246,9 @@ export default function CaseDetail() {
               <button onClick={toggleKiMode}
                 style={{
                   fontSize: 11, fontWeight: 600, padding: "5px 12px", borderRadius: 8, cursor: "pointer", transition: "all 0.14s",
-                  background: kiMode ? "rgba(52,199,89,0.1)" : "rgba(0,0,0,0.05)",
-                  color: kiMode ? "#1a7f37" : "#666",
-                  border: kiMode ? "1px solid rgba(52,199,89,0.25)" : "1px solid rgba(0,0,0,0.09)",
+                  background: "rgba(0,0,0,0.05)",
+                  color: kiMode ? "#1a1a1a" : "#666",
+                  border: "1px solid rgba(0,0,0,0.09)",
                 }}>
                 {kiMode ? "KI-Modus" : "Manuell"}
               </button>
@@ -279,14 +279,14 @@ export default function CaseDetail() {
                   fontSize: 12,
                   fontWeight: activeTab===tab.id ? 600 : 400,
                   color: activeTab===tab.id ? "#1a1a1a" : "#999",
-                  borderBottom: activeTab===tab.id ? "2px solid #34C759" : "2px solid transparent",
+                  borderBottom: activeTab===tab.id ? "2px solid #1a1a1a" : "2px solid transparent",
                   background: "transparent",
                   border: "none",
                   cursor: "pointer",
                   marginBottom: "-1px",
                 }}>
                 {completedTabs[i] ? (
-                  <Check className="w-3 h-3" style={{ color: "#34C759" }} />
+                  <Check className="w-3 h-3" style={{ color: "#1a1a1a" }} />
                 ) : (
                   <span style={{
                     width: 15, height: 15, borderRadius: "50%", display: "inline-flex", alignItems: "center", justifyContent: "center",
@@ -314,8 +314,8 @@ export default function CaseDetail() {
                       padding: "6px 14px 7px",
                       fontSize: 11,
                       fontWeight: activeSub === i ? 600 : 400,
-                      color: activeSub === i ? "#1a7f37" : "#aaa",
-                      borderBottom: activeSub === i ? "2px solid #34C759" : "2px solid transparent",
+                      color: activeSub === i ? "#1a1a1a" : "#aaa",
+                      borderBottom: activeSub === i ? "2px solid #1a1a1a" : "2px solid transparent",
                       background: "transparent",
                       border: "none",
                       cursor: "pointer",
@@ -352,7 +352,7 @@ export default function CaseDetail() {
               <div key={i} style={{
                 width: activeTab===i+1 ? 18 : 6, height: 6,
                 borderRadius: 3, transition: "all 0.2s",
-                background: activeTab===i+1 ? "#1a1a1a" : completedTabs[i] ? "#34C759" : "#ddd"
+                background: activeTab===i+1 ? "#1a1a1a" : completedTabs[i] ? "#555" : "#ddd"
               }}/>
             ))}
           </div>

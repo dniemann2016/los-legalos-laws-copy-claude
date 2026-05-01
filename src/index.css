@@ -157,6 +157,57 @@ input, textarea, select {
   background: rgba(0,0,0,0.04) !important;
 }
 
+/* ── Alle farbigen Buttons → weiß mit schwarzer Schrift ── */
+button.bg-violet-600, button.bg-violet-700,
+button.bg-emerald-600, button.bg-emerald-700, button.bg-emerald-800,
+button.bg-blue-600, button.bg-blue-700,
+button.bg-red-600, button.bg-red-700,
+button.bg-orange-600, button.bg-orange-700,
+button.bg-amber-600, button.bg-amber-700,
+button.bg-green-600, button.bg-green-700,
+button.bg-indigo-600, button.bg-indigo-700,
+button.bg-pink-600, button.bg-pink-700,
+button.bg-teal-600, button.bg-teal-700,
+button.bg-cyan-600, button.bg-cyan-700,
+button.bg-rose-600, button.bg-rose-700,
+button.bg-fuchsia-600, button.bg-fuchsia-700,
+button.bg-purple-600, button.bg-purple-700,
+button.bg-sky-600, button.bg-sky-700,
+button.bg-lime-600, button.bg-lime-700,
+button.bg-yellow-600, button.bg-yellow-700 {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgba(0,0,0,0.12) !important;
+}
+button.bg-violet-600:hover, button.bg-violet-700:hover,
+button.bg-emerald-600:hover, button.bg-emerald-700:hover, button.bg-emerald-800:hover,
+button.bg-blue-600:hover, button.bg-blue-700:hover,
+button.bg-red-600:hover, button.bg-red-700:hover,
+button.bg-orange-600:hover, button.bg-orange-700:hover,
+button.bg-amber-600:hover, button.bg-amber-700:hover,
+button.bg-green-600:hover, button.bg-green-700:hover,
+button.bg-indigo-600:hover, button.bg-indigo-700:hover,
+button.bg-pink-600:hover, button.bg-pink-700:hover,
+button.bg-teal-600:hover, button.bg-teal-700:hover,
+button.bg-cyan-600:hover, button.bg-cyan-700:hover,
+button.bg-rose-600:hover, button.bg-rose-700:hover,
+button.bg-fuchsia-600:hover, button.bg-fuchsia-700:hover,
+button.bg-purple-600:hover, button.bg-purple-700:hover,
+button.bg-sky-600:hover, button.bg-sky-700:hover,
+button.bg-lime-600:hover, button.bg-lime-700:hover,
+button.bg-yellow-600:hover, button.bg-yellow-700:hover {
+  background-color: #f5f5f5 !important;
+}
+/* Auch dark bg-gray-900 Buttons → weiß */
+button.bg-gray-900, button.bg-gray-800 {
+  background-color: #ffffff !important;
+  color: #1a1a1a !important;
+  border: 1px solid rgba(0,0,0,0.15) !important;
+}
+button.bg-gray-900:hover, button.bg-gray-800:hover {
+  background-color: #f5f5f5 !important;
+}
+
 /* ── Focus ring neutral ── */
 *:focus-visible {
   outline: 2px solid rgba(0,0,0,0.3) !important;
