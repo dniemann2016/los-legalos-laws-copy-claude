@@ -5,7 +5,7 @@
  */
 
 import { useState, useEffect } from "react";
-import { Shield, CheckCircle, AlertTriangle, Info, Lock, Eye, Database, Scale, FileText, Bot, ChevronDown, ChevronUp, RefreshCw } from "lucide-react";
+import { Shield, CheckCircle, AlertTriangle, Info, Lock, Eye, Database, Scale, FileText, Bot, ChevronDown, ChevronUp, RefreshCw, Target, Sword, BarChart2, MessageSquare } from "lucide-react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import { base44 } from "@/api/base44Client";
@@ -29,8 +29,9 @@ const COMPLIANCE_CHECKS = [
     checks: [
       { id: "dsgvo_5_zweckbindung", label: "Art. 5 Abs. 1 lit. b DSGVO — Zweckbindung", beschreibung: "KI-Agenten dürfen nur auf Daten zugreifen, die für die jeweilige Aufgabe notwendig sind. Der Plattform-Optimierer greift ausschließlich zur Qualitätssicherung zu, nicht zu anderen Zwecken.", status: "ok" },
       { id: "dsgvo_5_datensparsamkeit", label: "Art. 5 Abs. 1 lit. c DSGVO — Datensparsamkeit", beschreibung: "Alle KI-Prompts sind so konfiguriert, dass nur minimal notwendige Daten verarbeitet werden. Keine Anforderung überschüssiger personenbezogener Daten.", status: "ok" },
-      { id: "dsgvo_rls", label: "Row-Level Security (RLS) — Datenisolation pro Nutzer", beschreibung: "Technisch erzwungen: Jeder Nutzer sieht ausschließlich eigene Fälle, Argumente und Dokumente. KI-Agenten können nicht auf Daten anderer Nutzer zugreifen (RLS-Regeln auf allen Entitäten).", status: "ok" },
-      { id: "dsgvo_25_privacy_by_design", label: "Art. 25 DSGVO — Privacy by Design & Default", beschreibung: "Datenschutz ist technisch in die Architektur eingebaut: Auth-Pflicht, RLS, keine externen API-Calls mit Falldaten, verschlüsselte Übertragung.", status: "ok" },
+      { id: "dsgvo_rls", label: "Row-Level Security (RLS) — Datenisolation pro Nutzer", beschreibung: "Technisch erzwungen: Jeder Nutzer sieht ausschließlich eigene Fälle, Argumente, Beweise und Dokumente. KI-Agenten können nicht auf Daten anderer Nutzer zugreifen.", status: "ok" },
+      { id: "dsgvo_25_privacy_by_design", label: "Art. 25 DSGVO — Privacy by Design & Default", beschreibung: "Datenschutz ist technisch in die Architektur eingebaut: Auth-Pflicht, RLS auf allen Entitäten, keine externen API-Calls mit Falldaten, verschlüsselte Übertragung (TLS).", status: "ok" },
+      { id: "dsgvo_dokumente", label: "Dokumenten-Uploads — Verarbeitung nur intern", beschreibung: "Hochgeladene Dateien (TabDokumenteAnalyse) werden ausschließlich auf der Plattform verarbeitet. analyzeDocument-Funktion greift nur für den authentifizierten Nutzer zu.", status: "ok" },
     ]
   },
   {
@@ -38,20 +39,50 @@ const COMPLIANCE_CHECKS = [
     icon: Bot,
     farbe: "violet",
     checks: [
-      { id: "euai_transparenz", label: "Art. 13 EU AI Act — KI-Transparenzpflicht", beschreibung: "Alle KI-Ausgaben sind als KI-generiert gekennzeichnet (Badges, Hinweise in der UI). Nutzer wissen stets, wann sie mit einem KI-System interagieren.", status: "ok" },
-      { id: "euai_human_oversight", label: "Art. 14 EU AI Act — Menschliche Aufsicht", beschreibung: "Das System ist so konzipiert, dass der Anwalt jederzeit die Kontrolle behält. KI kann weder selbstständig Mandate abschließen noch verbindliche Rechtsauskünfte erteilen.", status: "ok" },
-      { id: "euai_audit_trail", label: "Audit-Trail — Dokumentation aller KI-Eingriffe", beschreibung: "CaseHistory-Entity protokolliert alle Datenänderungen durch KI-Agenten. KIUsageLog speichert alle KI-Interaktionen mit Zeitstempel, Funktion und Kontext.", status: "ok" },
+      { id: "euai_transparenz", label: "Art. 13 EU AI Act — KI-Transparenzpflicht", beschreibung: "Alle KI-Ausgaben in allen Reitern (Argumente, Strategie, Risiko, KI-Berater, Prognose, Schriftsatz) sind als KI-generiert gekennzeichnet. Nutzer wissen stets, wann sie mit einem KI-System interagieren.", status: "ok" },
+      { id: "euai_human_oversight", label: "Art. 14 EU AI Act — Menschliche Aufsicht", beschreibung: "Das System ist so konzipiert, dass der Anwalt jederzeit die Kontrolle behält. KI-Vorschläge (Argumentstärke, Prognose, Strategie, Schriftsatz) werden manuell vom Anwalt bestätigt und übernommen.", status: "ok" },
+      { id: "euai_audit_trail", label: "Audit-Trail — Dokumentation aller KI-Eingriffe", beschreibung: "CaseHistory-Entity protokolliert alle Datenänderungen. KIUsageLog speichert alle KI-Interaktionen mit Zeitstempel, Funktion, Modell und Kontext (TabArgumente, TabStrategie, TabRisiko, TabKIBerater etc.).", status: "ok" },
+      { id: "euai_keine_entscheidung", label: "KI trifft keine rechtsverbindlichen Entscheidungen", beschreibung: "Sämtliche KI-Outputs (Prognosen, Strategieempfehlungen, Schriftsatzentwürfe, Risikoanalysen) sind Assistenzleistungen. Die finale Entscheidung obliegt ausschließlich dem zugelassenen Rechtsanwalt.", status: "ok" },
     ]
   },
   {
-    kategorie: "Technische Sicherheit",
+    kategorie: "KI-Reiter & Features — Tab-spezifische Prüfung",
+    icon: FileText,
+    farbe: "orange",
+    checks: [
+      { id: "tab_argumente", label: "TabArgumente — KI-Argumentbewertung", beschreibung: "KI bewertet Argumentstärke (0–10) mit Begründung. Diskrepanzen ≥ 4 werden als Warnung markiert. Anwalt übernimmt KI-Vorschlag manuell. Compliance-Badge pro Argument sichtbar.", status: "ok" },
+      { id: "tab_beweise", label: "TabBeweise — KI-Beweisgewichtung", beschreibung: "KI bewertet Beweisgewicht mit Begründung. Diskrepanzen werden angezeigt. Compliance-Badge pro Beweis. Keine automatische Übernahme ohne Nutzerinteraktion.", status: "ok" },
+      { id: "tab_strategie", label: "TabStrategie / TabStrategiePrognose — Prognose & Simulation", beschreibung: "KI-gestützte Erfolgswahrscheinlichkeit basiert auf transparentem Algorithmus (legalAlgorithms.js). Alle Eingabefaktoren sind für den Nutzer einsehbar und manuell überschreibbar.", status: "ok" },
+      { id: "tab_risiko", label: "TabRisiko — Risikoanalyse & Rechtsprechung", beschreibung: "Algorithmische Risikoberechnung + KI-Rechtsprechungsrecherche. Quellen (§§, Urteile) werden explizit genannt. KI-generierte Inhalte als solche markiert.", status: "ok" },
+      { id: "tab_kiberater", label: "TabKIBerater — Strategische Beratung", beschreibung: "LLM-Beratung zu Gegnerpsychologie, Verhandlungstaktik, Sun Tzu / Machiavelli. Ergebnisse sind als KI-generiert markiert und klar als strategische Empfehlung, nicht Rechtsberatung, deklariert.", status: "ok" },
+      { id: "tab_dokumente", label: "TabDokumenteAnalyse — Dokumenten-KI", beschreibung: "10-Schritt-KI-Analyse extrahiert Fristen, Personen, Argumente aus Dokumenten. Alle Extraktionen sind Vorschläge — Übernahme nur mit Nutzerbestätigung. analyzeDocument läuft serverseitig (kein Client-KI).", status: "ok" },
+      { id: "tab_schriftsatz", label: "TabSchriftsatz — KI-Schriftsatzentwurf", beschreibung: "KI generiert Schriftsatzentwürfe auf Basis der Falldaten. Entwürfe sind explizit als KI-generiert gekennzeichnet. Anwalt ist verantwortlich für Prüfung, Anpassung und Einreichung.", status: "ok" },
+      { id: "tab_fristen", label: "TabFristen / Zeitleiste — Fristenmanagement", beschreibung: "Fristen werden manuell oder per Dokumentenanalyse erfasst. E-Mail-Alerts (deadlineEmailAlert) laufen über serverseitige Backend-Funktion. Kein KI-Automatismus bei Fristversäumnis.", status: "ok" },
+      { id: "tab_personen", label: "TabPersonen / Richterprofile — Personendaten", beschreibung: "Richterprofile und Zeugenprofile enthalten Verhaltensdaten. Verarbeitung gemäß Art. 9 DSGVO (besondere Kategorien) nur für Zwecke der Prozessführung. Keine Profilweitergabe an Dritte.", status: "ok" },
+      { id: "tab_gegner", label: "Gegneranalyse — Verhaltenstracking", beschreibung: "GegnerVerhalten-Entity trackt prozessuale Reaktionen der Gegenseite. KI-Analyse (Muster, Taktik) ist als Prognose deklariert und enthält keine persönlichen Daten im Sinne einer unzulässigen Profilbildung.", status: "ok" },
+    ]
+  },
+  {
+    kategorie: "Strategos Enterprise — KI-Szenarioplanung",
+    icon: Target,
+    farbe: "red",
+    checks: [
+      { id: "strategos_szenarion", label: "Strategos — Mehrstufige KI-Szenarioanalyse", beschreibung: "6-Schritt-Enterprise-Analyse (Kontext → Situation → Matrix → Aktionsplan → Empfehlung → Sync). Alle KI-Schritte sind transparent und vom Nutzer steuerbar. Ergebnisse in StrategosScenario-Entity persistiert.", status: "ok" },
+      { id: "strategos_loopholes", label: "Gesetzeslücken-Analyse (LegalLoophole)", beschreibung: "Identifikation rechtlicher Grauzonen nur als strategische Beratungsleistung. Kein Aufruf zu rechtswidrigem Handeln. Ergebnisse sind mit Risikobewertung versehen.", status: "ok" },
+      { id: "strategos_lexara_sync", label: "LEXARA-Sync — Datentransfer zwischen Modulen", beschreibung: "Sync zwischen Strategos und LEXARA-Fällen (exportToSupabase) erfolgt nur auf explizite Nutzerinitiative. Keine automatische Datenübertragung ohne Bestätigung.", status: "ok" },
+    ]
+  },
+  {
+    kategorie: "Technische Sicherheit & Infrastruktur",
     icon: Shield,
     farbe: "gray",
     checks: [
-      { id: "tech_no_external", label: "Keine externen API-Calls mit Falldaten", beschreibung: "Backend-Funktionen senden keine Mandanten- oder Falldaten an externe Dienste. InvokeLLM-Aufrufe enthalten nur anonymisierte oder für die Analyse notwendige Daten.", status: "ok" },
-      { id: "tech_auth", label: "Authentifizierungspflicht für alle KI-Funktionen", beschreibung: "Alle Backend-Funktionen prüfen base44.auth.me() vor der Verarbeitung. Unautorisierte Anfragen werden mit HTTP 401 abgelehnt.", status: "ok" },
-      { id: "tech_ki_log", label: "KI-Nutzungsprotokoll (KIUsageLog-Entity)", beschreibung: "Jede KI-Nutzung wird mit Funktion, Kontext, Modell und Zeitstempel protokolliert. Ratingfeedback durch Nutzer zur kontinuierlichen Qualitätssicherung.", status: "ok" },
+      { id: "tech_no_external", label: "Keine externen API-Calls mit Falldaten", beschreibung: "Backend-Funktionen (analyzeDocument, exportCasePDF, sendMandantUpdate etc.) senden keine Mandanten- oder Falldaten an externe Dienste ohne explizite Nutzeraktion.", status: "ok" },
+      { id: "tech_auth", label: "Authentifizierungspflicht für alle KI-Funktionen", beschreibung: "Alle Backend-Funktionen (analyzeDocument, checkCaseCompliance, logCaseChange, sendMandantUpdate, exportCasePDF) prüfen base44.auth.me() vor der Verarbeitung. HTTP 401 bei unautorisiertem Zugriff.", status: "ok" },
+      { id: "tech_ki_log", label: "KI-Nutzungsprotokoll (KIUsageLog-Entity)", beschreibung: "Jede KI-Nutzung in allen Reitern wird mit Funktion, Kontext, Modell, Zeitstempel und Nutzer protokolliert. Rating-Feedback für kontinuierliche Qualitätssicherung verfügbar.", status: "ok" },
       { id: "tech_agent_rls", label: "Agent-Isolation: Keine Nutzer-Kreuzabfragen", beschreibung: "KI-Agenten sind durch die Plattform-RLS technisch daran gehindert, Daten anderer Nutzer abzufragen oder zu kombinieren.", status: "ok" },
+      { id: "tech_export", label: "Export-Funktionen — Datensicherheit", beschreibung: "PDF-Export (exportCasePDF), iCal-Export (exportIcal), Gegner-PDF (exportGegnerVerhaltenPDF) erstellen Dateien ausschließlich für den authentifizierten Nutzer. Keine Speicherung auf externen Servern.", status: "ok" },
+      { id: "tech_stripe", label: "Zahlungsabwicklung (Stripe) — PCI-Compliance", beschreibung: "Stripe-Integration (stripeCheckout, stripeWebhook) verarbeitet keine Zahlungsdaten serverseitig. Kreditkartendaten werden ausschließlich über Stripe-gehostete Formulare abgewickelt (PCI SAQ A).", status: "ok" },
     ]
   },
 ];
@@ -59,18 +90,20 @@ const COMPLIANCE_CHECKS = [
 const AGENTS = [
   {
     name: "fall_assistent",
-    label: "Fall-Assistent",
-    beschreibung: "Juristischer KI-Assistent für Fallanalyse, Argumentation und Fristen",
+    label: "Fall-Assistent (Agent)",
+    icon: MessageSquare,
+    beschreibung: "Juristischer KI-Chat-Assistent für Fallanalyse, Argumentation und Fristen",
     compliance_highlights: [
-      "Verschwiegenheit explizit im System-Prompt verankert",
+      "Verschwiegenheit explizit im System-Prompt verankert (§ 43a BRAO)",
       "Rechtsberatung nur als Assistenz für autorisierten Anwalt",
-      "Keine Datenweitergabe nach außen",
-      "KI-Ausgaben als solche gekennzeichnet",
+      "Keine Mandantendaten nach außen kommuniziert",
+      "KI-Ausgaben als solche gekennzeichnet (EU AI Act Art. 13)",
     ]
   },
   {
     name: "plattform_optimierer",
-    label: "Plattform-Optimierer",
+    label: "Plattform-Optimierer (Agent)",
+    icon: Target,
     beschreibung: "Strategischer KI-Berater für Kanzlei-Qualitätssicherung und Plattformverbesserung",
     compliance_highlights: [
       "Zweckbindung auf Optimierung und Qualitätssicherung beschränkt",
@@ -80,9 +113,70 @@ const AGENTS = [
     ]
   },
   {
-    name: "InvokeLLM (inline)",
-    label: "Inline-KI-Analysen",
-    beschreibung: "Direkte LLM-Aufrufe in Tabs (Argumente, Beweise, Prognose, Gegneranalyse etc.)",
+    name: "TabArgumente / TabBeweise",
+    label: "Argument- & Beweisanalyse",
+    icon: Scale,
+    beschreibung: "KI-Stärkebewertung für Argumente (0–10) und Beweisgewichtung mit Diskrepanzerkennung",
+    compliance_highlights: [
+      "DSGVO-Compliance-Badge pro Argument und Beweis sichtbar",
+      "Diskrepanzen ≥ 4 werden explizit als Warnung markiert",
+      "Anwalt übernimmt KI-Vorschläge manuell — keine Automatik",
+      "KI-Begründung transparent und einsehbar",
+    ]
+  },
+  {
+    name: "TabStrategie / TabRisiko",
+    label: "Strategie, Prognose & Risiko",
+    icon: BarChart2,
+    beschreibung: "KI-Erfolgswahrscheinlichkeit, Risikoberechnung und Rechtsprechungsrecherche",
+    compliance_highlights: [
+      "Algorithmus (legalAlgorithms.js) transparent und auditierbar",
+      "Alle Eingabefaktoren manuell überschreibbar",
+      "KI-Rechtsprechung mit expliziten Quellenangaben",
+      "Was-wäre-wenn-Simulation als Planungswerkzeug deklariert",
+    ]
+  },
+  {
+    name: "TabKIBerater",
+    label: "KI-Berater (Gegnerpsychologie)",
+    icon: Sword,
+    beschreibung: "Sun Tzu / Machiavelli-basierte Verhandlungs- und Prozesstaktik-Empfehlungen",
+    compliance_highlights: [
+      "Ergebnisse als strategische Empfehlung, nicht Rechtsberatung deklariert",
+      "Kein automatisches Handeln — nur Informationsbereitstellung",
+      "Personenbezogene Gegnerprofile nur für Prozessführungszwecke",
+      "Outputs im KIUsageLog protokolliert",
+    ]
+  },
+  {
+    name: "TabDokumenteAnalyse",
+    label: "Dokumenten-KI (analyzeDocument)",
+    icon: FileText,
+    beschreibung: "10-Schritt-KI-Extraktion von Fristen, Personen, Argumenten aus hochgeladenen Dokumenten",
+    compliance_highlights: [
+      "analyzeDocument läuft serverseitig — kein clientseitiger Datenzugriff",
+      "Uploads nur für authentifizierten Nutzer (HTTP 401 sonst)",
+      "Extraktionen sind Vorschläge — Übernahme nur mit Nutzerbestätigung",
+      "Keine Speicherung der Dokumente auf externen Diensten",
+    ]
+  },
+  {
+    name: "Strategos Enterprise",
+    label: "Strategos — KI-Szenarioplanung",
+    icon: Target,
+    beschreibung: "6-Schritt Enterprise-Analyse: Gesetzeslücken, Optionenmatrix, Aktionsplan, Empfehlung",
+    compliance_highlights: [
+      "Alle Schritte durch explizite Nutzeraktion ausgelöst",
+      "Gesetzeslücken-Analyse mit Risikohinweis versehen",
+      "LEXARA-Sync nur auf Nutzerinitiative — keine Automatik",
+      "Szenariodaten in StrategosScenario-Entity mit RLS gesichert",
+    ]
+  },
+  {
+    name: "InvokeLLM (inline, alle Reiter)",
+    label: "Inline-KI (alle weiteren Tabs)",
+    icon: Bot,
+    beschreibung: "Direkte LLM-Aufrufe in Schriftsatz, Verhandlung, Zeitstrahl, Gegneranalyse, Cockpit etc.",
     compliance_highlights: [
       "Nur für eingeloggten Nutzer — RLS sichert Datenisolation",
       "Outputs werden im KIUsageLog protokolliert",
@@ -103,6 +197,8 @@ const FARBE_CONFIG = {
   blue: { badge: "bg-blue-100 text-blue-800", header: "bg-blue-50 border-blue-200", icon: "text-blue-600" },
   violet: { badge: "bg-violet-100 text-violet-800", header: "bg-violet-50 border-violet-200", icon: "text-violet-600" },
   gray: { badge: "bg-gray-100 text-gray-800", header: "bg-gray-50 border-gray-200", icon: "text-gray-600" },
+  orange: { badge: "bg-orange-100 text-orange-800", header: "bg-orange-50 border-orange-200", icon: "text-orange-600" },
+  red: { badge: "bg-red-100 text-red-800", header: "bg-red-50 border-red-200", icon: "text-red-600" },
 };
 
 function ComplianceKategorie({ gruppe }) {
@@ -151,11 +247,12 @@ function ComplianceKategorie({ gruppe }) {
 }
 
 function AgentCard({ agent }) {
+  const Icon = agent.icon || Bot;
   return (
     <div className="bg-white border rounded-xl p-4" style={{ borderColor: "rgba(0,0,0,0.08)" }}>
       <div className="flex items-start gap-3 mb-3">
         <div className="w-8 h-8 bg-gray-900 rounded-lg flex items-center justify-center flex-shrink-0">
-          <Bot className="w-4 h-4 text-white" />
+          <Icon className="w-4 h-4 text-white" />
         </div>
         <div>
           <p className="text-sm font-semibold text-gray-900">{agent.label}</p>
@@ -351,8 +448,8 @@ export default function KICompliance() {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {[
             { label: "Compliance-Score", value: `${Math.round((okChecks/totalChecks)*100)}%`, icon: Shield, color: "text-emerald-600" },
-            { label: "KI-Agenten geprüft", value: AGENTS.length, icon: Bot, color: "text-violet-600" },
-            { label: "Rechtliche Checks", value: totalChecks, icon: Scale, color: "text-blue-600" },
+            { label: "KI-Systeme geprüft", value: AGENTS.length, icon: Bot, color: "text-violet-600" },
+            { label: "Checks gesamt", value: totalChecks, icon: Scale, color: "text-blue-600" },
             { label: "Dokumentenstand", value: new Date().toLocaleDateString("de-DE", {month:"short", year:"numeric"}), icon: FileText, color: "text-gray-600" },
           ].map(stat => {
             const Icon = stat.icon;
