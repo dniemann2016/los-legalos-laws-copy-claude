@@ -5,13 +5,14 @@ import TabZeitstrahl from "./TabZeitstrahl";
 import TabPrognoseVergleich from "./TabPrognoseVergleich";
 import RiskMatrix from "./RiskMatrix";
 import TabRisiko from "./TabRisiko";
+import SubTabBar from "./SubTabBar";
 
 const SUB_TABS = [
-  "🏁 Abschluss & Monte Carlo",
+  "🏁 Abschluss",
   "📋 KI-Protokoll",
-  "📅 Zeitstrahl (Gesamt)",
+  "📅 Zeitstrahl",
   "📊 Prognose-Vergleich",
-  "⚠️ Risiko-Analyse",
+  "⚠️ Risiko",
 ];
 
 export default function TabAbschlussProtokoll({ caseId, caseData, kiMode, activeSub }) {
@@ -19,14 +20,7 @@ export default function TabAbschlussProtokoll({ caseId, caseData, kiMode, active
   useEffect(() => { setSub(activeSub || 0); }, [activeSub]);
   return (
     <div className="space-y-4">
-      <div className="flex gap-2 border-b border-gray-100 overflow-x-auto">
-        {SUB_TABS.map((label, i) => (
-          <button key={i} onClick={() => setSub(i)}
-            className={`px-3 py-2 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${sub === i ? "border-gray-900 text-gray-900" : "border-transparent text-gray-400 hover:text-gray-600"}`}>
-            {label}
-          </button>
-        ))}
-      </div>
+      <SubTabBar tabs={SUB_TABS} active={sub} onChange={setSub} level="primary" />
       <div className={sub === 0 ? "" : "hidden"}><Tab10Abschluss caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
       <div className={sub === 1 ? "" : "hidden"}><TabKIProtokoll caseId={caseId} caseData={caseData} /></div>
       <div className={sub === 2 ? "" : "hidden"}><TabZeitstrahl caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
