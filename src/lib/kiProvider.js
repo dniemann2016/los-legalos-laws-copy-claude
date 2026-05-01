@@ -25,6 +25,9 @@
 import { base44 } from "@/api/base44Client";
 
 // ── Konfiguration ─────────────────────────────────────────────────────────────
+// ⚙️  HIER KANN DER KI-ANBIETER UMGESTELLT WERDEN:
+//     "base44"  → Standard-Cloud-KI (base44.integrations.Core.InvokeLLM)
+//     "offline" → Lokaler Server (Ollama, LM Studio, OpenAI-kompat. API)
 const KI_MODE = "base44"; // "base44" | "offline"
 const OFFLINE_KI_URL = "http://localhost:11434/api/chat"; // z.B. Ollama
 const OFFLINE_KI_MODEL = "llama3"; // z.B. "llama3", "mistral", "phi3", "gemma"

@@ -1,4 +1,47 @@
 /**
+ * legalAlgorithms.js — Stochastisch-Juristische Berechnungsmaschine
+ *
+ * ══════════════════════════════════════════════════════════════════
+ *  WICHTIG: Alle Berechnungen hier sind REIN ALGORITHMISCH (keine KI).
+ *  KI-Aufrufe erfolgen ausschließlich über lib/kiProvider.js.
+ * ══════════════════════════════════════════════════════════════════
+ *
+ * EXPORTIERTE FUNKTIONEN:
+ * ─────────────────────────────────────────────────────────────────
+ *  computePrognose(input)
+ *    → Bayesianisches Update: Berechnet Erfolgsprognose (0–100%)
+ *    → Eingabe: args, evidence, deadlines, persons, caseData
+ *    → Ausgabe: { score, ci_low, ci_high, logOdds, sigma, steps, inputs }
+ *
+ *  runMonteCarlo({ baseResult, iterations })
+ *    → Monte-Carlo-Simulation (Standard: 5.000 Iterationen)
+ *    → Ausgabe: { mean, median, p10, p25, p75, p90, histogram, scenarios }
+ *
+ *  computeRisikoFaktoren(input)
+ *    → 8 Risikodimensionen (Beweis, Richter, Recht, Kosten, Zeit, Gegner, Reputation, Vergleich)
+ *    → Ausgabe: { faktoren[], gesamtrisiko, gesamtScore, steps }
+ *
+ *  computeBreakEven({ caseData })
+ *    → Break-Even-Analyse: Mindest-Erfolgschance für wirtschaftliche Klage
+ *    → Ausgabe: { break_even_pct, gesamtkosten, formel, erklaerung, zusatzoptionen[] }
+ *
+ *  computeVollanalyse(input)
+ *    → Kombiniert alle vier Funktionen in einem Aufruf
+ *    → Ausgabe: { prognose, risikofaktoren, monteCarlo, breakEven, timestamp, version }
+ *
+ * METHODIK:
+ *   Bayesianische Inferenz, Monte-Carlo-Simulation,
+ *   gewichtete Kombination juristischer Faktoren,
+ *   statistische Konfidenzintervalle (90% CI via Fehlerfortpflanzung).
+ *
+ * ANPASSUNG DER GEWICHTE:
+ *   Gewichtungskonstanten sind inline kommentiert (z.B. × 1.6, × 0.4).
+ *   Basisraten je Rechtsgebiet → RECHTSGEBIET_BASERATES (Zeile ~21)
+ *   Instanzfaktoren            → INSTANZ_FAKTOR (Zeile ~15)
+ * ─────────────────────────────────────────────────────────────────
+ */
+
+/**
  * MachiavelLEX – Stochastisch-Juristische Berechnungsmaschine
  *
  * Alle Prognosen und Risikowerte werden OHNE KI berechnet.

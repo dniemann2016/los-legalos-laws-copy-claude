@@ -1,3 +1,28 @@
+/**
+ * AppShell.jsx — Haupt-Layout-Wrapper der gesamten App
+ *
+ * Struktur:
+ *   ┌─ <header> ─────────────────────────────────────────────────────┐
+ *   │  Logo · Nav-Tabs · JurisdictionToggle · User-Menü              │
+ *   └────────────────────────────────────────────────────────────────┘
+ *   ┌─ <aside> Sidebar ──┬─ <main> Seiteninhalt (<Outlet>) ─────────┐
+ *   │  Kontextabhängige  │  Wird durch React Router befüllt          │
+ *   │  Navigation pro    │  (alle Seiten aus App.jsx)                │
+ *   │  Modul             │                                           │
+ *   └────────────────────┴───────────────────────────────────────────┘
+ *
+ * Wichtige Konzepte:
+ *   - NAV_ITEMS:   Haupt-Navigationspunkte in der Toolbar
+ *   - SIDEBAR_MAP: Kontextuelle Sidebar-Links je Modul (Schlüssel = Pfad-Präfix)
+ *   - "lexara_goto_step" CustomEvent: Sidebar-Links dispatchen dieses Event,
+ *     damit CaseDetail.jsx direkt auf den gewünschten Tab (1–9) springen kann.
+ *
+ * Design:
+ *   Alle Farben über das C-Objekt zentral definiert (SwiftUI/Großkanzlei-Palette).
+ *   Button-Styles werden per inline-style gesetzt, damit der globale CSS-Override
+ *   in index.css nicht greift (Toolbar-Buttons sind keine normalen Formular-Buttons).
+ */
+
 import { useState } from "react";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { base44 } from "@/api/base44Client";

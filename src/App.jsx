@@ -1,4 +1,49 @@
 /**
+ * App.jsx — Haupt-Router & Einstiegspunkt der React-App
+ *
+ * ARCHITEKTUR-ÜBERBLICK:
+ * ──────────────────────────────────────────────────────────────────
+ *  Provider-Stack (von außen nach innen):
+ *    AuthProvider          → Stellt currentUser & auth-State bereit
+ *    QueryClientProvider   → React Query Caching & Server-State
+ *    BrowserRouter         → React Router v6
+ *      AppShell            → Layout (Toolbar + Sidebar + Outlet)
+ *        [Alle Seiten]     → Werden über <Route> eingebunden
+ *    Toaster / Sonner      → Toast-Benachrichtigungen
+ *    DsgvoBanner           → DSGVO-Cookie-Hinweis
+ *
+ * NEUE SEITE HINZUFÜGEN:
+ *   1. import MyPage from './pages/MyPage'
+ *   2. <Route path="/mein-pfad" element={<MyPage />} />
+ *      (innerhalb von <Route element={<AppShell />}>)
+ *
+ * KI-FUNKTIONEN:
+ *   Alle KI-Aufrufe laufen über lib/kiProvider.js → invokeLLM()
+ *   Alle algorithmischen Berechnungen (ohne KI) → lib/legalAlgorithms.js
+ *
+ * BACKEND-FUNKTIONEN (Deno / functions/):
+ *   analyzeDocument      → Dokumenten-KI-Analyse (10 Schritte)
+ *   checkCaseCompliance  → DSGVO-Compliance-Check pro Fall
+ *   deadlineEmailAlert   → E-Mail-Alert bei ablaufenden Fristen (scheduled)
+ *   exportCasePDF        → PDF-Export eines Falls
+ *   exportGegnerVerhaltenPDF → PDF-Export Gegner-Verhaltensdaten
+ *   exportIcal           → iCal-Export aller Fristen
+ *   exportToSupabase     → Sync zu externem Supabase-Projekt
+ *   logCaseChange        → Audit-Trail-Eintrag für CaseHistory
+ *   sendMandantUpdate    → E-Mail-Update an Mandanten
+ *   stripeCheckout       → Stripe-Zahlungssession erstellen
+ *   stripeWebhook        → Stripe-Webhook-Handler
+ *
+ * ENTITÄTEN (Base44 DB):
+ *   Case, Argument, Evidence, Deadline, Person, Document,
+ *   JudgeProfile, CaseFolder, CaseHistory, CaseQuestionnaire,
+ *   CaseWarning, GegnerVerhalten, TimelineEvent, Task,
+ *   StrategosScenario, LegalLoophole, AIPerformanceFeedback,
+ *   KIUsageLog, JurisdictionInsight
+ * ──────────────────────────────────────────────────────────────────
+ */
+
+/**
  * App.jsx — Haupt-Router
  *
  * Alle Seiten werden hier als Routen registriert.
