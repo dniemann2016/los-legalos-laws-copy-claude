@@ -355,53 +355,47 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
   const takeAll = async () => {
     if (!extracted) return;
     try {
-      const all = [...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })), ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))];
-      
-      // Erstelle Beweise aus dem Dokument
+      const all = [
+        ...(extracted.eigene_argumente || []).map(a => ({ ...a, side: "eigen" })),
+        ...(extracted.gegenseite_argumente || []).map(a => ({ ...a, side: "gegner" }))
+      ];
+
+      // Erstelle zuerst alle Beweise und baue eine Map Titel → ID
       const evidenceMap = {};
       if (extracted.beweise && Array.isArray(extracted.beweise)) {
         for (const ev of extracted.beweise) {
+          if (!ev.titel) continue;
           const evEntity = await base44.entities.Evidence.create({
             case_id: caseId,
-            title: ev.titel || "Beweis",
+            title: ev.titel,
             description: ev.beschreibung || "",
             type: ev.typ || "Dokument",
-            source: "Vertrag",
+            source: "Extraktion",
             weight: ev.gewicht || 5
           });
-          evidenceMap[ev.titel] = evEntity?.id || evEntity;
+          evidenceMap[ev.titel] = evEntity?.id;
         }
       }
-      
-      // Erstelle Argumente NUR wenn sie KEINE Beweise mitbringen
-      // (Argumente die zu Beweisen werden, werden nicht als Argument gespeichert)
-      const konvertiert = [];
+
+      // Erstelle alle Argumente (unabhängig von Beweisen)
       for (const a of all) {
-        const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
-        if (linkedEvidenceIds.length > 0) {
-          await deleteExistingArgIfConverted(a.titel);
-          konvertiert.push(a.titel);
-          continue; // Argument wurde zu Beweis(en) → nicht als Argument speichern
-        }
         await base44.entities.Argument.create({
           case_id: caseId,
           title: a.titel,
           description: a.beschreibung || "",
           side: a.side,
           strength: a.staerke || 5,
-          type: "Rechtsargument",
+          type: a.typ || "Rechtsargument",
           paragraphs: a.paragraphen || []
         });
       }
-      if (konvertiert.length > 0) {
-        toast.success(`${konvertiert.length} Argument(e) → Beweis konvertiert`, {
-          description: `Bitte Beweisliste prüfen: ${konvertiert.slice(0, 3).join(", ")}${konvertiert.length > 3 ? "…" : ""}`,
-          duration: 6000,
-        });
-      }
-      // Lösche das Extraktions-Panel
+
       setExtracted(null);
       await loadAll(true);
+      toast.success(`${all.length} Argument(e) übernommen`, {
+        description: Object.keys(evidenceMap).length > 0 ? `+ ${Object.keys(evidenceMap).length} Beweis(e) erstellt` : undefined,
+        duration: 4000,
+      });
     } catch (e) {
       console.error("Fehler beim Übernehmen all:", e);
       alert("Fehler beim Übernehmen der Argumente: " + e.message);
@@ -417,44 +411,16 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
 
   const take = async (a, side) => {
     try {
-      // Erstelle zuerst Beweise (falls vorhanden)
-      const evidenceIds = [];
-      if (side === "eigen" && (a.beweise || []).length > 0) {
-        for (const ev of a.beweise) {
-          const created = await base44.entities.Evidence.create({
-            case_id: caseId,
-            title: ev.titel,
-            description: ev.beschreibung || "",
-            type: ev.typ || "Dokument",
-            weight: ev.gewicht || 5,
-          });
-          if (created?.id) evidenceIds.push(created.id);
-        }
-      }
-      // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern + ggf. vorhandenes löschen
-      if (evidenceIds.length > 0) {
-        await deleteExistingArgIfConverted(a.titel);
-        toast.success(`Argument → Beweis konvertiert: "${a.titel}"`, {
-          description: `${evidenceIds.length} Beweis(e) erstellt. Bitte Beweisliste prüfen.`,
-          duration: 6000,
-        });
-        setExtracted(prev => {
-          if (!prev) return null;
-          const key = side === "eigen" ? "eigene_argumente" : "gegenseite_argumente";
-          const updated = { ...prev };
-          updated[key] = (updated[key] || []).filter(x => x.titel !== a.titel);
-          return updated;
-        });
-        await loadAll(true);
-        return;
-      }
+      // Argumente aus der Extraktion haben verlinkte_beweise (Titelstrings die auf extracted.beweise zeigen)
+      // Prüfe ob verlinkte Beweise bereits als Evidence existieren (wurden in takeAll erstellt)
+      // Für einzelnes Übernehmen: erstelle das Argument direkt
       await base44.entities.Argument.create({
         case_id: caseId,
         title: a.titel,
         description: a.beschreibung || "",
         side,
         strength: a.staerke || 5,
-        type: "Rechtsargument",
+        type: a.typ || "Rechtsargument",
         paragraphs: a.paragraphen || [],
       });
       // Entferne das Argument aus der Extraktions-Liste
