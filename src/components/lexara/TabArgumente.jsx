@@ -379,6 +379,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
       for (const a of all) {
         const linkedEvidenceIds = (a.verlinkte_beweise || []).map(eb => evidenceMap[eb]).filter(Boolean);
         if (linkedEvidenceIds.length > 0) {
+          await deleteExistingArgIfConverted(a.titel);
           konvertiert.push(a.titel);
           continue; // Argument wurde zu Beweis(en) → nicht als Argument speichern
         }
@@ -407,6 +408,13 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
     }
   };
 
+  const deleteExistingArgIfConverted = async (titel) => {
+    const existing = args.find(arg => arg.title === titel);
+    if (existing) {
+      await base44.entities.Argument.delete(existing.id);
+    }
+  };
+
   const take = async (a, side) => {
     try {
       // Erstelle zuerst Beweise (falls vorhanden)
@@ -423,8 +431,9 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           if (created?.id) evidenceIds.push(created.id);
         }
       }
-      // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern
+      // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern + ggf. vorhandenes löschen
       if (evidenceIds.length > 0) {
+        await deleteExistingArgIfConverted(a.titel);
         toast.success(`Argument → Beweis konvertiert: "${a.titel}"`, {
           description: `${evidenceIds.length} Beweis(e) erstellt. Bitte Beweisliste prüfen.`,
           duration: 6000,
@@ -606,8 +615,9 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
           if (created?.id) evidenceIds.push(created.id);
         }
       }
-      // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern
+      // Wenn das Argument zu Beweis(en) wurde, NICHT als Argument speichern + ggf. vorhandenes löschen
       if (evidenceIds.length > 0) {
+        await deleteExistingArgIfConverted(a.titel);
         toast.success(`Argument → Beweis konvertiert: "${a.titel}"`, {
           description: `${evidenceIds.length} Beweis(e) erstellt. Bitte Beweisliste prüfen.`,
           duration: 6000,
@@ -668,8 +678,9 @@ Zusätzlich: Generiere für JEDES eigene Argument (falls geeignet) 1-3 konkrete 
             if (created?.id) evidenceIds.push(created.id);
           }
         }
-        // Wenn Argument zu Beweis(en) wurde → NICHT als Argument speichern
+        // Wenn Argument zu Beweis(en) wurde → NICHT als Argument speichern + ggf. vorhandenes löschen
         if (evidenceIds.length > 0) {
+          await deleteExistingArgIfConverted(a.titel);
           konvertiert.push(a.titel);
           continue;
         }
