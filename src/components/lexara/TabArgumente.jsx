@@ -224,6 +224,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
   const [args, setArgs] = useState([]);
   const [evidence, setEvidence] = useState([]);
   const [filter, setFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("created"); // "created" | "date" | "strength"
   const [showAdd, setShowAdd] = useState(false);
   const [newArg, setNewArg] = useState({ title: "", description: "", side: "eigen", strength: 5, type: "Rechtsargument", zeitpunkt: "", anmerkungen: "" });
   const [extractError, setExtractError] = useState(null);
@@ -274,6 +275,7 @@ export default function TabArgumente({ caseId, caseData, onCountChange }) {
 2. GEGENSEITE-ARGUMENTE (was könnte der Gegner argumentieren?)
 3. BEWEISE (konkrete Klauseln, Unterschriften, Daten aus dem Vertrag - dies sind die Belege!)
 4. Für JEDES Argument: Welche Beweise aus Punkt 3 unterstützen es?
+5. DATUM: Extrahiere für Argumente und Beweise das jeweilige Datum (YYYY-MM-DD) — z.B. Vertragsdatum, Schreibdatum, Ereignisdatum. Nur wenn im Dokument erkennbar.
 
 Fallkontext: ${caseData?.fallname || ""} | ${caseData?.rechtsgebiet || ""}
 Rechtsfrage: ${caseData?.zentrale_rechtsfrage || ""}
@@ -305,13 +307,14 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
                   beschreibung: { type: "string" },
                   typ: { type: "string" },
                   staerke: { type: "number" },
+                  datum: { type: "string", description: "Datum des Arguments (YYYY-MM-DD) falls im Dokument erkennbar" },
                   verlinkte_beweise: { type: "array", items: { type: "string" }, description: "Titel der Beweise die dieses Argument stützen" },
                   paragraphen: { type: "array", items: { type: "string" } }
                 },
                 required: ["titel"]
               }
-            },
-            gegenseite_argumente: {
+              },
+              gegenseite_argumente: {
               type: "array",
               items: {
                 type: "object",
@@ -320,11 +323,12 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
                   beschreibung: { type: "string" },
                   typ: { type: "string" },
                   staerke: { type: "number" },
+                  datum: { type: "string", description: "Datum des Arguments (YYYY-MM-DD) falls erkennbar" },
                   verlinkte_beweise: { type: "array", items: { type: "string" } }
                 },
                 required: ["titel"]
               }
-            },
+              },
             widersprueche: { type: "array", items: { type: "object", properties: { titel: { type: "string" }, staerke: { type: "number" } }, required: ["titel"] } },
             relevante_paragraphen: { type: "array", items: { type: "string" } }
           },
@@ -386,7 +390,8 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
           side: a.side,
           strength: a.staerke || 5,
           type: a.typ || "Rechtsargument",
-          paragraphs: a.paragraphen || []
+          paragraphs: a.paragraphen || [],
+          zeitpunkt: a.datum || null,
         });
       }
 
@@ -422,6 +427,7 @@ ${!fileUrls.length ? "TEXT: " + text : ""}`,
         strength: a.staerke || 5,
         type: a.typ || "Rechtsargument",
         paragraphs: a.paragraphen || [],
+        zeitpunkt: a.datum || null,
       });
       // Entferne das Argument aus der Extraktions-Liste
       setExtracted(prev => {
@@ -851,7 +857,17 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
     }
   };
 
-  const filtered = args.filter(a => filter === "all" || a.side === filter);
+  const filtered = args
+    .filter(a => filter === "all" || a.side === filter)
+    .sort((a, b) => {
+      if (sortBy === "date") {
+        const da = a.zeitpunkt ? new Date(a.zeitpunkt).getTime() : 0;
+        const db = b.zeitpunkt ? new Date(b.zeitpunkt).getTime() : 0;
+        return db - da;
+      }
+      if (sortBy === "strength") return (b.ki_strength ?? b.strength ?? 0) - (a.ki_strength ?? a.strength ?? 0);
+      return 0; // "created" — natural order
+    });
 
   const linkedEvidenceForArg = (argId) => {
     const arg = args.find(a => a.id === argId);
@@ -865,6 +881,12 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
         {[["all", "Alle"], ["eigen", "Eigene"], ["gegner", "Gegner"]].map(([f, l]) => (
           <button key={f} onClick={() => setFilter(f)}
             className={`px-3 py-1 rounded-full text-xs border transition-all ${filter === f ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-600 hover:border-gray-400"}`}>{l}</button>
+        ))}
+        <div className="w-px h-4 bg-gray-200 mx-1" />
+        <span className="text-[10px] text-gray-400">Sortierung:</span>
+        {[["created", "Erstellt"], ["date", "Datum"], ["strength", "Stärke"]].map(([s, l]) => (
+          <button key={s} onClick={() => setSortBy(s)}
+            className={`px-2.5 py-1 rounded-full text-xs border transition-all ${sortBy === s ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}>{l}</button>
         ))}
         <div className="ml-auto flex gap-2">
            <Button size="sm" onClick={rateBatch} disabled={batchRating || args.length === 0} className="bg-violet-600 text-white rounded-xl text-xs gap-1">
@@ -1078,6 +1100,7 @@ Gib NUR Arguments zurück, die WIRKLICH KEINEN Bezug haben (keine false positive
                           <div className="flex items-center gap-1 flex-wrap">
                             <span className="font-medium text-gray-800 flex-1">{a.titel}</span>
                             <span className="text-gray-400">{a.staerke || 5}/10</span>
+                            {a.datum && <span className="text-[9px] bg-orange-50 text-orange-600 border border-orange-200 rounded px-1.5 py-0.5">🗓 {a.datum}</span>}
                             {(a.paragraphen || []).length > 0 && (
                               <span className="text-[9px] font-mono bg-blue-50 text-blue-700 border border-blue-200 rounded px-1.5 py-0.5">§§: {a.paragraphen.length}</span>
                             )}

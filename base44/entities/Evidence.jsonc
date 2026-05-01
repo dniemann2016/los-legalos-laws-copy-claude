@@ -37,6 +37,10 @@
     "source": {
       "type": "string",
       "title": "Quelle"
+    },
+    "datum": {
+      "type": "string",
+      "title": "Datum des Beweises (YYYY-MM-DD)"
     }
   },
   "required": [

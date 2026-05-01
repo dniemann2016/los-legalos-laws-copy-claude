@@ -64,8 +64,8 @@ AUFGABE: Analysiere das Dokument und extrahiere NUR was tatsächlich im Dokument
 
 REGELN:
 - Basisdaten (Gericht, AZ etc.) nur eintragen wenn explizit im Dokument genannt
-- Argumente nur wenn konkrete rechtliche Positionen erkennbar sind
-- Beweise nur wenn konkrete Beweismittel erkennbar sind
+- Argumente nur wenn konkrete rechtliche Positionen erkennbar sind — extrahiere IMMER das Datum (YYYY-MM-DD) wenn ein Datum oder Zeitraum zum Argument erkennbar ist (z.B. Vertragsdatum, Ereignisdatum, Schreiben-Datum)
+- Beweise nur wenn konkrete Beweismittel erkennbar sind — extrahiere IMMER das Datum (YYYY-MM-DD) wenn ein Datum erkennbar ist (z.B. Dokumentdatum, Ausstellungsdatum, Ereignisdatum)
 - Fristen nur wenn konkrete Daten genannt werden (Format: YYYY-MM-DD)
 - Personen nur wenn namentlich erwähnt
 - Gegneranalyse nur wenn Gegnerposition erkennbar ist
@@ -100,6 +100,7 @@ REGELN:
                 beschreibung: { type: "string" },
                 seite: { type: "string" },
                 staerke: { type: "number" },
+                datum: { type: "string", description: "Datum der Argumentation (YYYY-MM-DD) falls im Dokument erkennbar" },
               }
             }
           },
@@ -112,6 +113,7 @@ REGELN:
                 beschreibung: { type: "string" },
                 typ: { type: "string" },
                 gewicht: { type: "number" },
+                datum: { type: "string", description: "Datum des Beweises / Ereignisses (YYYY-MM-DD) falls erkennbar" },
               }
             }
           },
@@ -330,6 +332,7 @@ REGELN:
           side,
           strength: Math.min(10, Math.max(1, Math.round(Number(arg.staerke) || 5))),
           type: "Rechtsargument",
+          zeitpunkt: arg.datum || null,
         })
       );
     }
@@ -344,6 +347,7 @@ REGELN:
           type: bew.typ || "Dokument",
           weight: Math.min(10, Math.max(1, Math.round(Number(bew.gewicht) || 5))),
           source: doc.title,
+          datum: bew.datum || null,
         })
       );
     }

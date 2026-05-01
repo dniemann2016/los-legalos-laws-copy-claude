@@ -50,7 +50,7 @@ function ScoreBar({ value, max = 10, color = "bg-green-500" }) {
 
 function EvidenceCard({ ev, onDelete, onSave }) {
   const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({ title: ev.title, description: ev.description || "", type: ev.type || BEWEIS_TYPES[0], source: ev.source || "", weight: ev.weight || 5 });
+  const [form, setForm] = useState({ title: ev.title, description: ev.description || "", type: ev.type || BEWEIS_TYPES[0], source: ev.source || "", weight: ev.weight || 5, datum: ev.datum || "" });
   const [newPara, setNewPara] = useState("");
   const [paragraphen, setParagraphen] = useState(() => {
     // Paragraphen werden im description-Feld als "[§§: ...]" gespeichert
@@ -135,6 +135,10 @@ function EvidenceCard({ ev, onDelete, onSave }) {
               {BEWEIS_TYPES.map(t => <option key={t}>{t}</option>)}
             </select>
             <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Quelle" value={form.source} onChange={e => setForm({ ...form, source: e.target.value })} />
+            <div>
+              <label className="text-[10px] text-gray-400 block mb-1">Datum des Beweises</label>
+              <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs bg-white" value={form.datum} onChange={e => setForm({ ...form, datum: e.target.value })} />
+            </div>
             <div className="flex items-center gap-2">
               <span className="text-xs text-gray-500">Manuelles Gewicht:</span>
               <input type="number" min={0} max={10} step={0.5} className="border border-gray-200 rounded-lg px-2 py-1 text-xs w-16 bg-white" value={form.weight} onChange={e => setForm({ ...form, weight: +e.target.value })} />
@@ -192,6 +196,7 @@ function EvidenceCard({ ev, onDelete, onSave }) {
                 </div>
                 {ev.description && <p className="text-xs text-gray-500">{ev.description}</p>}
                 {ev.type && <p className="text-[10px] text-gray-400 mt-0.5">{ev.type}</p>}
+                {ev.datum && <p className="text-[10px] text-orange-500 font-medium">🗓 {new Date(ev.datum).toLocaleDateString("de-DE")}</p>}
                 {ev.source && <p className="text-[10px] text-gray-400">Quelle: {ev.source}</p>}
                 {paragraphen.length > 0 && (
                   <div className="flex flex-wrap gap-1 mt-1">
@@ -253,7 +258,8 @@ export default function TabBeweise({ caseId }) {
   const [showPara, setShowPara] = useState(false);
   const [activePara, setActivePara] = useState(null);
   const [showLink, setShowLink] = useState(false);
-  const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "" });
+  const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "", datum: "" });
+  const [sortBy, setSortBy] = useState("created"); // "created" | "date" | "weight"
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -347,10 +353,19 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
   };
 
   const selectedArgData = args.find(a => a.id === selectedArg);
-  const argEvidence = evidence.filter(e =>
+  const sortEvidence = (list) => list.slice().sort((a, b) => {
+    if (sortBy === "date") {
+      const da = a.datum ? new Date(a.datum).getTime() : 0;
+      const db = b.datum ? new Date(b.datum).getTime() : 0;
+      return db - da;
+    }
+    if (sortBy === "weight") return (b.ki_weight ?? b.weight ?? 0) - (a.ki_weight ?? a.weight ?? 0);
+    return 0;
+  });
+  const argEvidence = sortEvidence(evidence.filter(e =>
     e.argument_id === selectedArg ||
     (selectedArgData?.evidence_ids || []).includes(e.id)
-  );
+  ));
   const unlinkedEvidence = evidence.filter(e =>
     !e.argument_id &&
     !(selectedArgData?.evidence_ids || []).includes(e.id)
@@ -381,7 +396,12 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
                 </span>
                 <h3 className="font-semibold text-gray-900 mt-1">{selectedArgData.title}</h3>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-[10px] text-gray-400">Sort:</span>
+                {[["created", "Neu"], ["date", "Datum"], ["weight", "Gewicht"]].map(([s, l]) => (
+                  <button key={s} onClick={() => setSortBy(s)}
+                    className={`px-2 py-0.5 rounded-full text-[10px] border transition-all ${sortBy === s ? "bg-blue-600 text-white border-blue-600" : "border-gray-200 text-gray-500 hover:border-gray-400"}`}>{l}</button>
+                ))}
                 <Button size="sm" variant="outline" onClick={() => setShowLink(!showLink)}
                   className="rounded-xl text-xs gap-1 border-blue-200 text-blue-700 hover:bg-blue-50">
                   🔗 Verknüpfen {unlinkedEvidence.length > 0 && `(${unlinkedEvidence.length})`}
@@ -469,6 +489,10 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
                   {BEWEIS_TYPES.map(t => <option key={t}>{t}</option>)}
                 </select>
                 <input className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white" placeholder="Quelle" value={newEv.source} onChange={e => setNewEv({ ...newEv, source: e.target.value })} />
+                <div>
+                  <label className="text-[10px] text-gray-400 block mb-1">Datum des Beweises</label>
+                  <input type="date" className="w-full border border-gray-200 rounded-lg px-3 py-1.5 text-xs bg-white" value={newEv.datum} onChange={e => setNewEv({ ...newEv, datum: e.target.value })} />
+                </div>
                 <div className="flex gap-2">
                   <Button size="sm" onClick={addEvidence} className="bg-gray-900 text-white rounded-lg text-xs">Hinzufügen</Button>
                   <Button size="sm" variant="outline" onClick={() => setShowAdd(false)} className="rounded-lg text-xs">Abbrechen</Button>
