@@ -260,6 +260,7 @@ export default function TabBeweise({ caseId }) {
   const [showLink, setShowLink] = useState(false);
   const [newEv, setNewEv] = useState({ title: "", description: "", type: BEWEIS_TYPES[0], source: "", datum: "" });
   const [sortBy, setSortBy] = useState("created"); // "created" | "date" | "weight"
+  const [argSortBy, setArgSortBy] = useState("created"); // "created" | "strength" | "evidence" | "date"
 
   useEffect(() => { load(); }, [caseId]);
 
@@ -374,13 +375,28 @@ Gib für jeden Beweis die ID des am besten passenden Arguments an und eine kurze
   return (
     <div className="flex gap-4" style={{ minHeight: "400px" }}>
       <div className="w-52 flex-shrink-0 overflow-y-auto space-y-1">
-        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-3">Argumente</p>
-        {args.map(arg => (
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">Argumente</p>
+        <div className="flex flex-wrap gap-1 mb-3">
+          {[["created", "Neu"], ["strength", "Stärke"], ["evidence", "Beweise"], ["date", "Datum"]].map(([s, l]) => (
+            <button key={s} onClick={() => setArgSortBy(s)}
+              className={`px-1.5 py-0.5 rounded text-[9px] border transition-all ${argSortBy === s ? "bg-gray-900 text-white border-gray-900" : "border-gray-200 text-gray-400 hover:border-gray-400"}`}>{l}</button>
+          ))}
+        </div>
+        {[...args].sort((a, b) => {
+          if (argSortBy === "strength") return (b.ki_strength ?? b.strength ?? 0) - (a.ki_strength ?? a.strength ?? 0);
+          if (argSortBy === "evidence") return evidence.filter(e => e.argument_id === b.id).length - evidence.filter(e => e.argument_id === a.id).length;
+          if (argSortBy === "date") {
+            const da = a.zeitpunkt ? new Date(a.zeitpunkt).getTime() : 0;
+            const db = b.zeitpunkt ? new Date(b.zeitpunkt).getTime() : 0;
+            return db - da;
+          }
+          return 0;
+        }).map(arg => (
           <button key={arg.id} onClick={() => setSelectedArg(arg.id)}
             className={`w-full text-left rounded-xl p-3 text-xs transition-all ${selectedArg === arg.id ? "bg-gray-900 text-white" : "bg-white border border-gray-100 text-gray-700 hover:border-gray-200"}`}>
             <div className={`text-[9px] font-medium mb-0.5 ${selectedArg === arg.id ? "text-gray-300" : "text-gray-400"}`}>{arg.side === "eigen" ? "Eigen" : "Gegner"}</div>
             <div className="font-medium leading-snug">{arg.title}</div>
-            <div className="mt-1 text-[10px] text-gray-400">{evidence.filter(e => e.argument_id === arg.id).length} Beweise</div>
+            <div className="mt-1 text-[10px] text-gray-400">{evidence.filter(e => e.argument_id === arg.id).length} Beweise · {arg.ki_strength ?? arg.strength ?? "–"}/10</div>
           </button>
         ))}
         {args.length === 0 && <p className="text-xs text-gray-400 text-center py-4">Keine Argumente</p>}
