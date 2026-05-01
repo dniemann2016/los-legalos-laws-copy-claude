@@ -157,31 +157,76 @@ input, textarea, select {
   background: rgba(0,0,0,0.04) !important;
 }
 
-/* ── ALLE Buttons → einheitlich weiß mit schwarzer Schrift (Großkanzlei) ── */
+/* ══════════════════════════════════════════════════════════════════
+   BUTTON-SYSTEM — Apple-inspiriert: transparent + farbiger Rand
+   Palette (gedämpft, nie grell):
+     Standard/Default  → Blau    #007AFF  (Apple systemBlue)
+     Destructive       → Rot     #FF3B30  (Apple systemRed)
+     Secondary/Outline → Grau    #636366  (Apple secondaryLabel)
+     Ghost / bare      → komplett transparent, kein Rand
+   Hintergrund: immer transparent (kein Weiß, kein Fill)
+   Hover: leichter Farb-Tint als Background (rgba der Randfarbe)
+   ══════════════════════════════════════════════════════════════════ */
+
+/* ── Basis: alle Buttons transparent mit Blau-Rand ── */
 button:not(.no-override) {
-  background-color: #ffffff !important;
-  color: #1a1a1a !important;
-  border: 1px solid rgba(0,0,0,0.12) !important;
+  background-color: transparent !important;
+  color: #007AFF !important;
+  border: 1px solid #007AFF !important;
   box-shadow: none !important;
 }
 button:not(.no-override):hover:not(:disabled) {
-  background-color: #f5f5f5 !important;
+  background-color: rgba(0, 122, 255, 0.07) !important;
 }
 button:not(.no-override):disabled {
-  background-color: #f5f5f5 !important;
-  color: #aaa !important;
-  border-color: rgba(0,0,0,0.07) !important;
+  background-color: transparent !important;
+  color: #AEAEB2 !important;
+  border-color: #AEAEB2 !important;
+  opacity: 0.55 !important;
 }
-/* Ausnahmen: reine Icon/Ghost-Buttons ohne sichtbaren Hintergrund */
+
+/* ── Destructive (z.B. Löschen, Abmelden) → Apple Rot ── */
+button.destructive:not(.no-override),
+button[data-variant="destructive"]:not(.no-override) {
+  color: #FF3B30 !important;
+  border-color: #FF3B30 !important;
+}
+button.destructive:not(.no-override):hover,
+button[data-variant="destructive"]:not(.no-override):hover {
+  background-color: rgba(255, 59, 48, 0.07) !important;
+}
+
+/* ── Secondary / Outline → gedämpftes Grau ── */
+button.secondary:not(.no-override),
+button[data-variant="secondary"]:not(.no-override),
+button[data-variant="outline"]:not(.no-override) {
+  color: #636366 !important;
+  border-color: #C7C7CC !important;
+}
+button.secondary:not(.no-override):hover,
+button[data-variant="secondary"]:not(.no-override):hover,
+button[data-variant="outline"]:not(.no-override):hover {
+  background-color: rgba(0, 0, 0, 0.04) !important;
+}
+
+/* ── Ghost / Icon-Buttons → vollständig transparent, kein Rand ── */
+button.ghost:not(.no-override),
+button[data-variant="ghost"]:not(.no-override),
 button.bg-transparent,
 button[style*="background: none"],
-button[style*="background:none"] {
+button[style*="background:none"],
+button[style*="background: transparent"],
+button[style*="background:transparent"] {
   background-color: transparent !important;
   border: none !important;
+  color: #636366 !important;
   box-shadow: none !important;
 }
+button.ghost:not(.no-override):hover,
+button[data-variant="ghost"]:not(.no-override):hover,
 button.bg-transparent:hover {
-  background-color: rgba(0,0,0,0.04) !important;
+  background-color: rgba(0, 0, 0, 0.05) !important;
+  border: none !important;
 }
 
 /* ── Focus ring neutral ── */
