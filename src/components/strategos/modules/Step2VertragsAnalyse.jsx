@@ -201,21 +201,28 @@ export default function Step2VertragsAnalyse({ scenario, onSave }) {
     const files = Array.from(e.target.files || []);
     if (!files.length) return;
     setUploading(true);
-    const up = [];
-    for (const f of files) {
-      const r = await base44.integrations.Core.UploadFile({ file: f });
-      up.push({ name: f.name, url: r.file_url, type: f.name.split(".").pop().toLowerCase(), uploaded_at: new Date().toISOString() });
+    try {
+      const up = [];
+      for (const f of files) {
+        const r = await base44.integrations.Core.UploadFile({ file: f });
+        up.push({ name: f.name, url: r.file_url, type: f.name.split(".").pop().toLowerCase(), uploaded_at: new Date().toISOString() });
+      }
+      const n = [...docs, ...up];
+      setDocs(n);
+      await onSave({ unternehmenskontext: { ...ctx, dokumente: n } });
+    } catch (err) {
+      console.error("Upload fehlgeschlagen:", err?.message || err);
+      alert("Upload fehlgeschlagen: " + (err?.message || "Bitte nochmals versuchen."));
     }
-    const n = [...docs, ...up];
-    setDocs(n);
-    await onSave({ unternehmenskontext: { ...ctx, dokumente: n } });
     setUploading(false);
   };
 
   const analyseVertrag = async () => {
     setAnalysing(true);
     const doc = selectedDoc || docs[0];
-    const r = await base44.integrations.Core.InvokeLLM({
+    let r;
+    try {
+    r = await base44.integrations.Core.InvokeLLM({
       prompt: `Du bist ein Senior-Anwalt einer internationalen Großkanzlei spezialisiert auf Vertragsrecht, AGB-Recht und internationale Vertragsgestaltung. Analysiere diesen Vertrag / dieses Dokument auf drei Dimensionen:
 
 UNTERNEHMENSKONTEXT:
@@ -300,6 +307,10 @@ WICHTIGE ANFORDERUNGEN:
     });
     setResult(r);
     await onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_analyse: r, vertrags_notiz: manuelleNotiz } });
+    } catch (err) {
+      console.error("Vertragsanalyse fehlgeschlagen:", err?.message || err);
+      alert("Analyse fehlgeschlagen: " + (err?.message || "Netzwerkfehler. Bitte erneut versuchen."));
+    }
     setAnalysing(false);
   };
 
