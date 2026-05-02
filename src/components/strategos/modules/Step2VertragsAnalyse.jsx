@@ -324,11 +324,11 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
           <p style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a" }}>{title}</p>
           <p style={{ fontSize: 10, color: "#888", marginTop: 1 }}>Dedizierte KI-Analyse für diese Visualisierung</p>
         </div>
-        <button onClick={onAnalyse} disabled={loading}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", fontSize: 11, fontWeight: 700, background: loading ? "rgba(0,0,0,0.06)" : color, color: loading ? "#aaa" : "#fff", border: "none", borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.15s" }}>
-          <Sparkles style={{ width: 12, height: 12 }} />
+        <div onClick={loading ? undefined : onAnalyse}
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", fontSize: 11, fontWeight: 700, background: loading ? "rgba(0,0,0,0.06)" : color, color: loading ? "#aaa" : "#fff", border: `1px solid ${loading ? "rgba(0,0,0,0.1)" : color}`, borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.15s", userSelect: "none", flexShrink: 0 }}>
+          <Sparkles style={{ width: 12, height: 12, color: loading ? "#aaa" : "#fff" }} />
           {loading ? "Analysiert…" : kiResult ? "Neu analysieren" : "KI analysieren"}
-        </button>
+        </div>
       </div>
 
       {kiResult && (
@@ -500,7 +500,6 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
 function VisualisierungsPanel({ result, scenario }) {
   const [activeTab, setActiveTab] = useState("heatmap");
   const [selectedKlauselIdx, setSelectedKlauselIdx] = useState(0);
-  // Per-tab KI results & loading states
   const [kiResults, setKiResults] = useState({});
   const [kiLoading, setKiLoading] = useState({});
 
@@ -542,18 +541,19 @@ function VisualisierungsPanel({ result, scenario }) {
         </div>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {VIZ_TABS.map(t => (
-            <button key={t.id} onClick={() => setActiveTab(t.id)}
+            <div key={t.id} onClick={() => setActiveTab(t.id)}
               style={{
-                padding: "5px 11px", borderRadius: 8, border: "none", cursor: "pointer",
+                padding: "5px 11px", borderRadius: 8, cursor: "pointer",
                 fontSize: 10, fontWeight: activeTab === t.id ? 700 : 500,
                 background: activeTab === t.id ? "#5856D6" : "rgba(0,0,0,0.05)",
                 color: activeTab === t.id ? "#fff" : "#555",
+                border: activeTab === t.id ? "1px solid #5856D6" : "1px solid transparent",
                 transition: "all 0.15s",
-                display: "flex", alignItems: "center", gap: 4,
+                display: "flex", alignItems: "center", gap: 4, userSelect: "none",
               }}>
               <span>{t.icon}</span>{t.label}
               {kiResults[t.id] && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1DB954", flexShrink: 0 }} />}
-            </button>
+            </div>
           ))}
         </div>
       </div>
