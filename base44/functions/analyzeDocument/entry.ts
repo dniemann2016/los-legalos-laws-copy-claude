@@ -386,15 +386,29 @@ REGELN:
     const failed = createResults.filter(r => r.status === "rejected").length;
     if (failed > 0) console.log(`${failed} von ${createPromises.length} Entity-Erstellungen fehlgeschlagen`);
 
+    // ── Auto-Verknüpfung: Beweise → Argumente (nach Analyse, non-blocking) ──
+    let linkStats = { linked: 0 };
+    const neueBeweise = (result.beweise || []).filter(b => b.titel?.trim()).length;
+    const neueArgumente = (result.argumente || []).filter(a => a.titel?.trim()).length;
+    if (neueBeweise > 0 && neueArgumente > 0) {
+      try {
+        const linkRes = await base44.functions.invoke('linkEvidenceToArguments', { caseId, docId });
+        linkStats = linkRes || { linked: 0 };
+      } catch (e) {
+        console.log('Auto-Verknüpfung fehlgeschlagen (non-blocking):', e.message);
+      }
+    }
+
     return Response.json({
       success: true,
       result,
       stats: {
-        argumente: (result.argumente || []).filter(a => a.titel?.trim()).length,
-        beweise: (result.beweise || []).filter(b => b.titel?.trim()).length,
+        argumente: neueArgumente,
+        beweise: neueBeweise,
         fristen: (result.fristen || []).filter(f => f.titel?.trim() && f.datum?.trim()).length,
         personen: (result.personen || []).filter(p => p.name?.trim()).length,
         case_felder_aktualisiert: Object.keys(caseUpdate).length,
+        verknuepfungen: linkStats.linked || 0,
       }
     });
 
