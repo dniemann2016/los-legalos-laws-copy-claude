@@ -251,20 +251,30 @@ export default function StrategieCheckliste({ caseId, caseData, kiMode }) {
   const gegnerArgs = args.filter(a => a.side === "gegner");
 
   useEffect(() => {
+    let cancelled = false;
     const load = async () => {
       setLoading(true);
-      const [a, e, d, p, gv] = await Promise.all([
-        base44.entities.Argument.filter({ case_id: caseId }),
-        base44.entities.Evidence.filter({ case_id: caseId }),
-        base44.entities.Deadline.filter({ case_id: caseId }),
-        base44.entities.Person.filter({ case_id: caseId }),
-        base44.entities.GegnerVerhalten.filter({ case_id: caseId }),
-      ]);
-      setArgs(a); setEvidence(e); setDeadlines(d); setPersons(p); setGegnerVerhalten(gv);
-      generateAlgorithmicChecklist(a, e, d, p, gv, caseData?.prognose || 50);
-      setLoading(false);
+      try {
+        // Sequential to avoid rate limits — load in two batches
+        const [a, e] = await Promise.all([
+          base44.entities.Argument.filter({ case_id: caseId }),
+          base44.entities.Evidence.filter({ case_id: caseId }),
+        ]);
+        const [d, p, gv] = await Promise.all([
+          base44.entities.Deadline.filter({ case_id: caseId }),
+          base44.entities.Person.filter({ case_id: caseId }),
+          base44.entities.GegnerVerhalten.filter({ case_id: caseId }),
+        ]);
+        if (cancelled) return;
+        setArgs(a); setEvidence(e); setDeadlines(d); setPersons(p); setGegnerVerhalten(gv);
+        generateAlgorithmicChecklist(a, e, d, p, gv, caseData?.prognose || 50);
+      } catch (err) {
+        console.log("StrategieCheckliste load error:", err.message);
+      }
+      if (!cancelled) setLoading(false);
     };
     load();
+    return () => { cancelled = true; };
   }, [caseId]);
 
   useEffect(() => {
