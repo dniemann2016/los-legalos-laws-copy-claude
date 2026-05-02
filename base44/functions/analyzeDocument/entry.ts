@@ -217,7 +217,7 @@ REGELN:
           }
         }
       },
-      model: "automatic"
+      model: "claude_sonnet_4_6"
     });
 
     // InvokeLLM mit response_json_schema gibt das Objekt direkt zurück (kein .response wrapper)

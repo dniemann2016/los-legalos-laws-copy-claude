@@ -62,21 +62,8 @@ REGELN:
 - Ein Beweis kann höchstens einem Argument zugeordnet werden
 - Gib die exakten IDs zurück`;
 
-    // Prompt kürzen wenn zu viele Einträge (Rate-Limit-Schutz)
-    const argsToUse = args.slice(0, 15);
-    const evidenceToUse = evidenceToLink.slice(0, 10);
-    const shortPrompt = `Du bist ein Prozessanwalt. Ordne jeden Beweis dem passendsten Argument zu.
-
-ARGUMENTE (${argsToUse.length}):
-${argsToUse.map((a, i) => `[${i}] ID="${a.id}" | "${a.title}" | ${a.side}`).join('\n')}
-
-BEWEISE (${evidenceToUse.length}):
-${evidenceToUse.map((e, i) => `[${i}] ID="${e.id}" | "${e.title}"`).join('\n')}
-
-Nur zuordnen wenn inhaltliche Verbindung klar. Gib exakte IDs zurück.`;
-
     const result = await base44.integrations.Core.InvokeLLM({
-      prompt: shortPrompt,
+      prompt,
       response_json_schema: {
         type: "object",
         properties: {
@@ -100,7 +87,7 @@ Nur zuordnen wenn inhaltliche Verbindung klar. Gib exakte IDs zurück.`;
       z.evidence_id && z.argument_id &&
       z.konfidenz !== "niedrig" &&
       evidenceToLink.find(e => e.id === z.evidence_id) &&
-      argsToUse.find(a => a.id === z.argument_id)
+      args.find(a => a.id === z.argument_id)
     );
 
     if (zuordnungen.length === 0) {
