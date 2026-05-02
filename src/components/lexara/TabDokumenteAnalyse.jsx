@@ -470,7 +470,7 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
     for (const p of pendingFiles) await uploadAndAnalyze(p);
   };
 
-  const analyzeDocument = async (doc) => {
+  const analyzeDocument = async (doc, retryCount = 0) => {
     setAnalyzing(doc.id);
     setOcrStatus(prev => ({ ...prev, [doc.id]: "analyzing" }));
     try {
@@ -483,7 +483,16 @@ export default function TabDokumenteAnalyse({ caseId, caseData, onDataImport }) 
       setResults(prev => ({ ...prev, [doc.id]: result }));
       onDataImport && onDataImport();
     } catch (error) {
-      setResults(prev => ({ ...prev, [doc.id]: { error: error.response?.data?.error || error.message } }));
+      const msg = error.response?.data?.error || error.message || "";
+      const isRateLimit = msg.toLowerCase().includes("rate limit") || error.response?.status === 429;
+      if (isRateLimit && retryCount < 3) {
+        const delay = Math.pow(2, retryCount) * 3000; // 3s, 6s, 12s
+        console.log(`Rate limit — retry ${retryCount + 1}/3 in ${delay / 1000}s`);
+        await new Promise(r => setTimeout(r, delay));
+        setAnalyzing(null);
+        return analyzeDocument(doc, retryCount + 1);
+      }
+      setResults(prev => ({ ...prev, [doc.id]: { error: isRateLimit ? "Rate-Limit erreicht — bitte kurz warten und erneut versuchen." : msg } }));
     }
     setOcrStatus(prev => ({ ...prev, [doc.id]: "done" }));
     setAnalyzing(null);

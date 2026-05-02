@@ -217,7 +217,7 @@ REGELN:
           }
         }
       },
-      model: "claude_sonnet_4_6"
+      model: "automatic"
     });
 
     // InvokeLLM mit response_json_schema gibt das Objekt direkt zurück (kein .response wrapper)
@@ -382,18 +382,30 @@ REGELN:
       );
     }
 
-    const createResults = await Promise.allSettled(createPromises);
-    const failed = createResults.filter(r => r.status === "rejected").length;
+    // Entity-Erstellungen in Batches von 5 aufteilen (Rate-Limit-Schutz)
+    const BATCH_SIZE = 5;
+    let failed = 0;
+    for (let i = 0; i < createPromises.length; i += BATCH_SIZE) {
+      const batch = createPromises.slice(i, i + BATCH_SIZE);
+      const batchResults = await Promise.allSettled(batch);
+      failed += batchResults.filter(r => r.status === "rejected").length;
+      // Kleine Pause zwischen Batches
+      if (i + BATCH_SIZE < createPromises.length) {
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+    }
     if (failed > 0) console.log(`${failed} von ${createPromises.length} Entity-Erstellungen fehlgeschlagen`);
 
-    // ── Auto-Verknüpfung: Beweise → Argumente (nach Analyse, non-blocking) ──
+    // ── Auto-Verknüpfung: Beweise → Argumente (mit Delay, non-blocking) ──
     let linkStats = { linked: 0 };
     const neueBeweise = (result.beweise || []).filter(b => b.titel?.trim()).length;
     const neueArgumente = (result.argumente || []).filter(a => a.titel?.trim()).length;
     if (neueBeweise > 0 && neueArgumente > 0) {
       try {
+        // Kurze Pause damit neue Entities persistiert sind bevor linking startet
+        await new Promise(resolve => setTimeout(resolve, 1000));
         const linkRes = await base44.functions.invoke('linkEvidenceToArguments', { caseId, docId });
-        linkStats = linkRes || { linked: 0 };
+        linkStats = linkRes?.data || { linked: 0 };
       } catch (e) {
         console.log('Auto-Verknüpfung fehlgeschlagen (non-blocking):', e.message);
       }
