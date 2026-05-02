@@ -1,7 +1,13 @@
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
-import { Upload, FileUp, Sparkles, Trash2, AlertTriangle, CheckCircle, MinusCircle, Scale, Shield, FileSearch } from "lucide-react";
+import { Upload, FileUp, Sparkles, Trash2, AlertTriangle, CheckCircle, MinusCircle, Scale, Shield, FileSearch, BarChart3 } from "lucide-react";
 import { AppleCard, AppleButton, ApplePill, AppleField, AppleTextarea, SF } from "../AppleCard";
+import KlauselHeatmap from "../visualisierung/KlauselHeatmap";
+import WirkungsBaum from "../visualisierung/WirkungsBaum";
+import ZeitachseSzenarien from "../visualisierung/ZeitachseSzenarien";
+import OptionenCards from "../visualisierung/OptionenCards";
+import ChancenRisikoQuadrant from "../visualisierung/ChancenRisikoQuadrant";
+import KlauselVergleich from "../visualisierung/KlauselVergleich";
 
 const RISIKO_FARBEN = {
   kritisch: { bg: "rgba(184,28,58,0.08)", border: "rgba(184,28,58,0.25)", text: "#B81C3A", icon: AlertTriangle },
@@ -96,6 +102,88 @@ function KlauselCard({ k, idx }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+const VIZ_TABS = [
+  { id: "heatmap",   label: "01 · Heatmap",     desc: "Wo hinschauen?" },
+  { id: "wirkung",   label: "02 · Wirkungsbaum", desc: "Was passiert?" },
+  { id: "zeitachse", label: "03 · Zeitachse",    desc: "Wann relevant?" },
+  { id: "optionen",  label: "04 · Optionen",     desc: "Was tun?" },
+  { id: "quadrant",  label: "05 · Quadrant",     desc: "Gesamtbild?" },
+  { id: "vergleich", label: "10 · Vorher/Nachher", desc: "Wie formulieren?" },
+];
+
+function VisualisierungsPanel({ result }) {
+  const [activeTab, setActiveTab] = useState("heatmap");
+  const [selectedKlauselIdx, setSelectedKlauselIdx] = useState(0);
+
+  if (!result?.klauseln?.length) return null;
+
+  const sorted = [...result.klauseln].sort((a, b) =>
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) -
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
+  );
+  const selectedKlausel = sorted[selectedKlauselIdx] || sorted[0];
+
+  return (
+    <div style={{ background: "#fafafa", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16, overflow: "hidden", marginTop: 2 }}>
+      {/* Header */}
+      <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid rgba(0,0,0,0.07)", background: "#fff" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+          <BarChart3 style={{ width: 14, height: 14, color: "#5856D6" }} />
+          <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>Visualisierungssystem — Strategos Vertragsanalyse</p>
+          <span style={{ fontSize: 9, color: "#888", marginLeft: "auto" }}>Konzept nach PDF · 6 Formate</span>
+        </div>
+        {/* Tab-Bar */}
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+          {VIZ_TABS.map(t => (
+            <button key={t.id} onClick={() => setActiveTab(t.id)}
+              style={{
+                padding: "5px 11px", borderRadius: 8, border: "none", cursor: "pointer",
+                fontSize: 10, fontWeight: activeTab === t.id ? 700 : 500,
+                background: activeTab === t.id ? "#5856D6" : "rgba(0,0,0,0.05)",
+                color: activeTab === t.id ? "#fff" : "#555",
+                transition: "all 0.15s",
+              }}>
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ padding: "14px 16px" }}>
+        {/* Klausel-Selektor für Detail-Ansichten */}
+        {["wirkung", "zeitachse", "optionen", "vergleich"].includes(activeTab) && (
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", marginBottom: 6 }}>Klausel auswählen</p>
+            <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+              {sorted.map((k, i) => {
+                const color = { kritisch: "#B81C3A", hoch: "#FF9500", mittel: "#0A84FF", niedrig: "#1DB954", positiv: "#1DB954" }[k.risiko_stufe] || "#888";
+                return (
+                  <button key={i} onClick={() => setSelectedKlauselIdx(i)}
+                    style={{
+                      padding: "4px 10px", borderRadius: 7, border: `1px solid ${selectedKlauselIdx === i ? color : "rgba(0,0,0,0.1)"}`,
+                      background: selectedKlauselIdx === i ? `${color}12` : "transparent",
+                      fontSize: 10, fontWeight: selectedKlauselIdx === i ? 700 : 400,
+                      color: selectedKlauselIdx === i ? color : "#555", cursor: "pointer",
+                    }}>
+                    {k.klausel_typ?.slice(0, 22) || `#${i + 1}`}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {activeTab === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} />}
+        {activeTab === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} />}
+        {activeTab === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} />}
+        {activeTab === "optionen"  && <OptionenCards klausel={selectedKlausel} />}
+        {activeTab === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} />}
+        {activeTab === "vergleich" && <KlauselVergleich klausel={selectedKlausel} />}
+      </div>
     </div>
   );
 }
@@ -364,6 +452,9 @@ WICHTIGE ANFORDERUNGEN:
               ))}
             </AppleCard>
           )}
+
+          {/* ── VISUALISIERUNGSSYSTEM (6 Formate aus Konzeptpapier) ── */}
+          <VisualisierungsPanel result={result} />
         </>
       )}
     </div>
