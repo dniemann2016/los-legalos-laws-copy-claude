@@ -37,5 +37,15 @@
       "type": "number",
       "title": "KI-Credits"
     }
-  }
+  },
+  "required": [
+    "role",
+    "language",
+    "jurisdiction",
+    "usState",
+    "disclaimerAccepted",
+    "onboardingDone",
+    "hasModuleAccess",
+    "kiCredits"
+  ]
 }

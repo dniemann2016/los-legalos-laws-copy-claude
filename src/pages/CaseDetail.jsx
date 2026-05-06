@@ -35,6 +35,7 @@ import TabStrategiePrognose from "../components/lexara/TabStrategiePrognose";
 import TabSimulationCockpit from "../components/lexara/TabSimulationCockpit";
 import Tab8Aktion from "../components/lexara/Tab8Aktion";
 import TabAbschlussProtokoll from "../components/lexara/TabAbschlussProtokoll";
+import VerfahrensBegründung from "../components/lexara/VerfahrensBegründung";
 
 import { exportCasePDF } from "@/functions/exportCasePDF";
 
@@ -332,6 +333,7 @@ export default function CaseDetail() {
 
       <div style={{ maxWidth: 1100, margin: "0 auto", padding: "24px 24px 48px" }}>
         <p style={{ fontSize: 10, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em", color: "#ccc", marginBottom: 20 }}>Schritt {activeTab} von 9</p>
+        <VerfahrensBegründung caseData={caseData} caseId={caseId} />
         {activeTab===1 && <Tab1Fallerfassung caseId={caseId} caseData={caseData} onUpdate={d=>setCaseData(d)} onDataImport={loadCase} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===2 && <Tab2SubstanzCore caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}
         {activeTab===3 && <Tab3AkteureFristen caseId={caseId} caseData={caseData} onCountChange={loadCase} kiMode={kiMode} activeSub={activeSub} />}

@@ -1,0 +1,63 @@
+{
+  "name": "JurisdictionInsight",
+  "type": "object",
+  "properties": {
+    "jurisdiction": {
+      "type": "string",
+      "title": "Rechtsordnung"
+    },
+    "topic": {
+      "type": "string",
+      "title": "Themenbereich"
+    },
+    "source_type": {
+      "type": "string",
+      "title": "Quellentyp",
+      "enum": [
+        "procedure",
+        "court_practice",
+        "argumentation_pattern",
+        "deadline_pattern",
+        "strategic_approach"
+      ]
+    },
+    "insight_text": {
+      "type": "string",
+      "title": "Erkenntnistext (anonymisiert)"
+    },
+    "usage_count": {
+      "type": "number",
+      "title": "Verwendungsanzahl"
+    },
+    "effectiveness_score": {
+      "type": "number",
+      "title": "Effektivit\u00e4tsscore (0-10)"
+    },
+    "tags": {
+      "type": "array",
+      "title": "Tags",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "jurisdiction",
+    "topic",
+    "insight_text"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
