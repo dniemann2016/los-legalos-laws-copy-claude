@@ -8,8 +8,9 @@ import Step3PatentAnalyse from "./modules/Step3PatentAnalyse";
 import Step4HandlungsOptionen from "./modules/Step4HandlungsOptionen";
 import Step5QuantitativeAnalyse from "./modules/Step5QuantitativeAnalyse";
 import Step6UmsetzungsPlan from "./modules/Step6UmsetzungsPlan";
-import { Brain, Share2 } from "lucide-react";
+import { Brain, Share2, BookOpen } from "lucide-react";
 import NotionExportTab from "./NotionExportTab";
+import RechtlicheEinschaetzungenTab from "./RechtlicheEinschaetzungenTab";
 
 const STEPS = [
   { num: 0,  label: "Dokumente & KI-Briefing", sub: "Upload · Extraktion · Automatisch befüllen",    color: "#5856D6" },
@@ -81,6 +82,7 @@ function Stepper({ current, onSelect, scenario }) {
 export default function EnterpriseShell({ scenario, onSave }) {
   const [step, setStep] = useState(scenario.enterprise_step ?? 0);
   const [showExport, setShowExport] = useState(false);
+  const [showEinschaetzungen, setShowEinschaetzungen] = useState(false);
 
   const handleSave = async (patch) => {
     const updated = { ...scenario, ...patch };
@@ -131,8 +133,22 @@ export default function EnterpriseShell({ scenario, onSave }) {
           )}
         </div>
 
+        {/* Rechtliche Einschätzungen Button */}
+        <button onClick={() => { setShowEinschaetzungen(!showEinschaetzungen); if (!showEinschaetzungen) setShowExport(false); }}
+          style={{
+            width: "100%", marginTop: 10, padding: "8px 0",
+            fontSize: 11, fontWeight: 700,
+            background: showEinschaetzungen ? "#5856D6" : "rgba(0,0,0,0.05)",
+            color: showEinschaetzungen ? "#fff" : "#555",
+            border: "none", borderRadius: 9, cursor: "pointer",
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+            transition: "all 0.15s"
+          }}>
+          <BookOpen size={12} /> {showEinschaetzungen ? "← Zurück zur Analyse" : "Rechtliche Einschätzungen"}
+        </button>
+
         {/* Notion Export Button */}
-        <button onClick={() => setShowExport(!showExport)}
+        <button onClick={() => { setShowExport(!showExport); if (!showExport) setShowEinschaetzungen(false); }}
           style={{
             width: "100%", marginTop: 10, padding: "8px 0",
             fontSize: 11, fontWeight: 700,
@@ -155,7 +171,9 @@ export default function EnterpriseShell({ scenario, onSave }) {
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {showExport ? (
+        {showEinschaetzungen ? (
+          <RechtlicheEinschaetzungenTab scenario={scenario} />
+        ) : showExport ? (
           <NotionExportTab scenario={scenario} />
         ) : (
           <>
