@@ -1,9 +1,8 @@
 import { useNavigate } from "react-router-dom";
-import { Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword, CheckSquare, Calendar, Target } from "lucide-react";
+import { Scale, Users, Bot, LayoutDashboard, MessageSquare, BarChart2, Sword, CheckSquare, Calendar, Target, TrendingUp, Globe, Microscope, FlaskConical, Landmark, Atom } from "lucide-react";
 import { useJurisdiction } from "../hooks/useJurisdiction";
 import { getT } from "../lib/jurisdictionConfig";
 import { useAuth } from "@/lib/AuthContext";
-import StrategischerBeweisstrang from "@/components/modules/StrategischerBeweisstrang";
 
 const PATHS = [
   "/chat/fall-assistent",
@@ -229,15 +228,96 @@ export default function Modules() {
         </div>
       </div>
 
-      {/* Strategischer Beweisstrang – unterhalb der Hauptkarte */}
+      {/* Strategos – unterhalb der Hauptkarte */}
       <div className="max-w-3xl mx-auto mt-5">
-        <p
-          className="text-[10px] font-semibold uppercase tracking-widest mb-3 px-1"
-          style={{ color: "#aaa", letterSpacing: "0.08em" }}
-        >
-          Strategischer Beweisstrang
+        <p className="text-[10px] font-semibold uppercase tracking-widest mb-3 px-1" style={{ color: "#aaa", letterSpacing: "0.08em" }}>
+          Strategos Enterprise
         </p>
-        <StrategischerBeweisstrang />
+
+        {/* Strategos Card */}
+        <button
+          onClick={() => navigate("/strategos")}
+          className="w-full rounded-xl overflow-hidden text-left transition-all duration-150"
+          style={{ background: "#fff", boxShadow: "0 2px 16px rgba(0,0,0,0.10)", border: "1px solid rgba(0,0,0,0.07)" }}
+          onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 6px 28px rgba(0,122,255,0.13)"; e.currentTarget.style.border = "1px solid rgba(0,122,255,0.25)"; }}
+          onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 2px 16px rgba(0,0,0,0.10)"; e.currentTarget.style.border = "1px solid rgba(0,0,0,0.07)"; }}
+        >
+          {/* Gradient header */}
+          <div style={{ background: "linear-gradient(135deg, #0a0a1a 0%, #1a1a3e 50%, #0a1628 100%)", padding: "24px 28px 20px", position: "relative", overflow: "hidden" }}>
+            {/* Background orbs */}
+            <div style={{ position: "absolute", top: -20, right: -20, width: 120, height: 120, borderRadius: "50%", background: "rgba(0,122,255,0.12)", filter: "blur(30px)" }} />
+            <div style={{ position: "absolute", bottom: -10, left: 60, width: 80, height: 80, borderRadius: "50%", background: "rgba(88,86,214,0.15)", filter: "blur(20px)" }} />
+            <div className="flex items-center justify-between relative">
+              <div className="flex items-center gap-3">
+                <div style={{ width: 40, height: 40, borderRadius: 12, background: "rgba(0,122,255,0.2)", border: "1px solid rgba(0,122,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <Target className="w-5 h-5" style={{ color: "#007AFF" }} />
+                </div>
+                <div>
+                  <p style={{ fontSize: 16, fontWeight: 800, color: "#fff", letterSpacing: "-0.3px" }}>Strategos</p>
+                  <p style={{ fontSize: 10, color: "rgba(255,255,255,0.5)", marginTop: 1 }}>Präventive Entscheidungsintelligenz</p>
+                </div>
+              </div>
+              <span style={{ fontSize: 9, fontWeight: 700, padding: "3px 8px", borderRadius: 6, background: "rgba(0,122,255,0.2)", color: "#007AFF", border: "1px solid rgba(0,122,255,0.3)" }}>Enterprise</span>
+            </div>
+            <p style={{ fontSize: 12, color: "rgba(255,255,255,0.65)", marginTop: 14, lineHeight: 1.6 }}>
+              Vertragsanalyse · Patente · Fusionen · Quantitative Risikoanalyse · Monte Carlo · Sun Tzu &amp; Machiavelli Strategie
+            </p>
+          </div>
+          {/* Feature pills */}
+          <div style={{ padding: "14px 28px 16px", display: "flex", flexWrap: "wrap", gap: 6 }}>
+            {["📄 Vertragsklauseln", "⚙️ Patentschutz", "🏢 M&A", "📊 Monte Carlo", "⚖️ Compliance", "🎯 Szenarien"].map(f => (
+              <span key={f} style={{ fontSize: 10.5, fontWeight: 500, padding: "4px 9px", borderRadius: 6, background: "rgba(0,0,0,0.04)", color: "#555", border: "1px solid rgba(0,0,0,0.07)" }}>{f}</span>
+            ))}
+            <span style={{ fontSize: 10.5, fontWeight: 700, padding: "4px 9px", borderRadius: 6, background: "rgba(0,122,255,0.08)", color: "#007AFF", border: "1px solid rgba(0,122,255,0.2)", marginLeft: "auto" }}>Öffnen →</span>
+          </div>
+        </button>
+
+        {/* Visual Infographic Strip */}
+        <div className="grid grid-cols-3 gap-3 mt-4">
+          {/* Jura */}
+          <div style={{ background: "#fff", borderRadius: 14, padding: "16px 14px", border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#e8f5e9", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+              <Landmark className="w-4 h-4" style={{ color: "#34C759" }} />
+            </div>
+            <p style={{ fontSize: 11.5, fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>Rechtssicherheit</p>
+            <p style={{ fontSize: 10, color: "#999", lineHeight: 1.5 }}>Normative Lücken · Präzedenzfälle · Jurisdiktionen</p>
+            {/* Mini bar chart */}
+            <div style={{ display: "flex", gap: 3, alignItems: "flex-end", marginTop: 12, height: 24 }}>
+              {[60, 80, 45, 90, 70, 55, 85].map((h, i) => (
+                <div key={i} style={{ flex: 1, height: `${h}%`, borderRadius: 3, background: i === 3 ? "#34C759" : "rgba(52,199,89,0.25)" }} />
+              ))}
+            </div>
+          </div>
+
+          {/* Wirtschaft */}
+          <div style={{ background: "#fff", borderRadius: 14, padding: "16px 14px", border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#e3f2fd", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+              <TrendingUp className="w-4 h-4" style={{ color: "#007AFF" }} />
+            </div>
+            <p style={{ fontSize: 11.5, fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>Wirtschaftsanalyse</p>
+            <p style={{ fontSize: 10, color: "#999", lineHeight: 1.5 }}>Expected Value · Monte Carlo · Exposure</p>
+            {/* Mini sparkline */}
+            <svg viewBox="0 0 80 24" style={{ width: "100%", marginTop: 12, height: 24 }}>
+              <polyline points="0,20 12,14 24,16 36,8 48,12 60,4 72,7 80,3" fill="none" stroke="#007AFF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              <polyline points="0,20 12,14 24,16 36,8 48,12 60,4 72,7 80,3 80,24 0,24" fill="rgba(0,122,255,0.08)" stroke="none" />
+            </svg>
+          </div>
+
+          {/* Wissenschaft */}
+          <div style={{ background: "#fff", borderRadius: 14, padding: "16px 14px", border: "1px solid rgba(0,0,0,0.07)", boxShadow: "0 1px 6px rgba(0,0,0,0.05)" }}>
+            <div style={{ width: 32, height: 32, borderRadius: 10, background: "#f3e5f5", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10 }}>
+              <Atom className="w-4 h-4" style={{ color: "#AF52DE" }} />
+            </div>
+            <p style={{ fontSize: 11.5, fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>KI-Wissenschaft</p>
+            <p style={{ fontSize: 10, color: "#999", lineHeight: 1.5 }}>Bayesianische Modelle · Verhaltensanalyse</p>
+            {/* Mini radar-like dots */}
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", marginTop: 12 }}>
+              {[9,7,8,6,9,7,5,8].map((v, i) => (
+                <div key={i} style={{ width: v * 2.5, height: v * 2.5, borderRadius: "50%", background: `rgba(175,82,222,${0.15 + v * 0.07})` }} />
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
