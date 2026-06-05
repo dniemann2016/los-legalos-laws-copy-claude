@@ -23,7 +23,120 @@
  */
 import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
-import { Sparkles, Info } from "lucide-react";
+import { Sparkles, Info, RotateCcw } from "lucide-react";
+
+// ── Drehbare 3D-Projektion (Maus-Drag + Touchscreen) ─────────────────────────
+// Ersetzt isometrische Projektion durch echte Rotation um X- und Y-Achse
+function project3D(x, y, z, rotX, rotY, cx, cy, scale) {
+  // Rotation um Y-Achse (links/rechts)
+  const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
+  const x1 =  x * cosY + z * sinY;
+  const z1 = -x * sinY + z * cosY;
+  // Rotation um X-Achse (oben/unten)
+  const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
+  const y2 = y * cosX - z1 * sinX;
+  const z2 = y * sinX + z1 * cosX;
+  // Perspektivische Projektion
+  const fov = 6;
+  const w = fov / (fov + z2 * 0.3 + 1);
+  return [cx + x1 * scale * w, cy - y2 * scale * w, w];
+}
+
+// Hook für Drag-Rotation
+function useRotation(defaultRotX = 0.45, defaultRotY = -0.6) {
+  const [rot, setRot] = useState({ x: defaultRotX, y: defaultRotY });
+  const drag = useRef(null);
+
+  const onMouseDown = useCallback((e) => {
+    drag.current = { mx: e.clientX, my: e.clientY, rx: rot.x, ry: rot.y };
+  }, [rot]);
+
+  const onMouseMove = useCallback((e) => {
+    if (!drag.current) return;
+    const dx = (e.clientX - drag.current.mx) * 0.008;
+    const dy = (e.clientY - drag.current.my) * 0.008;
+    setRot({
+      x: Math.max(-1.2, Math.min(1.2, drag.current.rx + dy)),
+      y: drag.current.ry + dx,
+    });
+  }, []);
+
+  const onMouseUp = useCallback(() => { drag.current = null; }, []);
+
+  const onTouchStart = useCallback((e) => {
+    const t = e.touches[0];
+    drag.current = { mx: t.clientX, my: t.clientY, rx: rot.x, ry: rot.y };
+  }, [rot]);
+
+  const onTouchMove = useCallback((e) => {
+    if (!drag.current) return;
+    const t = e.touches[0];
+    const dx = (t.clientX - drag.current.mx) * 0.008;
+    const dy = (t.clientY - drag.current.my) * 0.008;
+    setRot({
+      x: Math.max(-1.2, Math.min(1.2, drag.current.rx + dy)),
+      y: drag.current.ry + dx,
+    });
+  }, []);
+
+  const onTouchEnd = useCallback(() => { drag.current = null; }, []);
+
+  const reset = useCallback(() => setRot({ x: defaultRotX, y: defaultRotY }), [defaultRotX, defaultRotY]);
+
+  return { rot, onMouseDown, onMouseMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset };
+}
+
+// Achsengitter mit echter 3D-Rotation
+function drawRotatedBox(ctx, rotX, rotY, cx, cy, scale, size = 3) {
+  const proj = (x, y, z) => project3D(x - size/2, y - size/2, z - size/2, rotX, rotY, cx, cy, scale);
+
+  // Bodengitter
+  ctx.strokeStyle = "rgba(0,0,0,0.08)";
+  ctx.lineWidth = 0.7;
+  for (let i = 0; i <= size; i++) {
+    ctx.beginPath();
+    let [px, py] = proj(i, 0, 0); ctx.moveTo(px, py);
+    [px, py] = proj(i, 0, size); ctx.lineTo(px, py); ctx.stroke();
+    ctx.beginPath();
+    [px, py] = proj(0, 0, i); ctx.moveTo(px, py);
+    [px, py] = proj(size, 0, i); ctx.lineTo(px, py); ctx.stroke();
+  }
+  // Rückwände (transparent)
+  ctx.strokeStyle = "rgba(0,0,0,0.05)"; ctx.lineWidth = 0.5;
+  for (let i = 0; i <= size; i++) {
+    ctx.beginPath();
+    let [px, py] = proj(0, i, 0); ctx.moveTo(px, py);
+    [px, py] = proj(0, i, size); ctx.lineTo(px, py); ctx.stroke();
+    ctx.beginPath();
+    [px, py] = proj(0, 0, i); ctx.moveTo(px, py);
+    [px, py] = proj(0, size, i); ctx.lineTo(px, py); ctx.stroke();
+  }
+  // Achslinien
+  ctx.strokeStyle = "rgba(0,0,0,0.25)"; ctx.lineWidth = 1.8;
+  const axes = [
+    [[0,0,0],[size+0.5,0,0]],
+    [[0,0,0],[0,size+0.5,0]],
+    [[0,0,0],[0,0,size+0.5]],
+  ];
+  axes.forEach(([a, b]) => {
+    ctx.beginPath();
+    let [px, py] = proj(...a); ctx.moveTo(px, py);
+    [px, py] = proj(...b); ctx.lineTo(px, py); ctx.stroke();
+  });
+}
+
+function drawRotatedLabels(ctx, rotX, rotY, cx, cy, scale, labels, size = 3) {
+  const proj = (x, y, z) => project3D(x - size/2, y - size/2, z - size/2, rotX, rotY, cx, cy, scale);
+  ctx.font = "bold 9px -apple-system,'Helvetica Neue',sans-serif"; ctx.textAlign = "center";
+  // X-Label
+  ctx.fillStyle = "#555";
+  let [lx, ly] = proj(size * 0.5, -0.7, -0.3); ctx.fillText(labels.x, lx, ly);
+  // Z-Label
+  [lx, ly] = proj(-0.3, -0.7, size * 0.5); ctx.fillText(labels.z, lx, ly);
+  // Y-Label
+  ctx.fillStyle = "#5856D6";
+  [lx, ly] = proj(-0.6, size * 0.5, -0.3); ctx.fillText(labels.y, lx, ly);
+}
 
 // ── Farb-Hilfsfunktionen ──────────────────────────────────────────────────────
 const RISIKO_COLOR = (score) => {
@@ -35,85 +148,7 @@ const RISIKO_COLOR = (score) => {
 
 const RISIKO_SCORE_MAP = { kritisch: 8.5, hoch: 6.5, mittel: 4.5, niedrig: 2.5, positiv: 2 };
 
-// ── Isometrische Projektion ───────────────────────────────────────────────────
-// Standard-Iso: x→rechts-unten, z→links-unten, y→hoch
-function iso(x, y, z, cx, cy, scale) {
-  const ix = (x - z) * Math.cos(Math.PI / 6) * scale;
-  const iy = (x + z) * Math.sin(Math.PI / 6) * scale - y * scale;
-  return [cx + ix, cy + iy];
-}
 
-// ── Gitter & Achsen ───────────────────────────────────────────────────────────
-function drawBox(ctx, cx, cy, scale, size = 3) {
-  // Bodengitter
-  ctx.strokeStyle = "rgba(0,0,0,0.07)";
-  ctx.lineWidth = 0.7;
-  for (let i = 0; i <= size; i++) {
-    ctx.beginPath();
-    const [x0, y0] = iso(i, 0, 0, cx, cy, scale);
-    const [x1, y1] = iso(i, 0, size, cx, cy, scale);
-    ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-    ctx.beginPath();
-    const [x2, y2] = iso(0, 0, i, cx, cy, scale);
-    const [x3, y3] = iso(size, 0, i, cx, cy, scale);
-    ctx.moveTo(x2, y2); ctx.lineTo(x3, y3); ctx.stroke();
-  }
-  // Drei Achslinien
-  ctx.strokeStyle = "rgba(0,0,0,0.22)";
-  ctx.lineWidth = 1.5;
-  // X-Achse
-  ctx.beginPath();
-  const [x0, y0] = iso(0, 0, 0, cx, cy, scale);
-  const [x1, y1] = iso(size + 0.6, 0, 0, cx, cy, scale);
-  ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.stroke();
-  // Z-Achse
-  ctx.beginPath();
-  const [z0, zz0] = iso(0, 0, 0, cx, cy, scale);
-  const [z1, zz1] = iso(0, 0, size + 0.6, cx, cy, scale);
-  ctx.moveTo(z0, zz0); ctx.lineTo(z1, zz1); ctx.stroke();
-  // Y-Achse
-  ctx.beginPath();
-  const [yy0, yy1] = iso(0, 0, 0, cx, cy, scale);
-  const [yy2, yy3] = iso(0, size + 0.6, 0, cx, cy, scale);
-  ctx.moveTo(yy0, yy1); ctx.lineTo(yy2, yy3); ctx.stroke();
-  // Tick marks auf X
-  ctx.strokeStyle = "rgba(0,0,0,0.15)"; ctx.lineWidth = 0.8;
-  for (let i = 1; i <= size; i++) {
-    ctx.beginPath();
-    const [ax, ay] = iso(i, 0, 0, cx, cy, scale);
-    const [ax2, ay2] = iso(i, 0, 0.15, cx, cy, scale);
-    ctx.moveTo(ax, ay); ctx.lineTo(ax2, ay2); ctx.stroke();
-    const [bx, by] = iso(0, 0, i, cx, cy, scale);
-    const [bx2, by2] = iso(0.15, 0, i, cx, cy, scale);
-    ctx.moveTo(bx, by); ctx.lineTo(bx2, by2); ctx.stroke();
-  }
-}
-
-function drawLabels(ctx, cx, cy, scale, labels, size = 3) {
-  ctx.font = "bold 9.5px -apple-system,'Helvetica Neue',sans-serif";
-  ctx.fillStyle = "#555";
-  ctx.textAlign = "center";
-  // X-Label
-  const [lx, ly] = iso(size * 0.5, -0.15, -0.55, cx, cy, scale);
-  ctx.fillText(labels.x, lx, ly);
-  // Z-Label
-  const [lz, lzz] = iso(-0.55, -0.15, size * 0.5, cx, cy, scale);
-  ctx.fillText(labels.z, lz, lzz);
-  // Y-Label
-  ctx.fillStyle = "#5856D6";
-  const [ly0, ly1] = iso(-0.45, size * 0.5 + 0.3, -0.25, cx, cy, scale);
-  ctx.fillText(labels.y, ly0, ly1);
-  // Tick-Werte X
-  ctx.font = "8px -apple-system,sans-serif"; ctx.fillStyle = "#aaa";
-  for (let i = 1; i <= size; i++) {
-    const val = ((i / size) * (labels.xMax || 1)).toFixed(labels.xDec !== undefined ? labels.xDec : 1);
-    const [tx, ty] = iso(i, 0, -0.25, cx, cy, scale);
-    ctx.fillText(val, tx, ty);
-    const zval = ((i / size) * (labels.zMax || 1)).toFixed(labels.zDec !== undefined ? labels.zDec : 1);
-    const [tzx, tzy] = iso(-0.28, 0, i, cx, cy, scale);
-    ctx.fillText(zval, tzx, tzy);
-  }
-}
 
 // ── Bubble mit Schatten & Stiel ───────────────────────────────────────────────
 function drawBubble(ctx, sx, sy, shx, shy, r, color, label, empfohlen = false) {
@@ -138,11 +173,11 @@ function drawBubble(ctx, sx, sy, shx, shy, r, color, label, empfohlen = false) {
 }
 
 // ── FORMAT 01: Klausel-Risikoraum ─────────────────────────────────────────────
-// X: Eintrittswahrscheinlichkeit | Y: Wirkungstiefe | Z: Zeithorizont
 function RisikoRaum({ klauseln, kiData }) {
   const canvasRef = useRef(null);
   const [hovered, setHovered] = useState(null);
   const pointsRef = useRef([]);
+  const { rot, onMouseDown, onMouseMove: onRotMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.4, -0.55);
 
   const data = kiData?.punkte?.length
     ? kiData.punkte.map(p => ({
@@ -156,13 +191,12 @@ function RisikoRaum({ klauseln, kiData }) {
       }))
     : klauseln.map((k, i) => {
         const rMap = { kritisch: 0.85, hoch: 0.65, mittel: 0.45, niedrig: 0.25, positiv: 0.2 };
-        const s = k.szenarien;
         const horizMap = { kurzfristig: 0.1, mittelfristig: 0.5, langfristig: 0.85 };
         return {
           name: k.klausel_typ?.slice(0, 12) || `§${i + 1}`,
           x: rMap[k.risiko_stufe] || 0.5,
           y: rMap[k.risiko_stufe] || 0.5,
-          z: horizMap[s?.[0]?.horizont] ?? (s?.length ? 0.5 : 0.7),
+          z: horizMap[k.szenarien?.[0]?.horizont] ?? 0.6,
           color: RISIKO_COLOR((rMap[k.risiko_stufe] || 0.5) * 10),
           score: (rMap[k.risiko_stufe] || 0.5) * 10,
           einordnung: k.kurzbeschreibung?.slice(0, 60),
@@ -175,35 +209,36 @@ function RisikoRaum({ klauseln, kiData }) {
     const ctx = canvas.getContext("2d");
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-    const cx = W * 0.48, cy = H * 0.74, scale = 42;
+    const cx = W * 0.5, cy = H * 0.5, scale = 58;
 
-    drawBox(ctx, cx, cy, scale);
-    drawLabels(ctx, cx, cy, scale, {
-      x: "X: Eintrittswahrsch. →", z: "Z: Zeithorizont (0→5J+) →", y: "↑ Y: Wirkungstiefe",
-      xMax: 1, xDec: 1, zMax: 1, zDec: 1,
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
+    drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
+      x: "X: Wahrscheinlichkeit", z: "Z: Zeithorizont", y: "Y: Wirkungstiefe",
     });
 
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
     const pts = [];
-    // Sortiere nach Y damit vordere Bubbles oben gerendert werden
-    const sorted = [...data].sort((a, b) => a.x + a.z - (b.x + b.z));
-    sorted.forEach((d) => {
-      const px = d.x * 3, py = d.y * 3, pz = d.z * 3;
-      const [sx, sy] = iso(px, py, pz, cx, cy, scale);
-      const [shx, shy] = iso(px, 0, pz, cx, cy, scale);
-      const r = 7 + d.score * 0.9;
+    [...data].sort((a, b) => {
+      const [,,wa] = proj(a.x * 3, a.y * 3, a.z * 3);
+      const [,,wb] = proj(b.x * 3, b.y * 3, b.z * 3);
+      return wa - wb;
+    }).forEach((d) => {
+      const [sx, sy] = proj(d.x * 3, d.y * 3, d.z * 3);
+      const [shx, shy] = proj(d.x * 3, 0, d.z * 3);
+      const r = 7 + d.score * 0.85;
       drawBubble(ctx, sx, sy, shx, shy, r, d.color, d.name);
       pts.push({ sx, sy, r, d });
     });
     pointsRef.current = pts;
-  }, [data]);
+  }, [data, rot]);
 
   const handleMouseMove = (e) => {
+    onRotMove(e);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleX;
+    const sx = canvas.width / rect.width;
+    const mx = (e.clientX - rect.left) * sx, my = (e.clientY - rect.top) * sx;
     const hit = pointsRef.current.find(p => Math.hypot(p.sx - mx, p.sy - my) < p.r + 5);
     setHovered(hit?.d || null);
   };
@@ -211,10 +246,16 @@ function RisikoRaum({ klauseln, kiData }) {
   return (
     <div style={{ position: "relative" }}>
       <canvas ref={canvasRef} width={540} height={360}
-        onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}
-        style={{ width: "100%", maxWidth: 540, cursor: "crosshair", display: "block", margin: "0 auto" }} />
+        onMouseDown={onMouseDown} onMouseMove={handleMouseMove}
+        onMouseUp={onMouseUp} onMouseLeave={() => { onMouseUp(); setHovered(null); }}
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
+      <button onClick={reset} title="Ansicht zurücksetzen"
+        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
+        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
+      </button>
       {hovered && (
-        <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10 }}>
+        <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10, pointerEvents: "none" }}>
           <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>{hovered.name}</p>
           <p style={{ color: "#888" }}>X Wahrsch.: {(hovered.x * 100).toFixed(0)}%</p>
           <p style={{ color: "#888" }}>Y Wirkung: {(hovered.y * 10).toFixed(1)}/10</p>
@@ -226,10 +267,10 @@ function RisikoRaum({ klauseln, kiData }) {
   );
 }
 
-// ── FORMAT 03: Wirkungslandschaft (Surface-Plot) ──────────────────────────────
-// X: Konzernbereiche | Y: Zeitpunkte | Z: €-Wirkung Mio
+// ── FORMAT 03: Wirkungslandschaft (Surface-Plot, rotierbar) ───────────────────
 function Wirkungslandschaft({ klausel, kiData }) {
   const canvasRef = useRef(null);
+  const { rot, onMouseDown, onMouseMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.38, -0.52);
 
   const BEREICHE = ["Vertrieb", "Produktion", "F&E", "Finanz.", "Reputat.", "Strategie"];
   const ZEITEN   = ["Q1", "Q2", "Q4", "J2", "J3", "J5"];
@@ -248,100 +289,104 @@ function Wirkungslandschaft({ klausel, kiData }) {
     const ctx = canvas.getContext("2d");
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-    const cx = W * 0.40, cy = H * 0.80, scale = 30;
+    const cx = W * 0.5, cy = H * 0.5, scale = 52;
 
     const NB = BEREICHE.length, NT = ZEITEN.length;
     const allVals = grid.flat().filter(v => isFinite(v));
     const minV = Math.min(...allVals, 0), maxV = Math.max(...allVals, 0);
+    const yscale = (v) => (v / (Math.max(Math.abs(minV), Math.abs(maxV)) + 0.1)) * 2.8;
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
 
-    // Back-to-front render
-    for (let bi = NB - 2; bi >= 0; bi--) {
-      for (let ti = NT - 2; ti >= 0; ti--) {
+    // Alle Surface-Patches sammeln + nach Tiefe sortieren (Painter's algorithm)
+    const patches = [];
+    for (let bi = 0; bi < NB - 1; bi++) {
+      for (let ti = 0; ti < NT - 1; ti++) {
         if (!grid[bi] || !grid[bi+1]) continue;
-        const vals = [grid[bi][ti], grid[bi+1][ti], grid[bi+1][ti+1], grid[bi][ti+1]];
-        const avgV = vals.reduce((a, b) => a + b, 0) / 4;
-        const norm = (avgV - minV) / (maxV - minV + 0.001);
-        const red   = avgV < 0 ? Math.round(180 + norm * 20) : 29;
-        const green = avgV < 0 ? Math.round(20 + norm * 30) : 185;
-        const blue  = avgV < 0 ? 50 : 84;
-        const alpha = 0.72 + Math.abs(avgV) / (Math.abs(minV) + 0.1) * 0.15;
-
-        const yscale = (v) => (v / (Math.max(Math.abs(minV), Math.abs(maxV)) + 0.1)) * 2.8;
+        const vs = [grid[bi][ti], grid[bi+1][ti], grid[bi+1][ti+1], grid[bi][ti+1]];
+        const avgV = vs.reduce((a, b) => a + b, 0) / 4;
         const corners = [
-          [bi / (NB-1) * 3, yscale(grid[bi][ti]),     ti / (NT-1) * 3],
-          [(bi+1)/(NB-1)*3, yscale(grid[bi+1][ti]),   ti / (NT-1) * 3],
+          [bi/(NB-1)*3, yscale(grid[bi][ti]),   ti/(NT-1)*3],
+          [(bi+1)/(NB-1)*3, yscale(grid[bi+1][ti]), ti/(NT-1)*3],
           [(bi+1)/(NB-1)*3, yscale(grid[bi+1][ti+1]), (ti+1)/(NT-1)*3],
-          [bi / (NB-1) * 3, yscale(grid[bi][ti+1]),   (ti+1)/(NT-1)*3],
+          [bi/(NB-1)*3, yscale(grid[bi][ti+1]), (ti+1)/(NT-1)*3],
         ];
-        ctx.beginPath();
-        corners.forEach(([x, y, z], idx) => {
-          const [px, py] = iso(x, y, z, cx, cy, scale);
-          idx === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
-        });
-        ctx.closePath();
-        ctx.fillStyle = `rgba(${red},${green},${blue},${Math.min(0.9, alpha)})`;
-        ctx.fill();
-        ctx.strokeStyle = "rgba(255,255,255,0.35)"; ctx.lineWidth = 0.6; ctx.stroke();
+        const projected = corners.map(([x,y,z]) => proj(x,y,z));
+        const avgZ = projected.reduce((s,[,,w]) => s + w, 0) / 4;
+        patches.push({ corners: projected, avgV, avgZ });
       }
     }
+    patches.sort((a, b) => a.avgZ - b.avgZ);
 
-    // Bodenrahmen
-    drawBox(ctx, cx, cy, scale);
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
 
-    // Achsenbeschriftungen
-    ctx.font = "8.5px -apple-system,sans-serif"; ctx.fillStyle = "#777"; ctx.textAlign = "center";
+    patches.forEach(({ corners, avgV }) => {
+      const norm = (avgV - minV) / (maxV - minV + 0.001);
+      const red   = avgV < 0 ? Math.round(180 + (1-norm)*20) : 29;
+      const green = avgV < 0 ? Math.round(20 + norm*30) : 185;
+      const blue  = avgV < 0 ? 50 : 84;
+      ctx.beginPath();
+      corners.forEach(([px, py], i) => i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py));
+      ctx.closePath();
+      ctx.fillStyle = `rgba(${red},${green},${blue},0.78)`; ctx.fill();
+      ctx.strokeStyle = "rgba(255,255,255,0.3)"; ctx.lineWidth = 0.5; ctx.stroke();
+    });
+
+    drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
+      x: "X: Bereiche", z: "Y: Zeit", y: "Z: €-Wirkung",
+    });
+
+    // Bereichs-Labels
+    ctx.font = "8px -apple-system,sans-serif"; ctx.fillStyle = "#888"; ctx.textAlign = "center";
     BEREICHE.forEach((b, bi) => {
-      const [px, py] = iso(bi / (NB-1) * 3, 0, -0.42, cx, cy, scale);
-      ctx.fillText(b.slice(0, 7), px, py);
+      const [px, py] = proj(bi/(NB-1)*3, 0, -0.5);
+      ctx.fillText(b.slice(0,6), px, py);
     });
     ZEITEN.forEach((t, ti) => {
-      const [px, py] = iso(-0.44, 0, ti / (NT-1) * 3, cx, cy, scale);
+      const [px, py] = proj(-0.5, 0, ti/(NT-1)*3);
       ctx.fillText(t, px, py);
     });
-    ctx.fillStyle = "#5856D6"; ctx.font = "bold 9px -apple-system,sans-serif";
-    const [lx, ly] = iso(-0.5, 2.6, -0.5, cx, cy, scale);
-    ctx.fillText("↑ Z: €-Wirkung (Mio)", lx, ly - 4);
-    ctx.fillStyle = "#555";
-    const [lbx, lby] = iso(1.5, 0, -0.75, cx, cy, scale);
-    ctx.fillText("X: Konzernbereiche →", lbx, lby);
-    const [ltx, lty] = iso(-0.7, 0, 1.5, cx, cy, scale);
-    ctx.save(); ctx.translate(ltx, lty); ctx.fillText("Y: Zeit →", 0, 0); ctx.restore();
 
     // Farbskala
-    const scaleX = W - 28, scaleY = H * 0.18;
-    const grad = ctx.createLinearGradient(scaleX, scaleY, scaleX, scaleY + 80);
-    grad.addColorStop(0, "#1DB954");
-    grad.addColorStop(0.5, "#FF9500");
-    grad.addColorStop(1, "#B81C3A");
-    ctx.fillStyle = grad;
-    ctx.fillRect(scaleX, scaleY, 10, 80);
+    const sx = W - 26, sy = H * 0.15;
+    const grad = ctx.createLinearGradient(sx, sy, sx, sy + 80);
+    grad.addColorStop(0, "#1DB954"); grad.addColorStop(0.5, "#FF9500"); grad.addColorStop(1, "#B81C3A");
+    ctx.fillStyle = grad; ctx.fillRect(sx, sy, 10, 80);
     ctx.font = "7px -apple-system,sans-serif"; ctx.fillStyle = "#888"; ctx.textAlign = "left";
-    ctx.fillText(`+${maxV.toFixed(1)}M`, scaleX + 13, scaleY + 7);
-    ctx.fillText("0", scaleX + 13, scaleY + 42);
-    ctx.fillText(`${minV.toFixed(1)}M`, scaleX + 13, scaleY + 80);
-  }, [grid, klausel]);
+    ctx.fillText(`+${maxV.toFixed(0)}M`, sx+12, sy+7);
+    ctx.fillText("0", sx+12, sy+42);
+    ctx.fillText(`${minV.toFixed(0)}M`, sx+12, sy+79);
+  }, [grid, klausel, rot]);
 
   return (
-    <canvas ref={canvasRef} width={520} height={360}
-      style={{ width: "100%", maxWidth: 520, display: "block", margin: "0 auto" }} />
+    <div style={{ position: "relative" }}>
+      <canvas ref={canvasRef} width={520} height={360}
+        onMouseDown={onMouseDown} onMouseMove={onMouseMove}
+        onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{ width: "100%", maxWidth: 520, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
+      <button onClick={reset} title="Ansicht zurücksetzen"
+        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
+        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
+      </button>
+    </div>
   );
 }
 
-// ── FORMAT 04: Optionsraum ────────────────────────────────────────────────────
-// X: Erfolgswahrscheinlichkeit | Y: Kosten Mio€ | Z: Strategischer Wert
+// ── FORMAT 04: Optionsraum (rotierbar) ───────────────────────────────────────
 function Optionsraum({ kiData, klausel }) {
   const canvasRef = useRef(null);
   const [hovered, setHovered] = useState(null);
   const pointsRef = useRef([]);
+  const { rot, onMouseDown, onMouseMove: onRotMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.4, -0.55);
 
   const DEFAULT = [
-    { name: "A: Akzept.", x: 0.9,  y: 0.05, z: 0.1,  color: "#888",    empfohlen: false },
-    { name: "B: Nachverh.", x: 0.62, y: 0.4,  z: 0.72, color: "#0A84FF", empfohlen: true  },
-    { name: "C: Struktur", x: 0.50, y: 0.55, z: 0.5,  color: "#FF9500", empfohlen: false },
-    { name: "D: Kompens.", x: 0.45, y: 0.65, z: 0.45, color: "#FF9500", empfohlen: false },
-    { name: "E: Garantien", x: 0.35, y: 0.5,  z: 0.58, color: "#5856D6", empfohlen: false },
-    { name: "F: Angriff", x: 0.28, y: 0.9,  z: 0.95, color: "#B81C3A", empfohlen: false },
-    { name: "G: Monitoring", x: 0.82, y: 0.1,  z: 0.2,  color: "#34C759", empfohlen: false },
+    { name: "A: Akzept.", x: 0.9,  y: 0.05, z: 0.1,  empfohlen: false },
+    { name: "B: Nachverh.", x: 0.62, y: 0.4,  z: 0.72, empfohlen: true  },
+    { name: "C: Struktur", x: 0.50, y: 0.55, z: 0.5,  empfohlen: false },
+    { name: "D: Kompens.", x: 0.45, y: 0.65, z: 0.45, empfohlen: false },
+    { name: "E: Garantien", x: 0.35, y: 0.5,  z: 0.58, empfohlen: false },
+    { name: "F: Angriff", x: 0.28, y: 0.9,  z: 0.95, empfohlen: false },
+    { name: "G: Monitoring", x: 0.82, y: 0.1,  z: 0.2,  empfohlen: false },
   ];
 
   const data = kiData?.optionen?.length
@@ -350,7 +395,6 @@ function Optionsraum({ kiData, klausel }) {
         x: Math.min(1, Math.max(0, (o.erfolg || 50) / 100)),
         y: Math.min(1.2, Math.max(0, o.kosten_mio || 0.5)),
         z: Math.min(1, Math.max(0, o.wert || 0.5)),
-        color: o.empfohlen ? "#1DB954" : "#0A84FF",
         empfohlen: !!o.empfohlen,
         detail: o.detail,
       }))
@@ -362,40 +406,36 @@ function Optionsraum({ kiData, klausel }) {
     const ctx = canvas.getContext("2d");
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-    const cx = W * 0.47, cy = H * 0.74, scale = 44;
+    const cx = W * 0.5, cy = H * 0.5, scale = 58;
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
 
-    drawBox(ctx, cx, cy, scale);
-    drawLabels(ctx, cx, cy, scale, {
-      x: "X: Erfolgswahrsch. →", z: "Y: Kosten (Mio€) →", y: "↑ Z: Strat. Wert",
-      xMax: 1, xDec: 1, zMax: 1.2, zDec: 1,
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
+    drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
+      x: "X: Erfolgswahrsch.", z: "Y: Kosten (Mio€)", y: "Z: Strat. Wert",
     });
 
     const pts = [];
-    const sorted = [...data].sort((a, b) => a.x + a.y - (b.x + b.y));
-    sorted.forEach((d) => {
-      // X=Erfolg, Z=Kosten (als z-Achse im iso), Y=Strat.Wert (als y-Achse nach oben)
-      const px = d.x * 3, py = d.z * 3, pz = (d.y / 1.2) * 3;
-      const [sx, sy] = iso(px, py, pz, cx, cy, scale);
-      const [shx, shy] = iso(px, 0, pz, cx, cy, scale);
-      const r = d.empfohlen ? 15 : 11;
-      drawBubble(ctx, sx, sy, shx, shy, r, d.color, d.name, d.empfohlen);
-      pts.push({ sx, sy, r, d });
+    [...data].sort((a, b) => {
+      const [,,wa] = proj(a.x * 3, a.z * 3, (a.y/1.2)*3);
+      const [,,wb] = proj(b.x * 3, b.z * 3, (b.y/1.2)*3);
+      return wa - wb;
+    }).forEach((d) => {
+      const color = d.empfohlen ? "#1DB954" : d.z > 0.7 ? "#B81C3A" : d.z > 0.4 ? "#FF9500" : "#0A84FF";
+      const [sx, sy] = proj(d.x * 3, d.z * 3, (d.y/1.2)*3);
+      const [shx, shy] = proj(d.x * 3, 0, (d.y/1.2)*3);
+      drawBubble(ctx, sx, sy, shx, shy, d.empfohlen ? 15 : 11, color, d.name, d.empfohlen);
+      pts.push({ sx, sy, r: d.empfohlen ? 15 : 11, d: { ...d, color } });
     });
     pointsRef.current = pts;
-
-    // "Ideale Zone" Annotation
-    ctx.font = "8px -apple-system,sans-serif"; ctx.fillStyle = "#1DB95480"; ctx.textAlign = "center";
-    const [iz, izy] = iso(3.2, 3.2, -0.1, cx, cy, scale);
-    ctx.fillText("← Ideale Zone", iz, izy);
-  }, [data]);
+  }, [data, rot]);
 
   const handleMouseMove = (e) => {
+    onRotMove(e);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleX;
+    const sx = canvas.width / rect.width;
+    const mx = (e.clientX - rect.left) * sx, my = (e.clientY - rect.top) * sx;
     const hit = pointsRef.current.find(p => Math.hypot(p.sx - mx, p.sy - my) < p.r + 7);
     setHovered(hit?.d || null);
   };
@@ -403,15 +443,21 @@ function Optionsraum({ kiData, klausel }) {
   return (
     <div style={{ position: "relative" }}>
       <canvas ref={canvasRef} width={540} height={360}
-        onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}
-        style={{ width: "100%", maxWidth: 540, cursor: "crosshair", display: "block", margin: "0 auto" }} />
+        onMouseDown={onMouseDown} onMouseMove={handleMouseMove}
+        onMouseUp={onMouseUp} onMouseLeave={() => { onMouseUp(); setHovered(null); }}
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
+      <button onClick={reset} title="Ansicht zurücksetzen"
+        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
+        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
+      </button>
       {hovered && (
-        <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10 }}>
+        <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10, pointerEvents: "none" }}>
           <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>{hovered.name}</p>
           <p style={{ color: "#888" }}>X Erfolg: {(hovered.x * 100).toFixed(0)}%</p>
-          <p style={{ color: "#888" }}>Y Kosten: {hovered.y.toFixed(2)} Mio €</p>
+          <p style={{ color: "#888" }}>Y Kosten: {hovered.y?.toFixed(2)} Mio €</p>
           <p style={{ color: "#888" }}>Z Strat. Wert: {(hovered.z * 10).toFixed(1)}/10</p>
-          {hovered.empfohlen && <p style={{ color: "#1DB954", fontWeight: 700, marginTop: 4 }}>★ EMPFOHLEN (Pareto-optimal)</p>}
+          {hovered.empfohlen && <p style={{ color: "#1DB954", fontWeight: 700, marginTop: 4 }}>★ EMPFOHLEN</p>}
           {hovered.detail && <p style={{ color: "#555", marginTop: 5, borderTop: "1px solid rgba(0,0,0,0.07)", paddingTop: 5 }}>{hovered.detail}</p>}
         </div>
       )}
@@ -419,19 +465,18 @@ function Optionsraum({ kiData, klausel }) {
   );
 }
 
-// ── FORMAT 12: Portfolio-Würfel ───────────────────────────────────────────────
-// X: Vertragsvolumen p.a. Mio€ | Y: Risikoscore 0–10 | Z: Restlaufzeit Jahre
+// ── FORMAT 12: Portfolio-Würfel (rotierbar) ───────────────────────────────────
 function PortfolioWuerfel({ klauseln, kiData }) {
   const canvasRef = useRef(null);
   const [hovered, setHovered] = useState(null);
   const pointsRef = useRef([]);
+  const { rot, onMouseDown, onMouseMove: onRotMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.4, -0.55);
 
-  // Stabile Fallback-Daten (kein Math.random im Render — useRef für Stabilität)
   const fallbackRef = useRef(null);
   if (!fallbackRef.current) {
     fallbackRef.current = klauseln.map((k, i) => ({
       name: k.klausel_typ?.slice(0, 14) || `§${i + 1}`,
-      x: 15 + (i * 37 + 11) % 175,          // deterministisch, kein Random
+      x: 15 + (i * 37 + 11) % 175,
       y: RISIKO_SCORE_MAP[k.risiko_stufe] || 5,
       z: k.szenarien?.length
         ? (k.szenarien[0]?.horizont === "langfristig" ? 6.5 : k.szenarien[0]?.horizont === "mittelfristig" ? 4 : 1.5)
@@ -458,58 +503,54 @@ function PortfolioWuerfel({ klauseln, kiData }) {
     const ctx = canvas.getContext("2d");
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-    const cx = W * 0.43, cy = H * 0.76, scale = 28;
-
-    drawBox(ctx, cx, cy, scale);
+    const cx = W * 0.5, cy = H * 0.5, scale = 52;
     const maxVol = Math.max(...data.map(d => d.x), 200);
-    drawLabels(ctx, cx, cy, scale, {
-      x: "X: Volumen (Mio€/J) →", z: "Z: Restlaufzeit (J) →", y: "↑ Y: Risiko-Score",
-      xMax: maxVol, xDec: 0, zMax: 8, zDec: 0,
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
+
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
+    drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
+      x: "X: Volumen (Mio€)", z: "Z: Restlaufzeit (J)", y: "Y: Risiko-Score",
     });
 
-    // Kritische Zone hervorheben (hohes Risiko + hohe Laufzeit + hohes Volumen)
-    const crX0 = 2.0, crY0 = 2.0, crZ0 = 2.0;
+    // Kritische Zone
     ctx.beginPath();
-    const corners3D = [
-      [crX0,  crY0, crZ0], [3, crY0, crZ0], [3, crY0, 3], [crX0, crY0, 3],
-    ];
-    corners3D.forEach(([x,y,z], i) => {
-      const [px, py] = iso(x, y, z, cx, cy, scale);
+    const cZone = [[2,2,2],[3,2,2],[3,2,3],[2,2,3]];
+    cZone.forEach(([x,y,z], i) => {
+      const [px, py] = proj(x, y, z);
       i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
     });
     ctx.closePath();
-    ctx.fillStyle = "rgba(184,28,58,0.06)"; ctx.fill();
-    ctx.strokeStyle = "rgba(184,28,58,0.25)"; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke();
+    ctx.fillStyle = "rgba(184,28,58,0.07)"; ctx.fill();
+    ctx.strokeStyle = "rgba(184,28,58,0.3)"; ctx.lineWidth = 1; ctx.setLineDash([3,3]); ctx.stroke();
     ctx.setLineDash([]);
 
-    // Punkte back-to-front
     const pts = [];
-    const sorted = [...data].sort((a, b) => a.x + a.z - (b.x + b.z));
-    sorted.forEach((d) => {
-      const px = (d.x / maxVol) * 3;
-      const py = (d.y / 10) * 3;
-      const pz = (Math.min(d.z, 8) / 8) * 3;
-      const [sx, sy] = iso(px, py, pz, cx, cy, scale);
-      const [shx, shy] = iso(px, 0, pz, cx, cy, scale);
+    [...data].sort((a, b) => {
+      const [,,wa] = proj((a.x/maxVol)*3, (a.y/10)*3, (a.z/8)*3);
+      const [,,wb] = proj((b.x/maxVol)*3, (b.y/10)*3, (b.z/8)*3);
+      return wa - wb;
+    }).forEach((d) => {
+      const px = (d.x/maxVol)*3, py = (d.y/10)*3, pz = (d.z/8)*3;
+      const [sx, sy] = proj(px, py, pz);
+      const [shx, shy] = proj(px, 0, pz);
       const r = 6 + d.score * 0.75;
       drawBubble(ctx, sx, sy, shx, shy, r, d.color, d.name);
       pts.push({ sx, sy, r, d });
     });
     pointsRef.current = pts;
 
-    // Kritische Zone Label
-    ctx.font = "8px -apple-system,sans-serif"; ctx.fillStyle = "rgba(184,28,58,0.55)"; ctx.textAlign = "center";
-    const [kx, ky] = iso(2.7, 3.0, 2.7, cx, cy, scale);
+    ctx.font = "8px -apple-system,sans-serif"; ctx.fillStyle = "rgba(184,28,58,0.5)"; ctx.textAlign = "center";
+    const [kx, ky] = proj(2.7, 3.2, 2.7);
     ctx.fillText("⚠ Kritische Zone", kx, ky - 4);
-  }, [data]);
+  }, [data, rot]);
 
   const handleMouseMove = (e) => {
+    onRotMove(e);
     const canvas = canvasRef.current;
     if (!canvas) return;
     const rect = canvas.getBoundingClientRect();
-    const scaleX = canvas.width / rect.width;
-    const mx = (e.clientX - rect.left) * scaleX;
-    const my = (e.clientY - rect.top) * scaleX;
+    const sx = canvas.width / rect.width;
+    const mx = (e.clientX - rect.left) * sx, my = (e.clientY - rect.top) * sx;
     const hit = pointsRef.current.find(p => Math.hypot(p.sx - mx, p.sy - my) < p.r + 6);
     setHovered(hit?.d || null);
   };
@@ -517,17 +558,21 @@ function PortfolioWuerfel({ klauseln, kiData }) {
   return (
     <div style={{ position: "relative" }}>
       <canvas ref={canvasRef} width={540} height={360}
-        onMouseMove={handleMouseMove} onMouseLeave={() => setHovered(null)}
-        style={{ width: "100%", maxWidth: 540, cursor: "crosshair", display: "block", margin: "0 auto" }} />
+        onMouseDown={onMouseDown} onMouseMove={handleMouseMove}
+        onMouseUp={onMouseUp} onMouseLeave={() => { onMouseUp(); setHovered(null); }}
+        onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
+        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
+      <button onClick={reset} title="Ansicht zurücksetzen"
+        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
+        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
+      </button>
       {hovered && (
-        <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10 }}>
+        <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10, pointerEvents: "none" }}>
           <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>{hovered.name}</p>
           <p style={{ color: "#888" }}>X Volumen: {hovered.x?.toFixed(0)} Mio €/J</p>
           <p style={{ color: "#888" }}>Y Risiko: {hovered.y?.toFixed(1)}/10</p>
           <p style={{ color: "#888" }}>Z Restlaufzeit: {hovered.z?.toFixed(1)} Jahre</p>
-          {hovered.y >= 7 && hovered.z >= 5 && (
-            <p style={{ color: "#B81C3A", fontWeight: 700, marginTop: 4 }}>⚠ In kritischer Zone</p>
-          )}
+          {hovered.y >= 7 && hovered.z >= 5 && <p style={{ color: "#B81C3A", fontWeight: 700, marginTop: 4 }}>⚠ Kritische Zone</p>}
         </div>
       )}
     </div>
