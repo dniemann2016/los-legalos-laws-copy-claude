@@ -379,7 +379,8 @@ AUFGABEN:
 5. ERFOLGSFAKTOREN: 3 kritische Erfolgsfaktoren (konkret, bezogen auf diesen Fall).
 6. HAUPTRISIKEN: 3 Hauptrisiken (konkret, mit Bezug auf Vertragsklauseln/Quant-Daten wo verfügbar).
 7. DREHBUCH: Was passiert in 30, 90, 180 Tagen bei diesem Reaktionsprofil? Konkrete Ereignisse, nicht allgemein.
-8. PROGNOSEKORREKTUR: Wie muss die Erfolgswahrscheinlichkeit (${prognose}%) korrigiert werden? Zahl zwischen -20 und +20.`,
+8. PROGNOSEKORREKTUR: Wie muss die taktische Erfolgswahrscheinlichkeit (${prognose}%) korrigiert werden? Zahl zwischen -20 und +20.
+9. VERTRAGS-ERFOLGSWAHRSCHEINLICHKEIT: Berechne eine eigenständige Gesamt-Erfolgswahrscheinlichkeit des VERTRAGS/SZENARIOS (0-100%) auf Basis ALLER Strategos-Daten: Vertragsklauseln (Risikostufen, kritische Klauseln), Quantanalyse (EV, Worst/Best-Case), Situationsanalyse (Gesamtrisiko, Exposure), Handlungsoptionen (beste Erfolgswahrscheinlichkeit), Strategos-Empfehlung (Grundhaltung, Hebel), Umsetzungsplan. Dies ist UNABHÄNGIG von den Reaktionsmustern — eine reine Vertragsbewertung. Gib auch eine kurze Begründung (2-3 Sätze).`,
     response_json_schema: {
       type: "object",
       properties: {
@@ -402,7 +403,9 @@ AUFGABEN:
           t180: { type: "string" }
         }},
         prognose_korrektur: { type: "number" },
-        prognose_begruendung: { type: "string" }
+        prognose_begruendung: { type: "string" },
+        vertrags_erfolg_pct: { type: "number" },
+        vertrags_erfolg_begruendung: { type: "string" }
       }
     },
     model: "claude_sonnet_4_6"
@@ -691,6 +694,44 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
       {kiResult && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
 
+          {/* ── Vertrags-Erfolgswahrscheinlichkeit (prominent, oben) ── */}
+          {kiResult.vertrags_erfolg_pct != null && (
+            <div style={{
+              background: "linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%)",
+              borderRadius: 16, padding: "20px 24px",
+              display: "flex", alignItems: "center", gap: 24, flexWrap: "wrap",
+            }}>
+              <div style={{ textAlign: "center", flexShrink: 0 }}>
+                <p style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.12em", marginBottom: 8 }}>Vertrags-Erfolgswahrscheinlichkeit</p>
+                <PrognoseGauge score={kiResult.vertrags_erfolg_pct} label="KI-Bewertung" />
+              </div>
+              <div style={{ flex: 1, minWidth: 200 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 8 }}>
+                  <div style={{ width: 10, height: 10, borderRadius: "50%", background: scoreColor(kiResult.vertrags_erfolg_pct), flexShrink: 0 }} />
+                  <p style={{ fontSize: 13, fontWeight: 700, color: scoreColor(kiResult.vertrags_erfolg_pct) }}>
+                    {kiResult.vertrags_erfolg_pct >= 70 ? "Starke Ausgangsposition" : kiResult.vertrags_erfolg_pct >= 50 ? "Moderate Ausgangsposition" : "Schwache Ausgangsposition"}
+                  </p>
+                </div>
+                {kiResult.vertrags_erfolg_begruendung && (
+                  <p style={{ fontSize: 11, color: "rgba(255,255,255,0.7)", lineHeight: 1.6 }}>{kiResult.vertrags_erfolg_begruendung}</p>
+                )}
+                <div style={{ display: "flex", gap: 12, marginTop: 10, flexWrap: "wrap" }}>
+                  <div>
+                    <p style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>Taktisch (mit Reaktion)</p>
+                    <p style={{ fontSize: 14, fontWeight: 800, color: scoreColor(kiKorrigiertePrognose ?? prognose) }}>{kiKorrigiertePrognose ?? prognose}%</p>
+                  </div>
+                  {kiResult.prognose_korrektur != null && (
+                    <div>
+                      <p style={{ fontSize: 9, color: "rgba(255,255,255,0.4)", textTransform: "uppercase" }}>KI-Korrektur</p>
+                      <p style={{ fontSize: 14, fontWeight: 800, color: kiResult.prognose_korrektur >= 0 ? "#1DB954" : "#B81C3A" }}>
+                        {kiResult.prognose_korrektur >= 0 ? "+" : ""}{kiResult.prognose_korrektur}%
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Gesamtbewertung */}
           <div style={{ background: "#fff", border: "1px solid rgba(88,86,214,0.2)", borderRadius: 14, overflow: "hidden" }}>
