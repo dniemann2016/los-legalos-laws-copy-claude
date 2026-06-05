@@ -643,6 +643,12 @@ export default function Step2VertragsAnalyse({ scenario, onSave }) {
   const analyseVertrag = async () => {
     setAnalysing(true);
     const doc = selectedDoc || docs[0];
+    // Dokument-URLs aus Schritt 0 als Fallback nutzen
+    const step0Docs = (scenario.ki_kontext?.docs || []).filter(d => d.url && d.status === "done");
+    const fileUrls = doc ? [doc.url] : step0Docs.map(d => d.url).slice(0, 3);
+    const kiBriefing = scenario.ki_kontext?.ki_briefing;
+    const notiz = manuelleNotizRef.current;
+
     let r;
     try {
     r = await base44.integrations.Core.InvokeLLM({
@@ -653,8 +659,8 @@ Unternehmen: ${ctx.unternehmen_name || "—"} (${ctx.rechtsform || "—"}, ${ctx
 Umsatz: ${ctx.umsatz ? (ctx.umsatz/1000000).toFixed(1) + "Mio. " + (ctx.waehrung || "EUR") : "—"}
 Gegenpartei: ${ctx.gegner_name || "—"} (${ctx.gegner_rolle || "—"})
 Sachverhalt: ${ctx.sachverhalt_lang || "—"}
-Dokument: ${doc ? doc.name : "manuell beschrieben"}
-Zusätzliche Notizen: ${manuelleNotiz || "—"}
+Dokument: ${doc ? doc.name : step0Docs.length > 0 ? step0Docs.map(d => d.name).join(", ") + " (Schritt 0)" : "manuell"}
+${kiBriefing ? `\nKI-BASIS-BRIEFING (Schritt 0):\n${String(kiBriefing).slice(0, 500)}\n` : ""}Zusätzliche Notizen: ${notiz || "—"}
 
 ANALYSEDIMENSIONEN:
 1. RISIKOKLASSIFIKATION jeder Klausel: Identifiziere 8-15 wichtige Klauseln. Pro Klausel: klausel_typ, kurzbeschreibung, risiko_stufe(kritisch/hoch/mittel/niedrig/positiv), norm (§ BGB / § HGB / AGB-Recht / etc.), rechtliche_mechanik (wie wirkt sie im Vertragsgefüge?), szenarien (3 Zeithorizonte: kurzfristig bis 6M, mittelfristig 2-5J, langfristig), verhandlungsempfehlung, alternativ_formulierung (wenn nicht unterzeichnet), durchsetzbar (boolean), durchsetzbarkeit.
@@ -725,7 +731,7 @@ WICHTIGE ANFORDERUNGEN:
           }}}
         }
       },
-      file_urls: doc ? [doc.url] : undefined,
+      file_urls: fileUrls.length > 0 ? fileUrls : undefined,
       model: "claude_sonnet_4_6"
     });
     setResult(r);
@@ -796,7 +802,11 @@ WICHTIGE ANFORDERUNGEN:
           <div>
             <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>KI-Vertragsanalyse</p>
             <p style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
-              {docs.length > 0 ? `${docs.length} Dokument(e) · ` : "Kein Dokument — "}
+              {docs.length > 0
+                ? `${docs.length} Dokument(e) · `
+                : (scenario.ki_kontext?.docs || []).filter(d => d.status === "done").length > 0
+                  ? `${(scenario.ki_kontext.docs).filter(d => d.status === "done").length} Dok. aus Schritt 0 · `
+                  : "Kein Dokument — "}
               Klausel-Risikoklassifikation · Szenarioprojektion · Verhandlungsposition
             </p>
           </div>

@@ -59,6 +59,7 @@ Option C: ${JSON.stringify(scenario.option_c || opts.option_c || {}).slice(0, 40
 
 RISIKOANALYSE: Gesamt-Risiko ${sit.gesamt_risiko || "—"}/10, Exposure ${sit.gesamt_exposure_eur ? (sit.gesamt_exposure_eur/1e6).toFixed(1)+"Mio.€" : "—"}
 
+${scenario.ki_kontext?.ki_briefing ? `════ KI-BASIS-BRIEFING (aus Dokumenten-Analyse) ════\n${String(scenario.ki_kontext.ki_briefing).slice(0, 600)}\n` : ""}
 BERECHNE:
 
 1. EXPECTED VALUE (EV) pro Option: wahrscheinlichkeitsgewichteter Nettoertrag

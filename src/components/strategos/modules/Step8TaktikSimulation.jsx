@@ -17,6 +17,7 @@ import { base44 } from "@/api/base44Client";
 import { Sparkles, RotateCcw, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, Zap } from "lucide-react";
 import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ReferenceLine } from "recharts";
 import TaktikVergleich from "./TaktikVergleich";
+import TaktikZeitstrahl from "./TaktikZeitstrahl";
 
 // ─── Reaktionsmuster-Bibliothek ────────────────────────────────────────────────
 const REAKTIONSMUSTER = [
@@ -913,6 +914,14 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
               </div>
             )}
           </div>
+
+          {/* ── Prognose-Zeitstrahl ── */}
+          <TaktikZeitstrahl
+            scenario={scenario}
+            prognose={kiKorrigiertePrognose ?? prognose}
+            basisPrognose={basisPrognose}
+            kiResult={kiResult}
+          />
 
           {/* ── Taktik-Szenario-Vergleich ── */}
           <TaktikVergleich basisPrognose={basisPrognose} />

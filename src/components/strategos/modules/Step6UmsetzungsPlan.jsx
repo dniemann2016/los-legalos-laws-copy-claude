@@ -33,6 +33,7 @@ VOLLSTÄNDIGE ANALYSE:
 Unternehmen: ${ctx.unternehmen_name} (${ctx.rechtsform}, ${ctx.branche}), Umsatz: ${ctx.umsatz ? (ctx.umsatz/1e6).toFixed(1)+"Mio.€" : "—"}
 Sachverhalt: ${ctx.sachverhalt_lang || "—"}
 Gegner: ${ctx.gegner_name || "—"} (${ctx.gegner_rolle || "—"})
+${scenario.ki_kontext?.ki_briefing ? `\n════ KI-BASIS-BRIEFING (aus Dokumenten-Analyse) ════\n${String(scenario.ki_kontext.ki_briefing).slice(0, 600)}\n` : ""}
 Gesamt-Risiko: ${sit.gesamt_risiko || "—"}/10 | Exposure: ${sit.gesamt_exposure_eur ? (sit.gesamt_exposure_eur/1e6).toFixed(1)+"Mio.€" : "—"}
 Empfohlene Option: ${quant.empfohlene_option || emp.grundhaltung || opts.empfohlene_option || "—"}
 Top-3 Hebel: ${(emp.groesste_hebel || []).slice(0, 3).join(" · ") || "—"}
