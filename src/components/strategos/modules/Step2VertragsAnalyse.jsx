@@ -647,7 +647,7 @@ export default function Step2VertragsAnalyse({ scenario, onSave }) {
     const step0Docs = (scenario.ki_kontext?.docs || []).filter(d => d.url && d.status === "done");
     const fileUrls = doc ? [doc.url] : step0Docs.map(d => d.url).slice(0, 3);
     const kiBriefing = scenario.ki_kontext?.ki_briefing;
-    const notiz = manuelleNotizRef.current;
+    const notiz = manuelleNotiz;
 
     let r;
     try {
