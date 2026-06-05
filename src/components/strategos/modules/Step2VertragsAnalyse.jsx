@@ -8,6 +8,7 @@ import ZeitachseSzenarien from "../visualisierung/ZeitachseSzenarien";
 import OptionenCards from "../visualisierung/OptionenCards";
 import ChancenRisikoQuadrant from "../visualisierung/ChancenRisikoQuadrant";
 import KlauselVergleich from "../visualisierung/KlauselVergleich";
+import Viz3DPanel from "../visualisierung/Viz3DPanel";
 
 const RISIKO_FARBEN = {
   kritisch: { bg: "rgba(184,28,58,0.08)", border: "rgba(184,28,58,0.25)", text: "#B81C3A", icon: AlertTriangle },
@@ -888,6 +889,9 @@ WICHTIGE ANFORDERUNGEN:
 
           {/* ── VISUALISIERUNGSSYSTEM (6 Formate aus Konzeptpapier) ── */}
           <VisualisierungsPanel result={result} scenario={scenario} />
+
+          {/* ── 3D-VISUALISIERUNGSSYSTEM (aus Konzeptpapier Q2/2026) ── */}
+          <Viz3DPanel result={result} scenario={scenario} />
         </>
       )}
     </div>
