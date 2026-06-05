@@ -99,16 +99,25 @@ FRISTEN: ${deadlines.length} gesamt, ${deadlines.filter(d=>d.status==="versaeumt
 Richter-Klägerquote: ${caseData?.richter_klaeger_rate || 50}%
 
 Deine anwaltliche Analyse muss enthalten:
-1. ERFOLGSWAHRSCHEINLICHKEIT: Klare Zahl mit kurzer anwaltlicher Begründung — welche §§ und welche BGH-Rspr. stützen oder gefährden unsere Position.
-2. DIE 3 STÄRKSTEN GEGENARGUMENTE der Gegenseite — mit der konkreten Norm auf die sich der Gegner stützen wird und dem Gefahrengrad (hoch/mittel/niedrig).
-3. DIE 2 KRITISCHSTEN SCHWACHSTELLEN unserer Position — direkte Aussage: "Hier liegt das Problem, weil §X uns nicht schützt / das Tatbestandsmerkmal fehlt."
-4. STRATEGISCHE GESAMTEMPFEHLUNG: Klare Aussage: Klagen, Vergleich anstreben oder aufgeben — mit anwaltlicher Begründung und Normbezug.
-5. JURISTISCHE GEGENMASSSNAHMEN: Alle prozessualen und materiell-rechtlichen Mittel zur Stärkung unserer Position (z.B. Widerklage § 33 ZPO, einstweilige Verfügung §§ 935 ff. ZPO, Prozesskostensicherheit § 110 ZPO, Befangenheitsantrag § 42 ZPO, Streitverkündung § 72 ZPO, Aufrechnung § 387 BGB). Für jede Maßnahme: Rechtsgrundlage + konkretes Ziel.`,
+1. ERFOLGSWAHRSCHEINLICHKEIT: Kein Punktwert — stattdessen ein Konfidenzintervall (z.B. "45–65%") mit Angabe der Datengrundlage (Vergleichsfälle, Erfahrungswert, Simulation). Kurze Begründung mit §§ und BGH-Rspr.
+2. DREISTUFIGE EMPFEHLUNGSARCHITEKTUR:
+   a) HAUPTSTRATEGIE: Klare Aussage mit Rechtsgrundlage
+   b) EVENTUALSTRATEGIE (trigger: "falls Hauptstrategie scheitert wegen X"): Alternative mit Begründung
+   c) NOTFALLSTRATEGIE (trigger: "falls unerwartetes Ereignis Y eintritt"): Schadensbegrenzung
+3. DIE 3 STÄRKSTEN GEGENARGUMENTE der Gegenseite — mit der konkreten Norm und dem Gefahrengrad (hoch/mittel/niedrig).
+4. DIE 2 KRITISCHSTEN SCHWACHSTELLEN unserer Position — direkte Aussage: "Hier liegt das Problem, weil §X uns nicht schützt."
+5. JURISTISCHE GEGENMASSSNAHMEN: Alle prozessualen und materiell-rechtlichen Mittel (z.B. Widerklage § 33 ZPO, einstweilige Verfügung §§ 935 ff. ZPO, Prozesskostensicherheit § 110 ZPO, Befangenheitsantrag § 42 ZPO, Streitverkündung § 72 ZPO, Aufrechnung § 387 BGB). Für jede Maßnahme: Rechtsgrundlage + konkretes Ziel.`,
       response_json_schema: {
         type: "object",
         properties: {
           erfolgswahrscheinlichkeit: { type: "number", minimum: 0, maximum: 100 },
+          erfolg_von: { type: "number" },
+          erfolg_bis: { type: "number" },
+          konfidenz_basis: { type: "string" },
           begruendung: { type: "string" },
+          haupt_strategie: { type: "object", properties: { titel: { type: "string" }, beschreibung: { type: "string" }, rechtsgrundlage: { type: "string" } } },
+          eventual_strategie: { type: "object", properties: { trigger: { type: "string" }, titel: { type: "string" }, beschreibung: { type: "string" } } },
+          notfall_strategie: { type: "object", properties: { trigger: { type: "string" }, titel: { type: "string" }, beschreibung: { type: "string" } } },
           staerkste_gegenargumente: {
             type: "array",
             items: {
@@ -295,6 +304,13 @@ Deine anwaltliche Analyse muss enthalten:
                     <p className={`text-sm font-bold ${(kiPrognose.erfolgswahrscheinlichkeit||0)>=60?"text-green-700":(kiPrognose.erfolgswahrscheinlichkeit||0)>=40?"text-amber-700":"text-red-700"}`}>
                       {(kiPrognose.erfolgswahrscheinlichkeit||0)>=60?"Günstige Prozesslage":(kiPrognose.erfolgswahrscheinlichkeit||0)>=40?"Ausgeglichene Lage":"Kritische Prozesslage"}
                     </p>
+                    {kiPrognose.erfolg_von && kiPrognose.erfolg_bis && (
+                      <div className="mt-1.5 flex items-center gap-2 flex-wrap">
+                        <span className="text-xs font-bold text-gray-800">{kiPrognose.erfolg_von}–{kiPrognose.erfolg_bis}%</span>
+                        <span className="text-[9px] text-gray-400">Konfidenzintervall</span>
+                        {kiPrognose.konfidenz_basis && <span className="text-[9px] text-gray-400 italic">({kiPrognose.konfidenz_basis})</span>}
+                      </div>
+                    )}
                     <p className="text-xs text-gray-600 mt-1 leading-relaxed">{kiPrognose.begruendung}</p>
                   </div>
                 </div>
@@ -330,10 +346,40 @@ Deine anwaltliche Analyse muss enthalten:
                   </div>
                 )}
 
-                {kiPrognose.strategische_empfehlung && (
-                  <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
-                    <p className="text-xs font-semibold text-blue-800 mb-1">Strategische Empfehlung</p>
-                    <p className="text-xs text-blue-700">{kiPrognose.strategische_empfehlung}</p>
+                {/* Dreistufige Empfehlungsarchitektur */}
+                {(kiPrognose.haupt_strategie || kiPrognose.strategische_empfehlung) && (
+                  <div className="space-y-2">
+                    <p className="text-xs font-semibold text-gray-700">Dreistufige Empfehlungsarchitektur</p>
+                    {kiPrognose.haupt_strategie && (
+                      <div className="bg-blue-50 border-l-4 border-blue-500 rounded-r-xl p-3">
+                        <p className="text-[9px] font-bold text-blue-500 uppercase tracking-wide mb-1">① Hauptstrategie</p>
+                        <p className="text-xs font-semibold text-blue-900">{kiPrognose.haupt_strategie.titel}</p>
+                        <p className="text-[11px] text-blue-700 mt-1">{kiPrognose.haupt_strategie.beschreibung}</p>
+                        {kiPrognose.haupt_strategie.rechtsgrundlage && <p className="text-[9px] text-blue-500 mt-1 font-mono">{kiPrognose.haupt_strategie.rechtsgrundlage}</p>}
+                      </div>
+                    )}
+                    {kiPrognose.eventual_strategie && (
+                      <div className="bg-amber-50 border-l-4 border-amber-400 rounded-r-xl p-3">
+                        <p className="text-[9px] font-bold text-amber-600 uppercase tracking-wide mb-1">② Eventualstrategie</p>
+                        {kiPrognose.eventual_strategie.trigger && <p className="text-[9px] text-amber-500 italic mb-1">Trigger: {kiPrognose.eventual_strategie.trigger}</p>}
+                        <p className="text-xs font-semibold text-amber-900">{kiPrognose.eventual_strategie.titel}</p>
+                        <p className="text-[11px] text-amber-700 mt-1">{kiPrognose.eventual_strategie.beschreibung}</p>
+                      </div>
+                    )}
+                    {kiPrognose.notfall_strategie && (
+                      <div className="bg-red-50 border-l-4 border-red-400 rounded-r-xl p-3">
+                        <p className="text-[9px] font-bold text-red-600 uppercase tracking-wide mb-1">③ Notfallstrategie</p>
+                        {kiPrognose.notfall_strategie.trigger && <p className="text-[9px] text-red-500 italic mb-1">Trigger: {kiPrognose.notfall_strategie.trigger}</p>}
+                        <p className="text-xs font-semibold text-red-900">{kiPrognose.notfall_strategie.titel}</p>
+                        <p className="text-[11px] text-red-700 mt-1">{kiPrognose.notfall_strategie.beschreibung}</p>
+                      </div>
+                    )}
+                    {!kiPrognose.haupt_strategie && kiPrognose.strategische_empfehlung && (
+                      <div className="bg-blue-50 border border-blue-100 rounded-xl p-3">
+                        <p className="text-xs font-semibold text-blue-800 mb-1">Strategische Empfehlung</p>
+                        <p className="text-xs text-blue-700">{kiPrognose.strategische_empfehlung}</p>
+                      </div>
+                    )}
                   </div>
                 )}
 
