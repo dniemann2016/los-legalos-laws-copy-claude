@@ -504,6 +504,11 @@ function VisualisierungsPanel({ result, scenario }) {
   const [kiLoading, setKiLoading] = useState({});
   const resultRef = useRef(null);
 
+  // Refs für stabile Werte in async Callbacks
+  const sortedRef = useRef([]);
+  const selectedKlauselIdxRef = useRef(0);
+  const ctxRef = useRef({});
+
   if (!result?.klauseln?.length) return null;
 
   const ctx = scenario?.unternehmenskontext || {};
@@ -513,16 +518,30 @@ function VisualisierungsPanel({ result, scenario }) {
   );
   const selectedKlausel = sorted[selectedKlauselIdx] || sorted[0];
 
+  // Refs aktuell halten
+  sortedRef.current = sorted;
+  selectedKlauselIdxRef.current = selectedKlauselIdx;
+  ctxRef.current = ctx;
+
   const runVizAnalysis = async (tabId) => {
+    // Aktuelle Werte aus Refs lesen — kein Closure-Bug
+    const currentSorted = sortedRef.current;
+    const currentKlausel = currentSorted[selectedKlauselIdxRef.current] || currentSorted[0];
+    const currentCtx = ctxRef.current;
+
+    if (!currentSorted.length) {
+      alert("Keine Klauseln vorhanden. Bitte zuerst Vertragsanalyse durchführen.");
+      return;
+    }
+
     setKiLoading(prev => ({ ...prev, [tabId]: true }));
     try {
-      const promptConfig = VIZ_PROMPTS[tabId](sorted, selectedKlausel, ctx);
+      const promptConfig = VIZ_PROMPTS[tabId](currentSorted, currentKlausel, currentCtx);
       const r = await base44.integrations.Core.InvokeLLM({
         ...promptConfig,
         model: "claude_sonnet_4_6",
       });
       setKiResults(prev => ({ ...prev, [tabId]: r }));
-      // Nach Analyse automatisch zu den Ergebnissen scrollen
       setTimeout(() => {
         resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
       }, 100);
