@@ -71,7 +71,8 @@ export default function WirkungsBaum({ klausel, kiResult }) {
         </div>
       )}
 
-      <div style={{ padding: "12px 14px", display: "flex", gap: 0, alignItems: "flex-start" }}>
+      <div style={{ padding: "12px 14px", overflowX: "auto" }}>
+      <div style={{ display: "flex", gap: 0, alignItems: "flex-start", minWidth: "max-content" }}>
         {/* Klausel-Quelle */}
         <div style={{ flexShrink: 0, marginRight: 16 }}>
           <div style={{ background: "#1a1a1a", borderRadius: 10, padding: "12px 14px", textAlign: "center", minWidth: 90 }}>
@@ -91,7 +92,7 @@ export default function WirkungsBaum({ klausel, kiResult }) {
         </div>
 
         {/* Wirkungspfade */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6, minWidth: 320 }}>
           {wirkungen.slice(0, 8).map((w, i) => (
             <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 8 }}>
               <div style={{ width: 6, height: 6, borderRadius: "50%", background: w.farbe, flexShrink: 0, marginTop: 6 }} />
@@ -114,6 +115,7 @@ export default function WirkungsBaum({ klausel, kiResult }) {
             </div>
           ))}
         </div>
+      </div>
       </div>
 
       {hasKI && kiResult.empfehlung && (
