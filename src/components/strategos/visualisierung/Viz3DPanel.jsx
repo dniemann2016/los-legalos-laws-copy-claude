@@ -25,70 +25,122 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { base44 } from "@/api/base44Client";
 import { Sparkles, Info, RotateCcw } from "lucide-react";
 
-// ── Drehbare 3D-Projektion (Maus-Drag + Touchscreen) ─────────────────────────
-// Ersetzt isometrische Projektion durch echte Rotation um X- und Y-Achse
-function project3D(x, y, z, rotX, rotY, cx, cy, scale) {
-  // Rotation um Y-Achse (links/rechts)
+// ── 3D-Projektion mit Rotation, Zoom und Pan ─────────────────────────────────
+function project3D(x, y, z, rotX, rotY, cx, cy, scale, zoom = 1, pan = { x: 0, y: 0 }) {
   const cosY = Math.cos(rotY), sinY = Math.sin(rotY);
   const x1 =  x * cosY + z * sinY;
   const z1 = -x * sinY + z * cosY;
-  // Rotation um X-Achse (oben/unten)
   const cosX = Math.cos(rotX), sinX = Math.sin(rotX);
   const y2 = y * cosX - z1 * sinX;
   const z2 = y * sinX + z1 * cosX;
-  // Perspektivische Projektion
   const fov = 6;
   const w = fov / (fov + z2 * 0.3 + 1);
-  return [cx + x1 * scale * w, cy - y2 * scale * w, w];
+  const effectiveScale = scale * zoom;
+  return [cx + pan.x + x1 * effectiveScale * w, cy + pan.y - y2 * effectiveScale * w, w];
 }
 
-// Hook für Drag-Rotation
+// ── Vollständige 3D-Controls: Rotate (LMB drag) + Zoom (scroll/pinch) + Pan (RMB/MMB drag) ──
 function useRotation(defaultRotX = 0.45, defaultRotY = -0.6) {
   const [rot, setRot] = useState({ x: defaultRotX, y: defaultRotY });
-  const drag = useRef(null);
+  const [zoom, setZoom] = useState(1);
+  const [pan, setPan] = useState({ x: 0, y: 0 });
+  const drag = useRef(null); // { mode: "rotate"|"pan", mx, my, rx, ry, px, py }
+  const pinch = useRef(null); // { dist, zoom }
 
+  // ── Mouse Down: LMB = rotate, RMB/MMB = pan ──
   const onMouseDown = useCallback((e) => {
-    drag.current = { mx: e.clientX, my: e.clientY, rx: rot.x, ry: rot.y };
-  }, [rot]);
+    e.preventDefault();
+    if (e.button === 0) {
+      drag.current = { mode: "rotate", mx: e.clientX, my: e.clientY, rx: rot.x, ry: rot.y };
+    } else if (e.button === 1 || e.button === 2) {
+      drag.current = { mode: "pan", mx: e.clientX, my: e.clientY, px: pan.x, py: pan.y };
+    }
+  }, [rot, pan]);
 
   const onMouseMove = useCallback((e) => {
     if (!drag.current) return;
-    const dx = (e.clientX - drag.current.mx) * 0.008;
-    const dy = (e.clientY - drag.current.my) * 0.008;
-    setRot({
-      x: Math.max(-1.2, Math.min(1.2, drag.current.rx + dy)),
-      y: drag.current.ry + dx,
-    });
+    if (drag.current.mode === "rotate") {
+      const dx = (e.clientX - drag.current.mx) * 0.008;
+      const dy = (e.clientY - drag.current.my) * 0.008;
+      setRot({
+        x: Math.max(-1.2, Math.min(1.2, drag.current.rx + dy)),
+        y: drag.current.ry + dx,
+      });
+    } else {
+      const dx = (e.clientX - drag.current.mx) * 0.5;
+      const dy = (e.clientY - drag.current.my) * 0.5;
+      setPan({ x: drag.current.px + dx, y: drag.current.py + dy });
+    }
   }, []);
 
   const onMouseUp = useCallback(() => { drag.current = null; }, []);
 
-  const onTouchStart = useCallback((e) => {
-    const t = e.touches[0];
-    drag.current = { mx: t.clientX, my: t.clientY, rx: rot.x, ry: rot.y };
-  }, [rot]);
-
-  const onTouchMove = useCallback((e) => {
-    if (!drag.current) return;
-    const t = e.touches[0];
-    const dx = (t.clientX - drag.current.mx) * 0.008;
-    const dy = (t.clientY - drag.current.my) * 0.008;
-    setRot({
-      x: Math.max(-1.2, Math.min(1.2, drag.current.rx + dy)),
-      y: drag.current.ry + dx,
-    });
+  // ── Scroll Wheel: Zoom ──
+  const onWheel = useCallback((e) => {
+    e.preventDefault();
+    const delta = e.deltaY > 0 ? 0.9 : 1.1;
+    setZoom(z => Math.max(0.3, Math.min(4, z * delta)));
   }, []);
 
-  const onTouchEnd = useCallback(() => { drag.current = null; }, []);
+  // ── Touch: 1-finger rotate, 2-finger pinch-zoom + pan ──
+  const onTouchStart = useCallback((e) => {
+    if (e.touches.length === 1) {
+      const t = e.touches[0];
+      drag.current = { mode: "rotate", mx: t.clientX, my: t.clientY, rx: rot.x, ry: rot.y };
+      pinch.current = null;
+    } else if (e.touches.length === 2) {
+      drag.current = null;
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      pinch.current = { dist: Math.hypot(dx, dy), zoom, px: pan.x, py: pan.y,
+        cx: (e.touches[0].clientX + e.touches[1].clientX) / 2,
+        cy: (e.touches[0].clientY + e.touches[1].clientY) / 2 };
+    }
+  }, [rot, zoom, pan]);
 
-  const reset = useCallback(() => setRot({ x: defaultRotX, y: defaultRotY }), [defaultRotX, defaultRotY]);
+  const onTouchMove = useCallback((e) => {
+    e.preventDefault();
+    if (e.touches.length === 1 && drag.current?.mode === "rotate") {
+      const t = e.touches[0];
+      const dx = (t.clientX - drag.current.mx) * 0.008;
+      const dy = (t.clientY - drag.current.my) * 0.008;
+      setRot({
+        x: Math.max(-1.2, Math.min(1.2, drag.current.rx + dy)),
+        y: drag.current.ry + dx,
+      });
+    } else if (e.touches.length === 2 && pinch.current) {
+      const dx = e.touches[1].clientX - e.touches[0].clientX;
+      const dy = e.touches[1].clientY - e.touches[0].clientY;
+      const newDist = Math.hypot(dx, dy);
+      const scale = newDist / pinch.current.dist;
+      setZoom(Math.max(0.3, Math.min(4, pinch.current.zoom * scale)));
+      // Two-finger pan
+      const newCx = (e.touches[0].clientX + e.touches[1].clientX) / 2;
+      const newCy = (e.touches[0].clientY + e.touches[1].clientY) / 2;
+      setPan({
+        x: pinch.current.px + (newCx - pinch.current.cx) * 0.5,
+        y: pinch.current.py + (newCy - pinch.current.cy) * 0.5,
+      });
+    }
+  }, []);
 
-  return { rot, onMouseDown, onMouseMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset };
+  const onTouchEnd = useCallback(() => { drag.current = null; pinch.current = null; }, []);
+
+  // Prevent context menu on right-click
+  const onContextMenu = useCallback((e) => e.preventDefault(), []);
+
+  const reset = useCallback(() => {
+    setRot({ x: defaultRotX, y: defaultRotY });
+    setZoom(1);
+    setPan({ x: 0, y: 0 });
+  }, [defaultRotX, defaultRotY]);
+
+  return { rot, zoom, pan, onMouseDown, onMouseMove, onMouseUp, onWheel, onTouchStart, onTouchMove, onTouchEnd, onContextMenu, reset };
 }
 
-// Achsengitter mit echter 3D-Rotation
-function drawRotatedBox(ctx, rotX, rotY, cx, cy, scale, size = 3) {
-  const proj = (x, y, z) => project3D(x - size/2, y - size/2, z - size/2, rotX, rotY, cx, cy, scale);
+// Achsengitter mit echter 3D-Rotation + Zoom/Pan
+function drawRotatedBox(ctx, rotX, rotY, cx, cy, scale, size = 3, zoom = 1, pan = { x: 0, y: 0 }) {
+  const proj = (x, y, z) => project3D(x - size/2, y - size/2, z - size/2, rotX, rotY, cx, cy, scale, zoom, pan);
 
   // Bodengitter
   ctx.strokeStyle = "rgba(0,0,0,0.08)";
@@ -125,8 +177,8 @@ function drawRotatedBox(ctx, rotX, rotY, cx, cy, scale, size = 3) {
   });
 }
 
-function drawRotatedLabels(ctx, rotX, rotY, cx, cy, scale, labels, size = 3) {
-  const proj = (x, y, z) => project3D(x - size/2, y - size/2, z - size/2, rotX, rotY, cx, cy, scale);
+function drawRotatedLabels(ctx, rotX, rotY, cx, cy, scale, labels, size = 3, zoom = 1, pan = { x: 0, y: 0 }) {
+  const proj = (x, y, z) => project3D(x - size/2, y - size/2, z - size/2, rotX, rotY, cx, cy, scale, zoom, pan);
   ctx.font = "bold 9px -apple-system,'Helvetica Neue',sans-serif"; ctx.textAlign = "center";
   // X-Label
   ctx.fillStyle = "#555";
@@ -172,12 +224,34 @@ function drawBubble(ctx, sx, sy, shx, shy, r, color, label, empfohlen = false) {
   ctx.fillText(label.slice(0, 7), sx, sy + Math.max(2, r * 0.22));
 }
 
+// ── Overlay: Zoom-Anzeige + Reset + Steuerhinweis ────────────────────────────
+function Controls({ zoom, reset }) {
+  return (
+    <div style={{ position: "absolute", bottom: 8, left: 8, right: 8, display: "flex", alignItems: "center", justifyContent: "space-between", pointerEvents: "none" }}>
+      <div style={{ display: "flex", gap: 5, alignItems: "center" }}>
+        <span style={{ fontSize: 9, color: "#aaa", background: "rgba(255,255,255,0.85)", padding: "2px 7px", borderRadius: 6, border: "1px solid rgba(0,0,0,0.07)" }}>
+          LMB: drehen · RMB: verschieben · Scroll: zoom · Pinch: touch
+        </span>
+      </div>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, pointerEvents: "all" }}>
+        <span style={{ fontSize: 9, color: "#888", background: "rgba(255,255,255,0.85)", padding: "2px 8px", borderRadius: 6, border: "1px solid rgba(0,0,0,0.07)" }}>
+          {Math.round(zoom * 100)}%
+        </span>
+        <button onClick={reset} title="Ansicht zurücksetzen"
+          style={{ background: "rgba(255,255,255,0.92)", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 7, padding: "4px 9px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4, boxShadow: "0 1px 4px rgba(0,0,0,0.08)" }}>
+          <RotateCcw style={{ width: 10, height: 10 }} /> Reset
+        </button>
+      </div>
+    </div>
+  );
+}
+
 // ── FORMAT 01: Klausel-Risikoraum ─────────────────────────────────────────────
 function RisikoRaum({ klauseln, kiData }) {
   const canvasRef = useRef(null);
   const [hovered, setHovered] = useState(null);
   const pointsRef = useRef([]);
-  const { rot, onMouseDown, onMouseMove: onRotMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.4, -0.55);
+  const { rot, zoom, pan, onMouseDown, onMouseMove: onRotMove, onMouseUp, onWheel, onTouchStart, onTouchMove, onTouchEnd, onContextMenu, reset } = useRotation(0.4, -0.55);
 
   const data = kiData?.punkte?.length
     ? kiData.punkte.map(p => ({
@@ -211,12 +285,12 @@ function RisikoRaum({ klauseln, kiData }) {
     ctx.clearRect(0, 0, W, H);
     const cx = W * 0.5, cy = H * 0.5, scale = 58;
 
-    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale, 3, zoom, pan);
     drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
       x: "X: Wahrscheinlichkeit", z: "Z: Zeithorizont", y: "Y: Wirkungstiefe",
-    });
+    }, 3, zoom, pan);
 
-    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale, zoom, pan);
     const pts = [];
     [...data].sort((a, b) => {
       const [,,wa] = proj(a.x * 3, a.y * 3, a.z * 3);
@@ -230,7 +304,7 @@ function RisikoRaum({ klauseln, kiData }) {
       pts.push({ sx, sy, r, d });
     });
     pointsRef.current = pts;
-  }, [data, rot]);
+  }, [data, rot, zoom, pan]);
 
   const handleMouseMove = (e) => {
     onRotMove(e);
@@ -248,12 +322,10 @@ function RisikoRaum({ klauseln, kiData }) {
       <canvas ref={canvasRef} width={540} height={360}
         onMouseDown={onMouseDown} onMouseMove={handleMouseMove}
         onMouseUp={onMouseUp} onMouseLeave={() => { onMouseUp(); setHovered(null); }}
+        onWheel={onWheel} onContextMenu={onContextMenu}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
-      <button onClick={reset} title="Ansicht zurücksetzen"
-        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
-        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
-      </button>
+        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none", touchAction: "none" }} />
+      <Controls zoom={zoom} reset={reset} />
       {hovered && (
         <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10, pointerEvents: "none" }}>
           <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>{hovered.name}</p>
@@ -270,7 +342,7 @@ function RisikoRaum({ klauseln, kiData }) {
 // ── FORMAT 03: Wirkungslandschaft (Surface-Plot, rotierbar) ───────────────────
 function Wirkungslandschaft({ klausel, kiData }) {
   const canvasRef = useRef(null);
-  const { rot, onMouseDown, onMouseMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.38, -0.52);
+  const { rot, zoom, pan, onMouseDown, onMouseMove, onMouseUp, onWheel, onTouchStart, onTouchMove, onTouchEnd, onContextMenu, reset } = useRotation(0.38, -0.52);
 
   const BEREICHE = ["Vertrieb", "Produktion", "F&E", "Finanz.", "Reputat.", "Strategie"];
   const ZEITEN   = ["Q1", "Q2", "Q4", "J2", "J3", "J5"];
@@ -295,7 +367,7 @@ function Wirkungslandschaft({ klausel, kiData }) {
     const allVals = grid.flat().filter(v => isFinite(v));
     const minV = Math.min(...allVals, 0), maxV = Math.max(...allVals, 0);
     const yscale = (v) => (v / (Math.max(Math.abs(minV), Math.abs(maxV)) + 0.1)) * 2.8;
-    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale, zoom, pan);
 
     // Alle Surface-Patches sammeln + nach Tiefe sortieren (Painter's algorithm)
     const patches = [];
@@ -317,7 +389,7 @@ function Wirkungslandschaft({ klausel, kiData }) {
     }
     patches.sort((a, b) => a.avgZ - b.avgZ);
 
-    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale, 3, zoom, pan);
 
     patches.forEach(({ corners, avgV }) => {
       const norm = (avgV - minV) / (maxV - minV + 0.001);
@@ -333,7 +405,7 @@ function Wirkungslandschaft({ klausel, kiData }) {
 
     drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
       x: "X: Bereiche", z: "Y: Zeit", y: "Z: €-Wirkung",
-    });
+    }, 3, zoom, pan);
 
     // Bereichs-Labels
     ctx.font = "8px -apple-system,sans-serif"; ctx.fillStyle = "#888"; ctx.textAlign = "center";
@@ -355,19 +427,17 @@ function Wirkungslandschaft({ klausel, kiData }) {
     ctx.fillText(`+${maxV.toFixed(0)}M`, sx+12, sy+7);
     ctx.fillText("0", sx+12, sy+42);
     ctx.fillText(`${minV.toFixed(0)}M`, sx+12, sy+79);
-  }, [grid, klausel, rot]);
+  }, [grid, klausel, rot, zoom, pan]);
 
   return (
     <div style={{ position: "relative" }}>
       <canvas ref={canvasRef} width={520} height={360}
         onMouseDown={onMouseDown} onMouseMove={onMouseMove}
         onMouseUp={onMouseUp} onMouseLeave={onMouseUp}
+        onWheel={onWheel} onContextMenu={onContextMenu}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-        style={{ width: "100%", maxWidth: 520, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
-      <button onClick={reset} title="Ansicht zurücksetzen"
-        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
-        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
-      </button>
+        style={{ width: "100%", maxWidth: 520, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none", touchAction: "none" }} />
+      <Controls zoom={zoom} reset={reset} />
     </div>
   );
 }
@@ -377,7 +447,7 @@ function Optionsraum({ kiData, klausel }) {
   const canvasRef = useRef(null);
   const [hovered, setHovered] = useState(null);
   const pointsRef = useRef([]);
-  const { rot, onMouseDown, onMouseMove: onRotMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.4, -0.55);
+  const { rot, zoom, pan, onMouseDown, onMouseMove: onRotMove, onMouseUp, onWheel, onTouchStart, onTouchMove, onTouchEnd, onContextMenu, reset } = useRotation(0.4, -0.55);
 
   const DEFAULT = [
     { name: "A: Akzept.", x: 0.9,  y: 0.05, z: 0.1,  empfohlen: false },
@@ -407,12 +477,12 @@ function Optionsraum({ kiData, klausel }) {
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
     const cx = W * 0.5, cy = H * 0.5, scale = 58;
-    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale, zoom, pan);
 
-    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale, 3, zoom, pan);
     drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
       x: "X: Erfolgswahrsch.", z: "Y: Kosten (Mio€)", y: "Z: Strat. Wert",
-    });
+    }, 3, zoom, pan);
 
     const pts = [];
     [...data].sort((a, b) => {
@@ -427,7 +497,7 @@ function Optionsraum({ kiData, klausel }) {
       pts.push({ sx, sy, r: d.empfohlen ? 15 : 11, d: { ...d, color } });
     });
     pointsRef.current = pts;
-  }, [data, rot]);
+  }, [data, rot, zoom, pan]);
 
   const handleMouseMove = (e) => {
     onRotMove(e);
@@ -445,12 +515,10 @@ function Optionsraum({ kiData, klausel }) {
       <canvas ref={canvasRef} width={540} height={360}
         onMouseDown={onMouseDown} onMouseMove={handleMouseMove}
         onMouseUp={onMouseUp} onMouseLeave={() => { onMouseUp(); setHovered(null); }}
+        onWheel={onWheel} onContextMenu={onContextMenu}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
-      <button onClick={reset} title="Ansicht zurücksetzen"
-        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
-        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
-      </button>
+        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none", touchAction: "none" }} />
+      <Controls zoom={zoom} reset={reset} />
       {hovered && (
         <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10, pointerEvents: "none" }}>
           <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>{hovered.name}</p>
@@ -470,7 +538,7 @@ function PortfolioWuerfel({ klauseln, kiData }) {
   const canvasRef = useRef(null);
   const [hovered, setHovered] = useState(null);
   const pointsRef = useRef([]);
-  const { rot, onMouseDown, onMouseMove: onRotMove, onMouseUp, onTouchStart, onTouchMove, onTouchEnd, reset } = useRotation(0.4, -0.55);
+  const { rot, zoom, pan, onMouseDown, onMouseMove: onRotMove, onMouseUp, onWheel, onTouchStart, onTouchMove, onTouchEnd, onContextMenu, reset } = useRotation(0.4, -0.55);
 
   const fallbackRef = useRef(null);
   if (!fallbackRef.current) {
@@ -505,12 +573,12 @@ function PortfolioWuerfel({ klauseln, kiData }) {
     ctx.clearRect(0, 0, W, H);
     const cx = W * 0.5, cy = H * 0.5, scale = 52;
     const maxVol = Math.max(...data.map(d => d.x), 200);
-    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale);
+    const proj = (x, y, z) => project3D(x - 1.5, y - 1.5, z - 1.5, rot.x, rot.y, cx, cy, scale, zoom, pan);
 
-    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale);
+    drawRotatedBox(ctx, rot.x, rot.y, cx, cy, scale, 3, zoom, pan);
     drawRotatedLabels(ctx, rot.x, rot.y, cx, cy, scale, {
       x: "X: Volumen (Mio€)", z: "Z: Restlaufzeit (J)", y: "Y: Risiko-Score",
-    });
+    }, 3, zoom, pan);
 
     // Kritische Zone
     ctx.beginPath();
@@ -542,7 +610,7 @@ function PortfolioWuerfel({ klauseln, kiData }) {
     ctx.font = "8px -apple-system,sans-serif"; ctx.fillStyle = "rgba(184,28,58,0.5)"; ctx.textAlign = "center";
     const [kx, ky] = proj(2.7, 3.2, 2.7);
     ctx.fillText("⚠ Kritische Zone", kx, ky - 4);
-  }, [data, rot]);
+  }, [data, rot, zoom, pan]);
 
   const handleMouseMove = (e) => {
     onRotMove(e);
@@ -560,12 +628,10 @@ function PortfolioWuerfel({ klauseln, kiData }) {
       <canvas ref={canvasRef} width={540} height={360}
         onMouseDown={onMouseDown} onMouseMove={handleMouseMove}
         onMouseUp={onMouseUp} onMouseLeave={() => { onMouseUp(); setHovered(null); }}
+        onWheel={onWheel} onContextMenu={onContextMenu}
         onTouchStart={onTouchStart} onTouchMove={onTouchMove} onTouchEnd={onTouchEnd}
-        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none" }} />
-      <button onClick={reset} title="Ansicht zurücksetzen"
-        style={{ position: "absolute", bottom: 8, right: 8, background: "rgba(0,0,0,0.06)", border: "1px solid rgba(0,0,0,0.1)", borderRadius: 7, padding: "4px 8px", cursor: "pointer", fontSize: 10, color: "#555", display: "flex", alignItems: "center", gap: 4 }}>
-        <RotateCcw style={{ width: 10, height: 10 }} /> Reset
-      </button>
+        style={{ width: "100%", maxWidth: 540, cursor: "grab", display: "block", margin: "0 auto", userSelect: "none", touchAction: "none" }} />
+      <Controls zoom={zoom} reset={reset} />
       {hovered && (
         <div style={{ position: "absolute", top: 8, right: 8, background: "#fff", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 10, padding: "9px 13px", fontSize: 11, boxShadow: "0 4px 14px rgba(0,0,0,0.12)", maxWidth: 220, zIndex: 10, pointerEvents: "none" }}>
           <p style={{ fontWeight: 700, color: "#1a1a1a", marginBottom: 4 }}>{hovered.name}</p>
@@ -747,7 +813,7 @@ export default function Viz3DPanel({ result, scenario }) {
         <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
           <span style={{ fontSize: 16 }}>🧊</span>
           <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>3D-Visualisierungssystem — Räumliche Analyse (x · y · z)</p>
-          <span style={{ fontSize: 9, color: "#888", marginLeft: "auto" }}>Isometrisch · Hover für Details · KI-kalibriert</span>
+          <span style={{ fontSize: 9, color: "#888", marginLeft: "auto" }}>LMB: drehen · RMB: verschieben · Scroll: zoom · KI-kalibriert</span>
         </div>
         <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
           {TABS_3D.map(t => (
@@ -859,7 +925,7 @@ export default function Viz3DPanel({ result, scenario }) {
         {/* Footer */}
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginTop: 8 }}>
           <p style={{ fontSize: 9, color: "#ccc", fontStyle: "italic" }}>
-            Isometrische 3D-Projektion · Hover für Koordinaten · nach LegalOS Konzeptpapier Q2/2026
+            3D-Projektion · LMB drehen · RMB/MMB verschieben · Scroll/Pinch zoomen · nach LegalOS Konzeptpapier Q2/2026
           </p>
           <div style={{ display: "flex", gap: 8 }}>
             {[["#B81C3A","Kritisch"],["#FF9500","Hoch"],["#0A84FF","Mittel"],["#1DB954","Niedrig"]].map(([c,l]) => (
