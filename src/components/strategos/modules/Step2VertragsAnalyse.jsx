@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { base44 } from "@/api/base44Client";
 import { Upload, FileUp, Sparkles, Trash2, AlertTriangle, CheckCircle, MinusCircle, Scale, Shield, FileSearch, BarChart3 } from "lucide-react";
 import { AppleCard, AppleButton, ApplePill, AppleField, AppleTextarea, SF } from "../AppleCard";
@@ -502,6 +502,7 @@ function VisualisierungsPanel({ result, scenario }) {
   const [selectedKlauselIdx, setSelectedKlauselIdx] = useState(0);
   const [kiResults, setKiResults] = useState({});
   const [kiLoading, setKiLoading] = useState({});
+  const resultRef = useRef(null);
 
   if (!result?.klauseln?.length) return null;
 
@@ -521,6 +522,10 @@ function VisualisierungsPanel({ result, scenario }) {
         model: "claude_sonnet_4_6",
       });
       setKiResults(prev => ({ ...prev, [tabId]: r }));
+      // Nach Analyse automatisch zu den Ergebnissen scrollen
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 100);
     } catch (err) {
       console.error(`KI-Analyse [${tabId}] fehlgeschlagen:`, err?.message);
       alert(`Analyse fehlgeschlagen: ${err?.message || "Netzwerkfehler"}`);
@@ -565,12 +570,14 @@ function VisualisierungsPanel({ result, scenario }) {
         )}
 
         {/* KI-Analyse Panel für aktiven Tab */}
-        <VizKIPanel
-          tabId={activeTab}
-          kiResult={kiResults[activeTab]}
-          loading={!!kiLoading[activeTab]}
-          onAnalyse={() => runVizAnalysis(activeTab)}
-        />
+        <div ref={resultRef}>
+          <VizKIPanel
+            tabId={activeTab}
+            kiResult={kiResults[activeTab]}
+            loading={!!kiLoading[activeTab]}
+            onAnalyse={() => runVizAnalysis(activeTab)}
+          />
+        </div>
 
         {/* Visualisierung — kiResult wird für KI-angereicherte Darstellung übergeben */}
         {activeTab === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} kiResult={kiResults["heatmap"]} />}
