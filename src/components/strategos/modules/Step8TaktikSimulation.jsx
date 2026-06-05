@@ -14,7 +14,8 @@
 
 import { useState, useMemo } from "react";
 import { base44 } from "@/api/base44Client";
-import { Sparkles, Play, RotateCcw, AlertTriangle, CheckCircle, TrendingUp, TrendingDown, Minus, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { Sparkles, RotateCcw, AlertTriangle, CheckCircle, ChevronDown, ChevronUp, Zap } from "lucide-react";
+import { RadarChart, Radar, PolarGrid, PolarAngleAxis, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Cell, ReferenceLine } from "recharts";
 
 // ─── Reaktionsmuster-Bibliothek ────────────────────────────────────────────────
 const REAKTIONSMUSTER = [
@@ -732,6 +733,90 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
               </div>
             </div>
           )}
+
+          {/* ── Graphen-Block ── */}
+          {(() => {
+            const ki = scenario?.ki_analyse || {};
+            const sit = scenario?.situationsanalyse || {};
+            const emp = scenario?.strategos_empfehlung || {};
+
+            // Radar-Daten: 6 Dimensionen der Gesamtlage
+            const radarData = [
+              { dim: "Vertragsrisiko", val: Math.max(0, 100 - ((ki.vertrags_analyse?.klauseln || []).filter(k => k.risiko_stufe === "kritisch").length * 15 + (ki.vertrags_analyse?.klauseln || []).filter(k => k.risiko_stufe === "hoch").length * 8)) },
+              { dim: "Quant. Stärke", val: ki.quant_analyse?.ev_gesamt != null ? Math.min(100, Math.max(0, 50 + (ki.quant_analyse.ev_gesamt / 1e6) * 2)) : 50 },
+              { dim: "Situationslage", val: sit.gesamt_risiko != null ? Math.max(0, 100 - sit.gesamt_risiko * 10) : 50 },
+              { dim: "Handlungsoptionen", val: Math.min(100, (ki.handlungsoptionen?.optionen?.length || 0) * 20 + 20) },
+              { dim: "Strateg. Position", val: emp.grundhaltung?.toLowerCase().includes("stark") ? 80 : emp.grundhaltung?.toLowerCase().includes("schwach") ? 30 : 55 },
+              { dim: "Taktik-Score", val: prognose },
+            ];
+
+            // Balken-Daten: Reaktionsmuster-Auswirkungen
+            const barData = selectedReaktionen.map(id => {
+              const r = REAKTIONSMUSTER.find(r => r.id === id);
+              return { name: r?.label?.slice(0, 14) || id, wert: r?.modifier || 0, color: r?.modifier >= 0 ? "#1DB954" : "#B81C3A" };
+            });
+
+            // Score-Vergleich: Basis vs Taktisch vs Vertraglich
+            const compareData = [
+              { name: "Basis\n(Strategos)", wert: basisPrognose, color: "#636366" },
+              { name: "Taktisch\n(+Reaktion)", wert: prognose, color: scoreColor(prognose) },
+              ...(kiKorrigiertePrognose != null ? [{ name: "KI-korrigiert", wert: kiKorrigiertePrognose, color: "#5856D6" }] : []),
+              ...(kiResult.vertrags_erfolg_pct != null ? [{ name: "Vertraglich\n(KI)", wert: kiResult.vertrags_erfolg_pct, color: scoreColor(kiResult.vertrags_erfolg_pct) }] : []),
+            ];
+
+            return (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                {/* Radar: Strategische Gesamtlage */}
+                <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 14, padding: "14px 12px" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", marginBottom: 2 }}>Strategische Gesamtlage</p>
+                  <p style={{ fontSize: 9, color: "#aaa", marginBottom: 10 }}>6 Dimensionen aus allen Strategos-Schritten</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <RadarChart data={radarData}>
+                      <PolarGrid stroke="rgba(0,0,0,0.07)" />
+                      <PolarAngleAxis dataKey="dim" tick={{ fontSize: 9, fill: "#888" }} />
+                      <Radar dataKey="val" stroke="#5856D6" fill="#5856D6" fillOpacity={0.18} strokeWidth={2} dot={{ r: 3, fill: "#5856D6" }} />
+                    </RadarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Bar: Score-Vergleich */}
+                <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 14, padding: "14px 12px" }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", marginBottom: 2 }}>Erfolgswahrscheinlichkeit — Vergleich</p>
+                  <p style={{ fontSize: 9, color: "#aaa", marginBottom: 10 }}>Basis · Taktisch · KI-korrigiert · Vertraglich</p>
+                  <ResponsiveContainer width="100%" height={200}>
+                    <BarChart data={compareData} barCategoryGap="30%">
+                      <XAxis dataKey="name" tick={{ fontSize: 8, fill: "#888" }} />
+                      <YAxis domain={[0, 100]} tick={{ fontSize: 8, fill: "#aaa" }} tickFormatter={v => `${v}%`} />
+                      <Tooltip formatter={v => [`${v}%`, "Score"]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                      <ReferenceLine y={50} stroke="rgba(0,0,0,0.12)" strokeDasharray="4 3" />
+                      <Bar dataKey="wert" radius={[5, 5, 0, 0]}>
+                        {compareData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+
+                {/* Bar: Reaktionsmuster-Einfluss (nur wenn gewählt) */}
+                {barData.length > 0 && (
+                  <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 14, padding: "14px 12px", gridColumn: "1 / -1" }}>
+                    <p style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a", marginBottom: 2 }}>Reaktionsmuster — Auswirkung auf Score</p>
+                    <p style={{ fontSize: 9, color: "#aaa", marginBottom: 10 }}>Positiv = erhöht Erfolgschance · Negativ = senkt Erfolgschance</p>
+                    <ResponsiveContainer width="100%" height={140}>
+                      <BarChart data={barData} layout="vertical" barCategoryGap="25%">
+                        <XAxis type="number" domain={[-35, 35]} tick={{ fontSize: 8, fill: "#aaa" }} tickFormatter={v => `${v > 0 ? "+" : ""}${v}%`} />
+                        <YAxis type="category" dataKey="name" tick={{ fontSize: 9, fill: "#555" }} width={90} />
+                        <Tooltip formatter={v => [`${v > 0 ? "+" : ""}${v}%`, "Modifier"]} contentStyle={{ fontSize: 11, borderRadius: 8 }} />
+                        <ReferenceLine x={0} stroke="rgba(0,0,0,0.2)" />
+                        <Bar dataKey="wert" radius={[0, 4, 4, 0]}>
+                          {barData.map((d, i) => <Cell key={i} fill={d.color} />)}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
 
           {/* Gesamtbewertung */}
           <div style={{ background: "#fff", border: "1px solid rgba(88,86,214,0.2)", borderRadius: 14, overflow: "hidden" }}>
