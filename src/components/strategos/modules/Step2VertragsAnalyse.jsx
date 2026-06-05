@@ -572,13 +572,13 @@ function VisualisierungsPanel({ result, scenario }) {
           onAnalyse={() => runVizAnalysis(activeTab)}
         />
 
-        {/* Visualisierung */}
-        {activeTab === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} />}
-        {activeTab === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} />}
-        {activeTab === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} />}
-        {activeTab === "optionen"  && <OptionenCards klausel={selectedKlausel} />}
-        {activeTab === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} />}
-        {activeTab === "vergleich" && <KlauselVergleich klausel={selectedKlausel} />}
+        {/* Visualisierung — kiResult wird für KI-angereicherte Darstellung übergeben */}
+        {activeTab === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} kiResult={kiResults["heatmap"]} />}
+        {activeTab === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} kiResult={kiResults["wirkung"]} />}
+        {activeTab === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} kiResult={kiResults["zeitachse"]} />}
+        {activeTab === "optionen"  && <OptionenCards klausel={selectedKlausel} kiResult={kiResults["optionen"]} />}
+        {activeTab === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} kiResult={kiResults["quadrant"]} />}
+        {activeTab === "vergleich" && <KlauselVergleich klausel={selectedKlausel} kiResult={kiResults["vergleich"]} />}
       </div>
     </div>
   );
