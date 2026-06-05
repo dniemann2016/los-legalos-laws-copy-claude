@@ -379,7 +379,9 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
   const handleKiAnalyse = async () => {
     setLoading(true);
     try {
-      const result = await runKiAnalyse(scenario, selectedReaktionen, eigeneStrategie, prognose);
+      const rawResult = await runKiAnalyse(scenario, selectedReaktionen, eigeneStrategie, prognose);
+      // InvokeLLM gibt das JSON direkt zurück wenn response_json_schema gesetzt ist
+      const result = rawResult?.gesamt_bewertung ? rawResult : (rawResult?.output || rawResult);
       // State ZUERST setzen, dann speichern — verhindert Verlust durch Re-mount
       setLocalKiResult(result);
       onSave({
@@ -614,6 +616,13 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
       {/* ── KI-Ergebnis ── */}
       {kiResult && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          {/* Fallback wenn KI-Struktur unerwartet ist */}
+          {!kiResult.gesamt_bewertung && !kiResult.hauptempfehlung && (
+            <div style={{ padding: "12px 14px", background: "rgba(255,149,0,0.08)", border: "1px solid rgba(255,149,0,0.25)", borderRadius: 12 }}>
+              <p style={{ fontSize: 11, color: "#FF9500", fontWeight: 700 }}>KI-Analyse empfangen</p>
+              <pre style={{ fontSize: 9, color: "#555", marginTop: 4, overflow: "auto", maxHeight: 120, whiteSpace: "pre-wrap" }}>{JSON.stringify(kiResult, null, 2)}</pre>
+            </div>
+          )}
 
           {/* Gesamtbewertung */}
           <div style={{ background: "#fff", border: "1px solid rgba(88,86,214,0.2)", borderRadius: 14, overflow: "hidden" }}>
