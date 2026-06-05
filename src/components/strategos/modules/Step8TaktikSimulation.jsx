@@ -349,9 +349,10 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
   const [manuelleAnpassung, setManuelleAnpassung] = useState(
     scenario?.ki_analyse?.taktik_simulation?.manuelle_anpassung || 0
   );
-  const [kiResult, setKiResult] = useState(
-    scenario?.ki_analyse?.taktik_simulation?.ki_result || null
-  );
+  // kiResult sowohl als State (lokales Re-render) als auch aus scenario (nach Re-mount)
+  const savedKiResult = scenario?.ki_analyse?.taktik_simulation?.ki_result || null;
+  const [localKiResult, setLocalKiResult] = useState(null);
+  const kiResult = localKiResult || savedKiResult;
   const [loading, setLoading] = useState(false);
   const [filterTag, setFilterTag] = useState("alle");
 
@@ -379,8 +380,9 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
     setLoading(true);
     try {
       const result = await runKiAnalyse(scenario, selectedReaktionen, eigeneStrategie, prognose);
-      setKiResult(result);
-      await onSave({
+      // State ZUERST setzen, dann speichern — verhindert Verlust durch Re-mount
+      setLocalKiResult(result);
+      onSave({
         ki_analyse: {
           ...(scenario.ki_analyse || {}),
           taktik_simulation: {
@@ -401,7 +403,7 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
     setSelectedReaktionen([]);
     setEigeneStrategie("hybrid");
     setManuelleAnpassung(0);
-    setKiResult(null);
+    setLocalKiResult(null);
   };
 
   const ctx = scenario?.unternehmenskontext || {};
