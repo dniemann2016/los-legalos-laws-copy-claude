@@ -578,23 +578,26 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
           </div>
 
           {/* KI-Analyse Button */}
-          <button onClick={handleKiAnalyse} disabled={loading || selectedReaktionen.length === 0}
+          <div
+            onClick={(!loading && selectedReaktionen.length > 0) ? handleKiAnalyse : undefined}
             style={{
               width: "100%", padding: "11px 0",
-              background: loading || selectedReaktionen.length === 0 ? "rgba(0,0,0,0.06)" : "#5856D6",
-              color: loading || selectedReaktionen.length === 0 ? "#aaa" : "#fff",
-              border: "none", borderRadius: 10, cursor: loading || selectedReaktionen.length === 0 ? "not-allowed" : "pointer",
+              background: loading ? "rgba(88,86,214,0.5)" : selectedReaktionen.length === 0 ? "rgba(0,0,0,0.06)" : "#5856D6",
+              color: loading ? "#fff" : selectedReaktionen.length === 0 ? "#aaa" : "#fff",
+              border: selectedReaktionen.length === 0 ? "1px solid rgba(0,0,0,0.1)" : "none",
+              borderRadius: 10,
+              cursor: loading || selectedReaktionen.length === 0 ? "not-allowed" : "pointer",
               fontSize: 12, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", gap: 7,
-              transition: "all 0.15s",
+              transition: "all 0.15s", userSelect: "none", boxSizing: "border-box",
             }}>
-            <Sparkles size={14} />
+            <Sparkles size={14} color={selectedReaktionen.length === 0 ? "#aaa" : "#fff"} />
             {loading ? "KI analysiert…" : selectedReaktionen.length === 0 ? "Reaktionen wählen" : "KI-Taktikanalyse starten"}
-          </button>
+          </div>
 
-          <button onClick={handleReset}
-            style={{ width: "100%", padding: "8px 0", background: "transparent", color: "#aaa", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 9, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", gap: 5 }}>
-            <RotateCcw size={11} /> Simulation zurücksetzen
-          </button>
+          <div onClick={handleReset}
+            style={{ width: "100%", padding: "8px 0", background: "transparent", color: "#888", border: "1px solid rgba(0,0,0,0.12)", borderRadius: 9, cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", justifyContent: "center", gap: 5, userSelect: "none", boxSizing: "border-box" }}>
+            <RotateCcw size={11} color="#888" /> Simulation zurücksetzen
+          </div>
 
           {selectedReaktionen.length > 0 && (
             <div style={{ padding: "9px 12px", background: "rgba(0,0,0,0.03)", borderRadius: 10 }}>
