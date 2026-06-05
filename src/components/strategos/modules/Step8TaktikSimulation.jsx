@@ -277,38 +277,109 @@ function ReaktionsCard({ reaktion, selected, onToggle }) {
   );
 }
 
+// ─── Strategos-Daten kumulieren für KI-Prompt ─────────────────────────────────
+function buildStrategosKontext(scenario) {
+  const ctx = scenario?.unternehmenskontext || {};
+  const sit = scenario?.situationsanalyse || {};
+  const ki  = scenario?.ki_analyse || {};
+  const emp = scenario?.strategos_empfehlung || {};
+  const mat = scenario?.szenario_matrix || {};
+
+  const lines = [];
+
+  // Schritt 1: Unternehmenskontext
+  if (ctx.unternehmen_name) lines.push(`UNTERNEHMEN: ${ctx.unternehmen_name} (${ctx.rechtsform || ""}, ${ctx.branche || ""}, Umsatz: ${ctx.umsatz ? (ctx.umsatz/1e6).toFixed(1)+"Mio. "+(ctx.waehrung||"EUR") : "—"})`);
+  if (ctx.sachverhalt_lang) lines.push(`SACHVERHALT: ${ctx.sachverhalt_lang.slice(0, 500)}`);
+  if (ctx.gegner_name) lines.push(`GEGNER: ${ctx.gegner_name} (${ctx.gegner_rolle || "—"}) — ${ctx.gegner_info?.slice(0,200) || ""}`);
+  if (ctx.zeitkritikalitaet != null) lines.push(`ZEITKRITIKALITÄT: ${ctx.zeitkritikalitaet}/10`);
+  if (ctx.rechtsgebiete?.length) lines.push(`RECHTSGEBIETE: ${ctx.rechtsgebiete.join(", ")}`);
+
+  // Schritt 2: Situationsanalyse
+  if (sit.gesamt_risiko != null) lines.push(`GESAMTRISIKO (Schritt 2): ${sit.gesamt_risiko}/10`);
+  if (sit.gesamt_exposure_eur) lines.push(`FINANZIELLE EXPOSURE: ${(sit.gesamt_exposure_eur/1e6).toFixed(1)} Mio. EUR`);
+  if (sit.kritische_punkte?.length) lines.push(`KRITISCHE PUNKTE: ${sit.kritische_punkte.join(" | ")}`);
+  if (sit.quantifizierung?.length) {
+    lines.push(`QUANTIFIZIERUNGEN: ${sit.quantifizierung.slice(0,3).map(q => `${q.titel||""}: ${q.betrag_eur ? (q.betrag_eur/1e6).toFixed(1)+"Mio.€" : ""} [${q.wahrscheinlichkeit_pct||""}%]`).join(", ")}`);
+  }
+
+  // Schritt 3: Szenario-Matrix
+  if (mat.szenarien?.length) {
+    lines.push(`SZENARIEN (Schritt 3): ${mat.szenarien.slice(0,3).map(s => `${s.titel||s.name||""} [${s.empfehlung||""}]`).join(" | ")}`);
+  }
+
+  // Schritt 5: Handlungsoptionen
+  if (ki.handlungsoptionen?.optionen?.length) {
+    lines.push(`HANDLUNGSOPTIONEN (Schritt 5): ${ki.handlungsoptionen.optionen.slice(0,4).map(o => `${o.titel||o.name||""} (Erfolg: ${o.erfolgswahrscheinlichkeit||o.wahrscheinlichkeit_pct||"?"}%, Kosten: ${o.kosten_eur ? (o.kosten_eur/1e6).toFixed(1)+"Mio.€" : "—"})`).join(" | ")}`);
+  }
+
+  // Schritt 3/Vertragsanalyse: Klauseln
+  if (ki.vertrags_analyse?.klauseln?.length) {
+    const kritisch = ki.vertrags_analyse.klauseln.filter(k => k.risiko_stufe === "kritisch");
+    const hoch = ki.vertrags_analyse.klauseln.filter(k => k.risiko_stufe === "hoch");
+    if (kritisch.length) lines.push(`KRITISCHE KLAUSELN: ${kritisch.map(k => k.klausel_typ).join(", ")}`);
+    if (hoch.length) lines.push(`HOHE-RISIKO-KLAUSELN: ${hoch.map(k => k.klausel_typ).join(", ")}`);
+    if (ki.vertrags_analyse.gesamtbewertung) lines.push(`VERTRAGSBEWERTUNG: ${ki.vertrags_analyse.gesamtbewertung.slice(0,200)}`);
+  }
+
+  // Schritt 6: Quantitative Analyse
+  if (ki.quant_analyse) {
+    if (ki.quant_analyse.ev_gesamt != null) lines.push(`ERWARTUNGSWERT (EV): ${(ki.quant_analyse.ev_gesamt/1e6).toFixed(2)} Mio. EUR`);
+    if (ki.quant_analyse.worst_case_eur) lines.push(`WORST CASE: ${(ki.quant_analyse.worst_case_eur/1e6).toFixed(1)} Mio. EUR`);
+    if (ki.quant_analyse.best_case_eur) lines.push(`BEST CASE: ${(ki.quant_analyse.best_case_eur/1e6).toFixed(1)} Mio. EUR`);
+    if (ki.quant_analyse.fazit) lines.push(`QUANT-FAZIT: ${ki.quant_analyse.fazit.slice(0,200)}`);
+  }
+
+  // Schritt 5: Strategos-Empfehlung
+  if (emp.grundhaltung) lines.push(`STRATEGOS-GRUNDHALTUNG: ${emp.grundhaltung}`);
+  if (emp.groesste_hebel?.length) lines.push(`GRÖSSTE HEBEL: ${emp.groesste_hebel.slice(0,3).join(" | ")}`);
+  if (emp.groesste_risiken?.length) lines.push(`GRÖSSTE RISIKEN: ${emp.groesste_risiken.slice(0,3).join(" | ")}`);
+  if (emp.sun_tzu?.length) lines.push(`SUN TZU: ${emp.sun_tzu.slice(0,2).map(s => s.prinzip||s.titel||"").join(" | ")}`);
+  if (emp.machiavelli?.length) lines.push(`MACHIAVELLI: ${emp.machiavelli.slice(0,2).map(s => s.prinzip||s.titel||"").join(" | ")}`);
+
+  // Schritt 7: Umsetzungsplan
+  if (ki.umsetzungsplan?.massnahmen?.length) {
+    lines.push(`UMSETZUNGSPLAN (Schritt 7): ${ki.umsetzungsplan.massnahmen.slice(0,3).map(m => `${m.titel||""} [${m.prioritaet||""}]`).join(" | ")}`);
+  }
+
+  return lines.join("\n");
+}
+
 // ─── KI-Analyse ───────────────────────────────────────────────────────────────
 async function runKiAnalyse(scenario, selectedReaktionen, eigeneStrategie, prognose) {
-  const ctx = scenario?.unternehmenskontext || {};
-  const ki  = scenario?.ki_analyse || {};
-  const reaktionTexte = selectedReaktionen.map(id => REAKTIONSMUSTER.find(r => r.id === id)?.label).join(", ");
+  const reaktionTexte = selectedReaktionen.map(id => {
+    const r = REAKTIONSMUSTER.find(r => r.id === id);
+    return r ? `${r.label} (${r.modifier > 0 ? "+" : ""}${r.modifier}%): ${r.beschreibung}` : id;
+  }).join("\n- ");
   const strategieText = EIGENE_STRATEGIEN.find(s => s.id === eigeneStrategie)?.label || "—";
+  const strategosKontext = buildStrategosKontext(scenario);
 
   return base44.integrations.Core.InvokeLLM({
-    prompt: `Du bist ein strategischer Prozess- und Vertragsberater. Erstelle eine tiefe Taktik-Simulation für folgendes Szenario.
+    prompt: `Du bist ein strategischer Prozess- und Vertragsberater auf Senior-Ebene. Führe eine vollständige Taktik-Simulation auf Basis ALLER vorliegenden Strategos-Analysedaten durch.
 
+═══════════════════════════════════════
 SZENARIO: ${scenario.title || "—"}
-UNTERNEHMEN: ${ctx.unternehmen_name || "—"} (${ctx.branche || "—"})
-SACHVERHALT: ${ctx.sachverhalt_lang?.slice(0, 400) || "—"}
-GEGNER: ${ctx.gegner_name || "—"} (${ctx.gegner_rolle || "—"})
+═══════════════════════════════════════
+${strategosKontext || "Keine weiteren Strategos-Daten vorhanden."}
 
-AUSGEWÄHLTE GEGNERISCHE REAKTIONSMUSTER: ${reaktionTexte || "Keine"}
-EIGENE STRATEGIE: ${strategieText}
-BERECHNETE ERFOLGSWAHRSCHEINLICHKEIT: ${prognose}%
+═══════════════════════════════════════
+SIMULATION: Eigene Strategie & Gegnerische Reaktionsmuster
+═══════════════════════════════════════
+GEWÄHLTE EIGENE STRATEGIE: ${strategieText}
+ERWARTETE GEGNERISCHE REAKTIONSMUSTER:
+- ${reaktionTexte || "Keine gewählt"}
+BERECHNETE AUSGANGS-ERFOLGSWAHRSCHEINLICHKEIT: ${prognose}%
 
-VORLIEGENDE STRATEGOS-DATEN:
-- Handlungsoptionen: ${JSON.stringify(ki.handlungsoptionen?.optionen?.slice(0,3) || [])}
-- Kritische Klauseln: ${(ki.vertrags_analyse?.klauseln || []).filter(k=>k.risiko_stufe==="kritisch").map(k=>k.klausel_typ).join(", ") || "—"}
-- Quantitative Analyse EV: ${ki.quant_analyse?.ev_gesamt || "—"} EUR
-- Empfehlung: ${scenario.strategos_empfehlung?.grundhaltung || "—"}
-
-AUFGABE:
-1. Bewerte die gewählte Strategiekombination (eigene Strategie vs. Reaktionsmuster)
-2. Identifiziere die gefährlichsten Kombinationen aus den gewählten Reaktionsmustern
-3. Empfehle für jedes Reaktionsmuster eine konkrete taktische Gegenmaßnahme
-4. Leite eine Hauptempfehlung für das weitere Vorgehen ab
-5. Nenne 3 kritische Erfolgsfaktoren und 3 Hauptrisiken
-6. Erstelle ein kurzes Szenario-Drehbuch: Was passiert in den nächsten 30, 90 und 180 Tagen bei diesem Reaktionsprofil?`,
+═══════════════════════════════════════
+AUFGABEN:
+═══════════════════════════════════════
+1. GESAMTBEWERTUNG: Bewerte die Strategiekombination unter Einbeziehung ALLER Strategos-Ergebnisse (Vertragsklauseln, Quantanalyse, Handlungsoptionen, Gegner-Info). Sei konkret, zahlenbasiert, schonungslos.
+2. GEFÄHRLICHSTE KOMBINATION: Welche Reaktionsmuster-Kombination ist am gefährlichsten? Warum?
+3. GEGENMASSNAMEN: Für jedes gewählte Reaktionsmuster: eine konkrete, umsetzbare taktische Gegenmaßnahme mit Dringlichkeit (hoch/mittel/niedrig).
+4. HAUPTEMPFEHLUNG: Eine klare, handlungsorientierte Hauptempfehlung die alle Strategos-Daten berücksichtigt.
+5. ERFOLGSFAKTOREN: 3 kritische Erfolgsfaktoren (konkret, bezogen auf diesen Fall).
+6. HAUPTRISIKEN: 3 Hauptrisiken (konkret, mit Bezug auf Vertragsklauseln/Quant-Daten wo verfügbar).
+7. DREHBUCH: Was passiert in 30, 90, 180 Tagen bei diesem Reaktionsprofil? Konkrete Ereignisse, nicht allgemein.
+8. PROGNOSEKORREKTUR: Wie muss die Erfolgswahrscheinlichkeit (${prognose}%) korrigiert werden? Zahl zwischen -20 und +20.`,
     response_json_schema: {
       type: "object",
       properties: {
@@ -380,8 +451,8 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
     setLoading(true);
     try {
       const rawResult = await runKiAnalyse(scenario, selectedReaktionen, eigeneStrategie, prognose);
-      // InvokeLLM gibt das JSON direkt zurück wenn response_json_schema gesetzt ist
-      const result = rawResult?.gesamt_bewertung ? rawResult : (rawResult?.output || rawResult);
+      // InvokeLLM mit response_json_schema gibt das Objekt direkt zurück
+      const result = rawResult;
       // State ZUERST setzen, dann speichern — verhindert Verlust durch Re-mount
       setLocalKiResult(result);
       onSave({
@@ -619,13 +690,7 @@ export default function Step8TaktikSimulation({ scenario, onSave }) {
       {/* ── KI-Ergebnis ── */}
       {kiResult && (
         <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {/* Fallback wenn KI-Struktur unerwartet ist */}
-          {!kiResult.gesamt_bewertung && !kiResult.hauptempfehlung && (
-            <div style={{ padding: "12px 14px", background: "rgba(255,149,0,0.08)", border: "1px solid rgba(255,149,0,0.25)", borderRadius: 12 }}>
-              <p style={{ fontSize: 11, color: "#FF9500", fontWeight: 700 }}>KI-Analyse empfangen</p>
-              <pre style={{ fontSize: 9, color: "#555", marginTop: 4, overflow: "auto", maxHeight: 120, whiteSpace: "pre-wrap" }}>{JSON.stringify(kiResult, null, 2)}</pre>
-            </div>
-          )}
+
 
           {/* Gesamtbewertung */}
           <div style={{ background: "#fff", border: "1px solid rgba(88,86,214,0.2)", borderRadius: 14, overflow: "hidden" }}>
