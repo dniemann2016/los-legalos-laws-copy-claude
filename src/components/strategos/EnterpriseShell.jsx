@@ -8,6 +8,7 @@ import Step3PatentAnalyse from "./modules/Step3PatentAnalyse";
 import Step4HandlungsOptionen from "./modules/Step4HandlungsOptionen";
 import Step5QuantitativeAnalyse from "./modules/Step5QuantitativeAnalyse";
 import Step6UmsetzungsPlan from "./modules/Step6UmsetzungsPlan";
+import Step8TaktikSimulation from "./modules/Step8TaktikSimulation";
 import { Brain, Share2, BookOpen } from "lucide-react";
 import NotionExportTab from "./NotionExportTab";
 import RechtlicheEinschaetzungenTab from "./RechtlicheEinschaetzungenTab";
@@ -21,6 +22,7 @@ const STEPS = [
   { num: 5,  label: "Handlungsoptionen",        sub: "Von A nach C · Gegner-Antizipation",           color: "#1DB954" },
   { num: 6,  label: "Quantitative Analyse",     sub: "EV · Monte Carlo · Bußgeld-Worst-Case",        color: "#5856D6" },
   { num: 7,  label: "Umsetzungsplan",           sub: "Roadmap · Monitoring · LEXARA-Export",         color: "#AF52DE" },
+  { num: 8,  label: "Taktik-Simulation",        sub: "Reaktionsmuster · Erfolgswahrscheinlichkeit",   color: "#FF2D55" },
 ];
 
 function Stepper({ current, onSelect, scenario }) {
@@ -37,6 +39,7 @@ function Stepper({ current, onSelect, scenario }) {
     5: !!ki.handlungsoptionen,
     6: !!ki.quant_analyse,
     7: !!ki.umsetzungsplan,
+    8: !!ki.taktik_simulation?.ki_result,
   };
 
   return (
@@ -185,6 +188,7 @@ export default function EnterpriseShell({ scenario, onSave }) {
             {step === 5 && <Step4HandlungsOptionen scenario={scenario} onSave={handleStepSave} />}
             {step === 6 && <Step5QuantitativeAnalyse scenario={scenario} onSave={handleStepSave} />}
             {step === 7 && <Step6UmsetzungsPlan scenario={scenario} onSave={handleStepSave} />}
+            {step === 8 && <Step8TaktikSimulation scenario={scenario} onSave={handleStepSave} />}
           </>
         )}
       </div>
