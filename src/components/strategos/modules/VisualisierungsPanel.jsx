@@ -283,22 +283,43 @@ export default function VisualisierungsPanel({ result, scenario }) {
                 {tabNeedsKlausel && (
                   <KlauselSelector sorted={sorted} selectedIdx={selectedKlauselIdx} onChange={setSelectedKlauselIdx} />
                 )}
-                {/* Diagramm zuerst anzeigen */}
-                {t.id === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={setSelectedKlauselIdx} selectedIdx={selectedKlauselIdx} />}
-                {t.id === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} />}
-                {t.id === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} />}
-                {t.id === "optionen"  && <OptionenCards klausel={selectedKlausel} />}
-                {t.id === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} />}
-                {t.id === "vergleich" && <KlauselVergleich klausel={selectedKlausel} />}
-                {/* KI-Analyse-Button und Ergebnisse UNTER dem Diagramm */}
-                <div style={{ marginTop: 12 }}>
-                  <VizKIPanel
-                    tabId={t.id}
-                    kiResult={kiResults[t.id]}
-                    loading={!!kiLoading[t.id]}
-                    onAnalyse={() => runVizAnalysis(t.id)}
-                  />
-                </div>
+                {/* Diagramm + KI-Optionen SOFORT anzeigen */}
+                {t.id === "heatmap" && (
+                  <>
+                    <KlauselHeatmap klauseln={sorted} onSelect={setSelectedKlauselIdx} selectedIdx={selectedKlauselIdx} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                  </>
+                )}
+                {t.id === "wirkung" && (
+                  <>
+                    <WirkungsBaum klausel={selectedKlausel} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                  </>
+                )}
+                {t.id === "zeitachse" && (
+                  <>
+                    <ZeitachseSzenarien klausel={selectedKlausel} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                  </>
+                )}
+                {t.id === "optionen" && (
+                  <>
+                    <OptionenCards klausel={selectedKlausel} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                  </>
+                )}
+                {t.id === "quadrant" && (
+                  <>
+                    <ChancenRisikoQuadrant klauseln={sorted} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                  </>
+                )}
+                {t.id === "vergleich" && (
+                  <>
+                    <KlauselVergleich klausel={selectedKlausel} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                  </>
+                )}
               </div>
             );
           })}
