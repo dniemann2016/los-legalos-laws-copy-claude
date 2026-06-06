@@ -41,7 +41,7 @@ function KlauselSelector({ sorted, selectedIdx, onChange }) {
   );
 }
 
-function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
+function VizKIPanel({ tabId, kiResult, status, onAnalyse }) {
   const labels = {
     heatmap:   { title: "KI-Heatmap-Analyse", color: "#B81C3A" },
     wirkung:   { title: "KI-Wirkungsbaum-Analyse", color: "#5856D6" },
@@ -51,23 +51,35 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
     vergleich: { title: "KI-Vorher/Nachher-Analyse", color: "#FF2D55" },
   };
   const { title, color } = labels[tabId] || { title: "KI-Analyse", color: "#5856D6" };
+  const { loading, hasError, error } = status || {};
 
   return (
     <div style={{ background: "#fff", border: `1px solid ${color}25`, borderRadius: 13, overflow: "hidden", marginBottom: 14 }}>
       <div style={{ padding: "10px 14px", borderBottom: `1px solid ${color}15`, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
-        <div>
+        <div style={{ flex: 1 }}>
           <p style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a" }}>{title}</p>
-          <p style={{ fontSize: 10, color: "#888", marginTop: 1 }}>Dedizierte KI-Analyse für diese Visualisierung</p>
+          <p style={{ fontSize: 10, color: "#888", marginTop: 1 }}>
+            {loading ? "KI analysiert Daten…" : hasError ? "Analyse fehlgeschlagen" : kiResult ? "Analyse abgeschlossen" : "Bereit zur Analyse"}
+          </p>
+          {hasError && <p style={{ fontSize: 9, color: "#B81C3A", marginTop: 2 }}>⚠ {error}</p>}
         </div>
         <button onClick={onAnalyse} disabled={loading}
-          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", fontSize: 11, fontWeight: 700, background: loading ? "rgba(0,0,0,0.06)" : color, color: loading ? "#aaa" : "#fff", border: `1px solid ${loading ? "rgba(0,0,0,0.1)" : color}`, borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.15s", userSelect: "none", flexShrink: 0 }}>
+          style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", fontSize: 11, fontWeight: 700, background: loading ? "rgba(0,0,0,0.06)" : color, color: loading ? "#aaa" : "#fff", border: `1px solid ${loading ? "rgba(0,0,0,0.1)" : color}`, borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.15s", userSelect: "none", flexShrink: 0, opacity: loading ? 0.7 : 1 }}>
           <Sparkles style={{ width: 12, height: 12, color: loading ? "#aaa" : "#fff" }} />
           {loading ? "Analysiert…" : kiResult ? "Neu analysieren" : "KI analysieren"}
         </button>
       </div>
 
+      {/* Ladeanzeige */}
+      {loading && (
+        <div style={{ padding: "20px", textAlign: "center" }}>
+          <div style={{ display: "inline-block", width: 24, height: 24, border: "3px solid rgba(0,0,0,0.1)", borderTopColor: color, borderRadius: "50%", animation: "spin 1s linear infinite" }} />
+          <p style={{ fontSize: 11, color: "#888", marginTop: 8 }}>KI analysiert {labels[tabId]?.title || "Daten"}…</p>
+        </div>
+      )}
+
       {/* KI-Ergebnis anzeigen (wenn vorhanden) */}
-      {kiResult && (
+      {kiResult && !loading && (
         <div style={{ padding: "12px 14px" }}>
           {/* Heatmap result */}
           {tabId === "heatmap" && kiResult.bewertungen && (
@@ -238,6 +250,7 @@ export default function VisualisierungsPanel({ result, scenario }) {
   const [selectedKlauselIdx, setSelectedKlauselIdx] = useState(0);
   const [kiResults, setKiResults] = useState({});
   const [kiLoading, setKiLoading] = useState({});
+  const [kiError, setKiError] = useState({});
 
   const ctx = scenario?.unternehmenskontext || {};
   const sorted = result?.klauseln?.length ? [...result.klauseln].sort((a, b) =>
@@ -246,8 +259,10 @@ export default function VisualisierungsPanel({ result, scenario }) {
   ) : [];
   const selectedKlausel = sorted[selectedKlauselIdx] || sorted[0];
 
+  // Zentrale KI-Analyse-Steuerung für alle Diagramm-Module
   const runVizAnalysis = async (tabId) => {
     setKiLoading(prev => ({ ...prev, [tabId]: true }));
+    setKiError(prev => ({ ...prev, [tabId]: null }));
     try {
       const promptConfig = VIZ_PROMPTS[tabId](sorted, selectedKlausel, ctx);
       const r = await base44.integrations.Core.InvokeLLM({
@@ -256,13 +271,22 @@ export default function VisualisierungsPanel({ result, scenario }) {
       });
       setKiResults(prev => ({ ...prev, [tabId]: r }));
     } catch (err) {
-      console.error(`KI-Analyse [${tabId}] fehlgeschlagen:`, err?.message);
-      alert(`Analyse fehlgeschlagen: ${err?.message || "Netzwerkfehler"}`);
+      const errorMsg = err?.message || "Netzwerkfehler";
+      setKiError(prev => ({ ...prev, [tabId]: errorMsg }));
+      console.error(`KI-Analyse [${tabId}] fehlgeschlagen:`, errorMsg);
+      alert(`Analyse fehlgeschlagen: ${errorMsg}`);
+    } finally {
+      setKiLoading(prev => ({ ...prev, [tabId]: false }));
     }
-    setKiLoading(prev => ({ ...prev, [tabId]: false }));
   };
 
-  // KEINE Auto-Analyse - Benutzer muss KI-Buttons manuell klicken
+  // Zentrale Status-Abfrage für alle Module
+  const getVizStatus = (tabId) => ({
+    loading: !!kiLoading[tabId],
+    hasResult: !!kiResults[tabId],
+    hasError: !!kiError[tabId],
+    error: kiError[tabId],
+  });
 
   if (!result?.klauseln?.length) return null;
 
@@ -289,37 +313,37 @@ export default function VisualisierungsPanel({ result, scenario }) {
                 {t.id === "heatmap" && (
                   <>
                     <KlauselHeatmap klauseln={sorted} onSelect={setSelectedKlauselIdx} selectedIdx={selectedKlauselIdx} />
-                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "wirkung" && (
                   <>
                     <WirkungsBaum klausel={selectedKlausel} kiResult={kiResults[t.id]} />
-                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "zeitachse" && (
                   <>
                     <ZeitachseSzenarien klausel={selectedKlausel} kiResult={kiResults[t.id]} />
-                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "optionen" && (
                   <>
                     <OptionenCards klausel={selectedKlausel} kiResult={kiResults[t.id]} />
-                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "quadrant" && (
                   <>
                     <ChancenRisikoQuadrant klauseln={sorted} kiResult={kiResults[t.id]} />
-                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "vergleich" && (
                   <>
                     <KlauselVergleich klausel={selectedKlausel} kiResult={kiResults[t.id]} />
-                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
               </div>
