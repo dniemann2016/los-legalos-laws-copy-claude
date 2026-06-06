@@ -288,7 +288,39 @@ export default function VisualisierungsPanel({ result, scenario }) {
     error: kiError[tabId],
   });
 
-  if (!result?.klauseln?.length) return null;
+  // Hilfskomponente für KI-Button unter jedem Ergebnis
+  const ResultKIButton = ({ tabId, label }) => (
+    <button
+      onClick={() => runVizAnalysis(tabId)}
+      disabled={kiLoading[tabId]}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+        padding: "7px 14px",
+        fontSize: 11,
+        fontWeight: 700,
+        background: kiLoading[tabId] ? "rgba(0,0,0,0.06)" : "#5856D6",
+        color: kiLoading[tabId] ? "#aaa" : "#fff",
+        border: `1px solid ${kiLoading[tabId] ? "rgba(0,0,0,0.1)" : "#5856D6"}`,
+        borderRadius: 9,
+        cursor: kiLoading[tabId] ? "not-allowed" : "pointer",
+        transition: "all 0.15s",
+        width: "100%",
+        marginTop: 8,
+        opacity: kiLoading[tabId] ? 0.7 : 1,
+      }}
+    >
+      <Sparkles style={{ width: 12, height: 12, color: kiLoading[tabId] ? "#aaa" : "#fff" }} />
+      {kiLoading[tabId] ? "KI analysiert…" : kiResults[tabId] ? `${label} neu analysieren` : `${label} mit KI analysieren`}
+    </button>
+  );
+
+  // Early return check - before any JSX but after all hooks
+  if (!result?.klauseln?.length) {
+    return null;
+  }
 
   return (
     <div style={{ background: "#fafafa", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16, overflow: "hidden", marginTop: 2 }}>
@@ -314,36 +346,42 @@ export default function VisualisierungsPanel({ result, scenario }) {
                   <>
                     <KlauselHeatmap klauseln={sorted} onSelect={setSelectedKlauselIdx} selectedIdx={selectedKlauselIdx} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <ResultKIButton tabId={t.id} label="Heatmap" />
                   </>
                 )}
                 {t.id === "wirkung" && (
                   <>
                     <WirkungsBaum klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <ResultKIButton tabId={t.id} label="Wirkungsbaum" />
                   </>
                 )}
                 {t.id === "zeitachse" && (
                   <>
                     <ZeitachseSzenarien klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <ResultKIButton tabId={t.id} label="Zeitachse" />
                   </>
                 )}
                 {t.id === "optionen" && (
                   <>
                     <OptionenCards klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <ResultKIButton tabId={t.id} label="Optionen" />
                   </>
                 )}
                 {t.id === "quadrant" && (
                   <>
                     <ChancenRisikoQuadrant klauseln={sorted} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <ResultKIButton tabId={t.id} label="Quadrant" />
                   </>
                 )}
                 {t.id === "vergleich" && (
                   <>
                     <KlauselVergleich klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} status={getVizStatus(t.id)} onAnalyse={() => runVizAnalysis(t.id)} />
+                    <ResultKIButton tabId={t.id} label="Vergleich" />
                   </>
                 )}
               </div>
