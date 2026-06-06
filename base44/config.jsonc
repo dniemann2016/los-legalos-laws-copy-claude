@@ -1,0 +1,9 @@
+{
+  "name": "lOS - LegalOS\u00ae, Laws\u00ae (Copy)",
+  "site": {
+    "installCommand": "npm install",
+    "buildCommand": "npm run build",
+    "serveCommand": "npm run dev",
+    "outputDirectory": "./dist"
+  }
+}
