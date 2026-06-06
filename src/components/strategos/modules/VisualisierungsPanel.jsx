@@ -59,11 +59,11 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
           <p style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a" }}>{title}</p>
           <p style={{ fontSize: 10, color: "#888", marginTop: 1 }}>Dedizierte KI-Analyse für diese Visualisierung</p>
         </div>
-        <div onClick={loading ? undefined : onAnalyse}
+        <button onClick={onAnalyse} disabled={loading}
           style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "6px 13px", fontSize: 11, fontWeight: 700, background: loading ? "rgba(0,0,0,0.06)" : color, color: loading ? "#aaa" : "#fff", border: `1px solid ${loading ? "rgba(0,0,0,0.1)" : color}`, borderRadius: 9, cursor: loading ? "not-allowed" : "pointer", transition: "all 0.15s", userSelect: "none", flexShrink: 0 }}>
           <Sparkles style={{ width: 12, height: 12, color: loading ? "#aaa" : "#fff" }} />
           {loading ? "Analysiert…" : kiResult ? "Neu analysieren" : "KI analysieren"}
-        </div>
+        </button>
       </div>
 
       {/* KI-Ergebnis anzeigen (wenn vorhanden) */}
