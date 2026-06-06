@@ -246,16 +246,6 @@ export default function VisualisierungsPanel({ result, scenario }) {
   ) : [];
   const selectedKlausel = sorted[selectedKlauselIdx] || sorted[0];
 
-  // Auto-Analyse beim ersten Laden für ALLE Formate
-  useEffect(() => {
-    if (sorted?.length > 0 && Object.keys(kiResults).length === 0) {
-      // Starte Analyse für alle 6 Formate nacheinander
-      VIZ_TABS.forEach((t, idx) => {
-        setTimeout(() => runVizAnalysis(t.id), idx * 300);
-      });
-    }
-  }, [sorted?.length]);
-
   const runVizAnalysis = async (tabId) => {
     setKiLoading(prev => ({ ...prev, [tabId]: true }));
     try {
@@ -271,6 +261,16 @@ export default function VisualisierungsPanel({ result, scenario }) {
     }
     setKiLoading(prev => ({ ...prev, [tabId]: false }));
   };
+
+  // Auto-Analyse beim ersten Laden für ALLE Formate
+  useEffect(() => {
+    if (sorted?.length > 0 && Object.keys(kiResults).length === 0) {
+      // Starte Analyse für alle 6 Formate nacheinander
+      VIZ_TABS.forEach((t, idx) => {
+        setTimeout(() => runVizAnalysis(t.id), idx * 300);
+      });
+    }
+  }, [sorted?.length]);
 
   if (!result?.klauseln?.length) return null;
 
