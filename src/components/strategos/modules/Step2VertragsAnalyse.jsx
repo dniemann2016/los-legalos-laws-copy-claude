@@ -498,64 +498,6 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
   );
 }
 
-// ── AUTO-VISUALISIERUNGEN — 5 MUSS-Formate, immer sichtbar nach Analyse ──────
-function AutoVisualisierungen({ result }) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
-
-  if (!result?.klauseln?.length) return null;
-
-  const sorted = [...result.klauseln].sort((a, b) =>
-    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) -
-    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
-  );
-  const selectedKlausel = sorted[selectedIdx] || sorted[0];
-
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
-      {/* Header */}
-      <div style={{ padding: "10px 16px 8px", background: "rgba(0,0,0,0.025)", borderRadius: 14, border: "1px solid rgba(0,0,0,0.07)" }}>
-        <p style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Visualisierungssystem · Schicht 01 — Standard</p>
-        <p style={{ fontSize: 11, color: "#aaa" }}>5 MUSS-Formate nach Konzeptpapier Q2/2026 · automatisch aus Analyse-Daten</p>
-      </div>
-
-      {/* FORMAT 01 — Heatmap */}
-      <KlauselHeatmap
-        klauseln={sorted}
-        onSelect={setSelectedIdx}
-        selectedIdx={selectedIdx}
-        kiResult={null}
-      />
-
-      {/* Klausel-Auswahl für Detail-Formate */}
-      <div style={{ padding: "8px 12px", background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 11 }}>
-        <p style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", marginBottom: 6 }}>Klausel für Detailansichten (02–04) auswählen</p>
-        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
-          {sorted.map((k, i) => {
-            const c = { kritisch: "#B81C3A", hoch: "#FF9500", mittel: "#0A84FF", niedrig: "#1DB954", positiv: "#1DB954" }[k.risiko_stufe] || "#888";
-            return (
-              <button key={i} onClick={() => setSelectedIdx(i)}
-                style={{ padding: "4px 10px", borderRadius: 7, border: `1px solid ${selectedIdx === i ? c : "rgba(0,0,0,0.1)"}`, background: selectedIdx === i ? `${c}12` : "transparent", fontSize: 10, fontWeight: selectedIdx === i ? 700 : 400, color: selectedIdx === i ? c : "#555", cursor: "pointer" }}>
-                {k.klausel_typ?.slice(0, 22) || `#${i + 1}`}
-              </button>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* FORMAT 02 — Wirkungsbaum */}
-      <WirkungsBaum klausel={selectedKlausel} kiResult={null} />
-
-      {/* FORMAT 03 — Zeitachse */}
-      <ZeitachseSzenarien klausel={selectedKlausel} kiResult={null} />
-
-      {/* FORMAT 04 — Optionen-Cards */}
-      <OptionenCards klausel={selectedKlausel} kiResult={null} />
-
-      {/* FORMAT 05 — Chancen-Risiken-Quadrant */}
-      <ChancenRisikoQuadrant klauseln={sorted} kiResult={null} />
-    </div>
-  );
-}
 
 function VisualisierungsPanel({ result, scenario }) {
   const [activeTab, setActiveTab] = useState("heatmap");
@@ -667,6 +609,207 @@ function VisualisierungsPanel({ result, scenario }) {
         {activeTab === "vergleich" && <KlauselVergleich klausel={selectedKlausel} kiResult={kiResults["vergleich"]} />}
       </div>
     </div>
+  );
+}
+
+// ── Collapsible Section ────────────────────────────────────────────────────────
+function Section({ title, accentColor = "#5856D6", defaultOpen = false, badge, children }) {
+  const [open, setOpen] = useState(defaultOpen);
+  return (
+    <div style={{ border: `1px solid ${accentColor}25`, borderRadius: 14, overflow: "hidden", background: "#fff" }}>
+      <button onClick={() => setOpen(o => !o)}
+        style={{ width: "100%", display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: open ? `${accentColor}08` : "#fff", border: "none", cursor: "pointer", textAlign: "left", transition: "background 0.15s" }}>
+        <div style={{ width: 4, height: 18, borderRadius: 2, background: accentColor, flexShrink: 0 }} />
+        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{title}</span>
+        {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: `${accentColor}15`, color: accentColor }}>{badge}</span>}
+        <span style={{ fontSize: 13, color: "#aaa", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>▼</span>
+      </button>
+      {open && <div style={{ borderTop: `1px solid ${accentColor}15`, padding: "14px 16px" }}>{children}</div>}
+    </div>
+  );
+}
+
+// ── Ergebnis-Bereich mit separaten Collapse-Buttons ───────────────────────────
+function ErgebnisBereich({ result, stats, scenario }) {
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      {/* Übersicht — immer offen */}
+      <Section title="Analyse-Ergebnis — Übersicht" accentColor={stats?.kritisch > 0 ? "#B81C3A" : "#1DB954"} defaultOpen={true}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "start" }}>
+          <div>
+            {result.dokument_typ && <p style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>Dokument: <strong>{result.dokument_typ}</strong>{result.parteien?.length > 0 ? ` · ${result.parteien.join(" vs. ")}` : ""}</p>}
+            <p style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.5 }}>{result.gesamtbewertung}</p>
+          </div>
+          {stats && (
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, minWidth: 160 }}>
+              {[["Kritisch", stats.kritisch, "#B81C3A"], ["Hoch", stats.hoch, "#FF9500"], ["Mittel", stats.mittel, "#0A84FF"], ["Positiv", stats.positiv, "#1DB954"]].map(([l, v, c]) => (
+                <div key={l} style={{ padding: "8px 10px", background: `${c}10`, borderRadius: 10, textAlign: "center" }}>
+                  <p style={{ fontSize: 18, fontWeight: 800, color: c }}>{v}</p>
+                  <p style={{ fontSize: 9, color: c, fontWeight: 700, textTransform: "uppercase" }}>{l}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </Section>
+
+      {/* Klausel-Analyse */}
+      {result.klauseln?.length > 0 && (
+        <Section title="Klausel-Analyse" accentColor="#B81C3A" badge={`${result.klauseln.length} Klauseln`} defaultOpen={true}>
+          {result.klauseln
+            .sort((a, b) => ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe))
+            .map((k, i) => <KlauselCard key={i} k={k} idx={i} />)}
+        </Section>
+      )}
+
+      {/* Szenario-Projektion */}
+      {result.szenarien_projektion && (
+        <Section title="Szenario-Projektion" accentColor="#0A84FF">
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {[["Best Case", result.szenarien_projektion.best_case, "#1DB954"], ["Base Case", result.szenarien_projektion.base_case, "#0A84FF"], ["Worst Case", result.szenarien_projektion.worst_case, "#B81C3A"]].map(([l, v, c]) => v && (
+              <div key={l} style={{ padding: "10px 13px", background: `${c}08`, border: `1px solid ${c}20`, borderRadius: 11 }}>
+                <p style={{ fontSize: 10, fontWeight: 700, color: c, textTransform: "uppercase", marginBottom: 4 }}>{l}</p>
+                <p style={{ fontSize: 12, color: "#333" }}>{v}</p>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Verhandlungsprioritäten */}
+      {result.verhandlungs_prioritaeten?.length > 0 && (
+        <Section title="Verhandlungsprioritäten" accentColor="#1DB954" badge="vor Unterzeichnung">
+          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+            {result.verhandlungs_prioritaeten.sort((a,b) => a.prioritaet - b.prioritaet).map((p, i) => (
+              <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 11px", background: "rgba(0,0,0,0.025)", borderRadius: 9 }}>
+                <div style={{ width: 22, height: 22, borderRadius: "50%", background: i === 0 ? "#B81C3A" : i === 1 ? "#FF9500" : "#0A84FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{p.prioritaet}</span>
+                </div>
+                <div>
+                  <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{p.klausel}</p>
+                  <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{p.massnahme}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </Section>
+      )}
+
+      {/* Kritische Fristen */}
+      {result.kritische_fristen?.length > 0 && (
+        <Section title="Kritische Fristen" accentColor="#FF9500" badge={`${result.kritische_fristen.length}`}>
+          {result.kritische_fristen.map((f, i) => (
+            <div key={i} style={{ display: "flex", gap: 12, padding: "8px 11px", background: "rgba(255,149,0,0.06)", borderRadius: 9, marginBottom: 6 }}>
+              <Scale style={{ width: 14, height: 14, color: "#FF9500", flexShrink: 0, marginTop: 2 }} />
+              <div>
+                <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{f.beschreibung}</p>
+                {f.datum && <p style={{ fontSize: 11, color: "#FF9500", fontWeight: 700, marginTop: 2 }}>📅 {f.datum}</p>}
+                {f.rechtsfolge && <p style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{f.rechtsfolge}</p>}
+              </div>
+            </div>
+          ))}
+        </Section>
+      )}
+
+      {/* FORMAT 01 — Heatmap */}
+      <Section title="FORMAT 01 · Klausel-Risiko-Heatmap" accentColor="#B81C3A">
+        <HeatmapSection result={result} />
+      </Section>
+
+      {/* FORMAT 02 — Wirkungsbaum */}
+      <Section title="FORMAT 02 · Wirkungsbaum" accentColor="#5856D6">
+        <WirkungsBaumSection result={result} />
+      </Section>
+
+      {/* FORMAT 03 — Zeitachse */}
+      <Section title="FORMAT 03 · Zeitachse mit Eintrittsszenarien" accentColor="#FF9500">
+        <ZeitachseSection result={result} />
+      </Section>
+
+      {/* FORMAT 04 — Optionen-Cards */}
+      <Section title="FORMAT 04 · Optionen-Cards" accentColor="#1DB954">
+        <OptionenSection result={result} />
+      </Section>
+
+      {/* FORMAT 05 — Chancen-Risiken-Quadrant */}
+      <Section title="FORMAT 05 · Chancen-Risiken-Quadrant" accentColor="#0A84FF">
+        <ChancenRisikoQuadrant klauseln={result.klauseln} kiResult={null} />
+      </Section>
+
+      {/* KI-Tiefenanalyse */}
+      <Section title="KI-Tiefenanalyse (6 dedizierte KI-Analysen)" accentColor="#5856D6">
+        <VisualisierungsPanel result={result} scenario={scenario} />
+      </Section>
+
+      {/* 3D-Visualisierung */}
+      <Section title="3D-Visualisierungssystem (Risikoraum · Wirkungslandschaft · Optionsraum · Portfolio)" accentColor="#AF52DE">
+        <Viz3DPanel result={result} scenario={scenario} />
+      </Section>
+    </div>
+  );
+}
+
+// ── Hilfssektionen mit eigenem Klausel-Selektor ───────────────────────────────
+function KlauselSelectorSimple({ sorted, selectedIdx, onChange }) {
+  return (
+    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
+      {sorted.map((k, i) => {
+        const c = { kritisch: "#B81C3A", hoch: "#FF9500", mittel: "#0A84FF", niedrig: "#1DB954", positiv: "#1DB954" }[k.risiko_stufe] || "#888";
+        return (
+          <button key={i} onClick={() => onChange(i)}
+            style={{ padding: "4px 10px", borderRadius: 7, border: `1px solid ${selectedIdx === i ? c : "rgba(0,0,0,0.1)"}`, background: selectedIdx === i ? `${c}12` : "transparent", fontSize: 10, fontWeight: selectedIdx === i ? 700 : 400, color: selectedIdx === i ? c : "#555", cursor: "pointer" }}>
+            {k.klausel_typ?.slice(0, 22) || `#${i + 1}`}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+function HeatmapSection({ result }) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const sorted = [...(result.klauseln || [])].sort((a, b) =>
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
+  );
+  return <KlauselHeatmap klauseln={sorted} onSelect={setSelectedIdx} selectedIdx={selectedIdx} kiResult={null} />;
+}
+
+function WirkungsBaumSection({ result }) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const sorted = [...(result.klauseln || [])].sort((a, b) =>
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
+  );
+  return (
+    <>
+      <KlauselSelectorSimple sorted={sorted} selectedIdx={selectedIdx} onChange={setSelectedIdx} />
+      <WirkungsBaum klausel={sorted[selectedIdx] || sorted[0]} kiResult={null} />
+    </>
+  );
+}
+
+function ZeitachseSection({ result }) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const sorted = [...(result.klauseln || [])].sort((a, b) =>
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
+  );
+  return (
+    <>
+      <KlauselSelectorSimple sorted={sorted} selectedIdx={selectedIdx} onChange={setSelectedIdx} />
+      <ZeitachseSzenarien klausel={sorted[selectedIdx] || sorted[0]} kiResult={null} />
+    </>
+  );
+}
+
+function OptionenSection({ result }) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+  const sorted = [...(result.klauseln || [])].sort((a, b) =>
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
+  );
+  return (
+    <>
+      <KlauselSelectorSimple sorted={sorted} selectedIdx={selectedIdx} onChange={setSelectedIdx} />
+      <OptionenCards klausel={sorted[selectedIdx] || sorted[0]} kiResult={null} />
+    </>
   );
 }
 
@@ -877,94 +1020,7 @@ WICHTIGE ANFORDERUNGEN:
 
       {/* Ergebnis */}
       {result && (
-        <>
-          {/* Gesamtübersicht */}
-          <AppleCard title="Analyse-Ergebnis" accentColor={stats?.kritisch > 0 ? "#B81C3A" : "#1DB954"}>
-            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "start" }}>
-              <div>
-                {result.dokument_typ && <p style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>Dokument: <strong>{result.dokument_typ}</strong>{result.parteien?.length > 0 ? ` · ${result.parteien.join(" vs. ")}` : ""}</p>}
-                <p style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.5 }}>{result.gesamtbewertung}</p>
-              </div>
-              {stats && (
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, minWidth: 160 }}>
-                  {[["Kritisch", stats.kritisch, "#B81C3A"], ["Hoch", stats.hoch, "#FF9500"], ["Mittel", stats.mittel, "#0A84FF"], ["Positiv", stats.positiv, "#1DB954"]].map(([l, v, c]) => (
-                    <div key={l} style={{ padding: "8px 10px", background: `${c}10`, borderRadius: 10, textAlign: "center" }}>
-                      <p style={{ fontSize: 18, fontWeight: 800, color: c }}>{v}</p>
-                      <p style={{ fontSize: 9, color: c, fontWeight: 700, textTransform: "uppercase" }}>{l}</p>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </AppleCard>
-
-          {/* Klauseln */}
-          {result.klauseln?.length > 0 && (
-            <AppleCard title={`Klausel-Analyse (${result.klauseln.length})`} accentColor="#B81C3A">
-              {result.klauseln
-                .sort((a, b) => ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe))
-                .map((k, i) => <KlauselCard key={i} k={k} idx={i} />)}
-            </AppleCard>
-          )}
-
-          {/* Szenario-Projektion */}
-          {result.szenarien_projektion && (
-            <AppleCard title="Szenario-Projektion" accentColor="#0A84FF">
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {[["Best Case", result.szenarien_projektion.best_case, "#1DB954"], ["Base Case", result.szenarien_projektion.base_case, "#0A84FF"], ["Worst Case", result.szenarien_projektion.worst_case, "#B81C3A"]].map(([l, v, c]) => v && (
-                  <div key={l} style={{ padding: "10px 13px", background: `${c}08`, border: `1px solid ${c}20`, borderRadius: 11 }}>
-                    <p style={{ fontSize: 10, fontWeight: 700, color: c, textTransform: "uppercase", marginBottom: 4 }}>{l}</p>
-                    <p style={{ fontSize: 12, color: "#333" }}>{v}</p>
-                  </div>
-                ))}
-              </div>
-            </AppleCard>
-          )}
-
-          {/* Verhandlungsprioritäten */}
-          {result.verhandlungs_prioritaeten?.length > 0 && (
-            <AppleCard title="Verhandlungsprioritäten (vor Unterzeichnung)" accentColor="#1DB954">
-              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-                {result.verhandlungs_prioritaeten.sort((a,b) => a.prioritaet - b.prioritaet).map((p, i) => (
-                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 11px", background: "rgba(0,0,0,0.025)", borderRadius: 9 }}>
-                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: i === 0 ? "#B81C3A" : i === 1 ? "#FF9500" : "#0A84FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                      <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{p.prioritaet}</span>
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{p.klausel}</p>
-                      <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{p.massnahme}</p>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </AppleCard>
-          )}
-
-          {/* Kritische Fristen */}
-          {result.kritische_fristen?.length > 0 && (
-            <AppleCard title="Kritische Fristen" accentColor="#FF9500">
-              {result.kritische_fristen.map((f, i) => (
-                <div key={i} style={{ display: "flex", gap: 12, padding: "8px 11px", background: "rgba(255,149,0,0.06)", borderRadius: 9, marginBottom: 6 }}>
-                  <Scale style={{ width: 14, height: 14, color: "#FF9500", flexShrink: 0, marginTop: 2 }} />
-                  <div>
-                    <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{f.beschreibung}</p>
-                    {f.datum && <p style={{ fontSize: 11, color: "#FF9500", fontWeight: 700, marginTop: 2 }}>📅 {f.datum}</p>}
-                    {f.rechtsfolge && <p style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{f.rechtsfolge}</p>}
-                  </div>
-                </div>
-              ))}
-            </AppleCard>
-          )}
-
-          {/* ── VISUALISIERUNGSSYSTEM — 5 MUSS-Formate (automatisch, immer sichtbar) ── */}
-          <AutoVisualisierungen result={result} />
-
-          {/* ── OPTIONALE TIEFENANALYSE (KI-gestützt, auf Anfrage) ── */}
-          <VisualisierungsPanel result={result} scenario={scenario} />
-
-          {/* ── 3D-VISUALISIERUNGSSYSTEM ── */}
-          <Viz3DPanel result={result} scenario={scenario} />
-        </>
+        <ErgebnisBereich result={result} stats={stats} scenario={scenario} />
       )}
     </div>
   );
