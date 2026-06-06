@@ -2,7 +2,7 @@
  * VisualisierungsPanel.jsx
  * 
  * Zeigt alle 6 Visualisierungsformate mit separaten KI-Analyse-Buttons.
- * Jeder Tab hat eine eigene dedizierte KI-Analyse.
+ * Jede Visualisierung hat ihren eigenen dedizierten KI-Analyse-Button.
  */
 
 import { useState } from "react";
@@ -234,11 +234,9 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
 
 // ── Hauptkomponente ───────────────────────────────────────────────────────────
 export default function VisualisierungsPanel({ result, scenario }) {
-  const [activeTab, setActiveTab] = useState("heatmap");
   const [selectedKlauselIdx, setSelectedKlauselIdx] = useState(0);
   const [kiResults, setKiResults] = useState({});
   const [kiLoading, setKiLoading] = useState({});
-  const [allExpanded, setAllExpanded] = useState(false);
 
   if (!result?.klauseln?.length) return null;
 
@@ -265,94 +263,41 @@ export default function VisualisierungsPanel({ result, scenario }) {
     setKiLoading(prev => ({ ...prev, [tabId]: false }));
   };
 
-  const needsKlausel = ["wirkung", "zeitachse", "optionen", "vergleich"].includes(activeTab);
-
   return (
     <div style={{ background: "#fafafa", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16, overflow: "hidden", marginTop: 2 }}>
-      {/* Header */}
-      <div style={{ padding: "12px 16px 10px", borderBottom: "1px solid rgba(0,0,0,0.07)", background: "#fff" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-          <BarChart3 style={{ width: 14, height: 14, color: "#5856D6" }} />
-          <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>Visualisierungssystem — 6 gesonderte KI-Analysen</p>
-          <button onClick={() => setAllExpanded(!allExpanded)} style={{ marginLeft: "auto", fontSize: 10, fontWeight: 700, color: "#5856D6", background: "rgba(88,86,214,0.1)", border: "1px solid rgba(88,86,214,0.2)", padding: "4px 10px", borderRadius: 7, cursor: "pointer" }}>
-            {allExpanded ? "Nur Tabs" : "Alle anzeigen"}
-          </button>
-        </div>
-        {!allExpanded && (
-          <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
-            {VIZ_TABS.map(t => (
-              <div key={t.id} onClick={() => setActiveTab(t.id)}
-                style={{
-                  padding: "5px 11px", borderRadius: 8, cursor: "pointer",
-                  fontSize: 10, fontWeight: activeTab === t.id ? 700 : 500,
-                  background: activeTab === t.id ? "#5856D6" : "rgba(0,0,0,0.05)",
-                  color: activeTab === t.id ? "#fff" : "#555",
-                  border: activeTab === t.id ? "1px solid #5856D6" : "1px solid transparent",
-                  transition: "all 0.15s",
-                  display: "flex", alignItems: "center", gap: 4, userSelect: "none",
-                }}>
-                <span>{t.icon}</span>{t.label}
-                {kiResults[t.id] && <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#1DB954", flexShrink: 0 }} />}
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div style={{ padding: allExpanded ? "14px 16px" : "14px 16px" }}>
-        {allExpanded ? (
-          /* ALLE Visualisierungen gleichzeitig anzeigen */
-          <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-            {VIZ_TABS.map(t => {
-              const tabNeedsKlausel = ["wirkung", "zeitachse", "optionen", "vergleich"].includes(t.id);
-              return (
-                <div key={t.id} style={{ borderBottom: "1px solid rgba(0,0,0,0.08)", paddingBottom: 16, marginBottom: t.id === "vergleich" ? 0 : 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                    <span style={{ fontSize: 16 }}>{t.icon}</span>
-                    <div>
-                      <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{t.label}</p>
-                      <p style={{ fontSize: 10, color: "#888" }}>{t.desc}</p>
-                    </div>
+      <div style={{ padding: "14px 16px" }}>
+        {/* ALLE Visualisierungen gleichzeitig anzeigen mit jeweils eigenem KI-Button */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {VIZ_TABS.map((t, idx) => {
+            const tabNeedsKlausel = ["wirkung", "zeitachse", "optionen", "vergleich"].includes(t.id);
+            return (
+              <div key={t.id} style={{ borderBottom: idx < VIZ_TABS.length - 1 ? "1px solid rgba(0,0,0,0.08)" : "none", paddingBottom: 16, marginBottom: idx < VIZ_TABS.length - 1 ? 16 : 0 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                  <span style={{ fontSize: 16 }}>{t.icon}</span>
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{t.label}</p>
+                    <p style={{ fontSize: 10, color: "#888" }}>{t.desc}</p>
                   </div>
-                  {tabNeedsKlausel && (
-                    <KlauselSelector sorted={sorted} selectedIdx={selectedKlauselIdx} onChange={setSelectedKlauselIdx} />
-                  )}
-                  <VizKIPanel
-                    tabId={t.id}
-                    kiResult={kiResults[t.id]}
-                    loading={!!kiLoading[t.id]}
-                    onAnalyse={() => runVizAnalysis(t.id)}
-                  />
-                  {t.id === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} />}
-                  {t.id === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} />}
-                  {t.id === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} />}
-                  {t.id === "optionen"  && <OptionenCards klausel={selectedKlausel} />}
-                  {t.id === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} />}
-                  {t.id === "vergleich" && <KlauselVergleich klausel={selectedKlausel} />}
                 </div>
-              );
-            })}
-          </div>
-        ) : (
-          /* Einzelansicht wie bisher */
-          <>
-            {needsKlausel && (
-              <KlauselSelector sorted={sorted} selectedIdx={selectedKlauselIdx} onChange={setSelectedKlauselIdx} />
-            )}
-            <VizKIPanel
-              tabId={activeTab}
-              kiResult={kiResults[activeTab]}
-              loading={!!kiLoading[activeTab]}
-              onAnalyse={() => runVizAnalysis(activeTab)}
-            />
-            {activeTab === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} />}
-            {activeTab === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} />}
-            {activeTab === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} />}
-            {activeTab === "optionen"  && <OptionenCards klausel={selectedKlausel} />}
-            {activeTab === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} />}
-            {activeTab === "vergleich" && <KlauselVergleich klausel={selectedKlausel} />}
-          </>
-        )}
+                {tabNeedsKlausel && (
+                  <KlauselSelector sorted={sorted} selectedIdx={selectedKlauselIdx} onChange={setSelectedKlauselIdx} />
+                )}
+                <VizKIPanel
+                  tabId={t.id}
+                  kiResult={kiResults[t.id]}
+                  loading={!!kiLoading[t.id]}
+                  onAnalyse={() => runVizAnalysis(t.id)}
+                />
+                {t.id === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={setSelectedKlauselIdx} selectedIdx={selectedKlauselIdx} />}
+                {t.id === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} />}
+                {t.id === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} />}
+                {t.id === "optionen"  && <OptionenCards klausel={selectedKlausel} />}
+                {t.id === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} />}
+                {t.id === "vergleich" && <KlauselVergleich klausel={selectedKlausel} />}
+              </div>
+            );
+          })}
+        </div>
       </div>
     </div>
   );
