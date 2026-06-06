@@ -5,7 +5,7 @@
  * Jede Visualisierung hat ihren eigenen dedizierten KI-Analyse-Button.
  */
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { base44 } from "@/api/base44Client";
 import { BarChart3, Sparkles } from "lucide-react";
 import KlauselHeatmap from "../visualisierung/KlauselHeatmap";
@@ -239,14 +239,22 @@ export default function VisualisierungsPanel({ result, scenario }) {
   const [kiResults, setKiResults] = useState({});
   const [kiLoading, setKiLoading] = useState({});
 
-  if (!result?.klauseln?.length) return null;
-
   const ctx = scenario?.unternehmenskontext || {};
-  const sorted = [...result.klauseln].sort((a, b) =>
+  const sorted = result?.klauseln?.length ? [...result.klauseln].sort((a, b) =>
     ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) -
     ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
-  );
+  ) : [];
   const selectedKlausel = sorted[selectedKlauselIdx] || sorted[0];
+
+  // Auto-Analyse beim ersten Laden für ALLE Formate
+  useEffect(() => {
+    if (sorted?.length > 0 && Object.keys(kiResults).length === 0) {
+      // Starte Analyse für alle 6 Formate nacheinander
+      VIZ_TABS.forEach((t, idx) => {
+        setTimeout(() => runVizAnalysis(t.id), idx * 300);
+      });
+    }
+  }, [sorted?.length]);
 
   const runVizAnalysis = async (tabId) => {
     setKiLoading(prev => ({ ...prev, [tabId]: true }));
@@ -263,6 +271,8 @@ export default function VisualisierungsPanel({ result, scenario }) {
     }
     setKiLoading(prev => ({ ...prev, [tabId]: false }));
   };
+
+  if (!result?.klauseln?.length) return null;
 
   return (
     <div style={{ background: "#fafafa", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 16, overflow: "hidden", marginTop: 2 }}>
