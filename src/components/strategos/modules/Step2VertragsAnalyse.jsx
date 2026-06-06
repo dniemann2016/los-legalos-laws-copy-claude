@@ -649,9 +649,8 @@ export default function Step2VertragsAnalyse({ scenario, onSave }) {
     const kiBriefing = scenario.ki_kontext?.ki_briefing;
     const notiz = manuelleNotiz;
 
-    let r;
     try {
-    r = await base44.integrations.Core.InvokeLLM({
+    const r = await base44.integrations.Core.InvokeLLM({
       prompt: `Du bist ein Senior-Anwalt einer internationalen Großkanzlei spezialisiert auf Vertragsrecht, AGB-Recht und internationale Vertragsgestaltung. Analysiere diesen Vertrag / dieses Dokument auf drei Dimensionen:
 
 UNTERNEHMENSKONTEXT:
@@ -735,12 +734,13 @@ WICHTIGE ANFORDERUNGEN:
       model: "claude_sonnet_4_6"
     });
     setResult(r);
-    await onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_analyse: r, vertrags_notiz: manuelleNotiz } });
+    onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_analyse: r, vertrags_notiz: manuelleNotiz } });
     } catch (err) {
       console.error("Vertragsanalyse fehlgeschlagen:", err?.message || err);
       alert("Analyse fehlgeschlagen: " + (err?.message || "Netzwerkfehler. Bitte erneut versuchen."));
+    } finally {
+      setAnalysing(false);
     }
-    setAnalysing(false);
   };
 
   const stats = result?.klauseln ? {
