@@ -498,6 +498,65 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
   );
 }
 
+// ── AUTO-VISUALISIERUNGEN — 5 MUSS-Formate, immer sichtbar nach Analyse ──────
+function AutoVisualisierungen({ result }) {
+  const [selectedIdx, setSelectedIdx] = useState(0);
+
+  if (!result?.klauseln?.length) return null;
+
+  const sorted = [...result.klauseln].sort((a, b) =>
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) -
+    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
+  );
+  const selectedKlausel = sorted[selectedIdx] || sorted[0];
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+      {/* Header */}
+      <div style={{ padding: "10px 16px 8px", background: "rgba(0,0,0,0.025)", borderRadius: 14, border: "1px solid rgba(0,0,0,0.07)" }}>
+        <p style={{ fontSize: 10, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: "0.1em", marginBottom: 2 }}>Visualisierungssystem · Schicht 01 — Standard</p>
+        <p style={{ fontSize: 11, color: "#aaa" }}>5 MUSS-Formate nach Konzeptpapier Q2/2026 · automatisch aus Analyse-Daten</p>
+      </div>
+
+      {/* FORMAT 01 — Heatmap */}
+      <KlauselHeatmap
+        klauseln={sorted}
+        onSelect={setSelectedIdx}
+        selectedIdx={selectedIdx}
+        kiResult={null}
+      />
+
+      {/* Klausel-Auswahl für Detail-Formate */}
+      <div style={{ padding: "8px 12px", background: "#fff", border: "1px solid rgba(0,0,0,0.08)", borderRadius: 11 }}>
+        <p style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", marginBottom: 6 }}>Klausel für Detailansichten (02–04) auswählen</p>
+        <div style={{ display: "flex", gap: 5, flexWrap: "wrap" }}>
+          {sorted.map((k, i) => {
+            const c = { kritisch: "#B81C3A", hoch: "#FF9500", mittel: "#0A84FF", niedrig: "#1DB954", positiv: "#1DB954" }[k.risiko_stufe] || "#888";
+            return (
+              <button key={i} onClick={() => setSelectedIdx(i)}
+                style={{ padding: "4px 10px", borderRadius: 7, border: `1px solid ${selectedIdx === i ? c : "rgba(0,0,0,0.1)"}`, background: selectedIdx === i ? `${c}12` : "transparent", fontSize: 10, fontWeight: selectedIdx === i ? 700 : 400, color: selectedIdx === i ? c : "#555", cursor: "pointer" }}>
+                {k.klausel_typ?.slice(0, 22) || `#${i + 1}`}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* FORMAT 02 — Wirkungsbaum */}
+      <WirkungsBaum klausel={selectedKlausel} kiResult={null} />
+
+      {/* FORMAT 03 — Zeitachse */}
+      <ZeitachseSzenarien klausel={selectedKlausel} kiResult={null} />
+
+      {/* FORMAT 04 — Optionen-Cards */}
+      <OptionenCards klausel={selectedKlausel} kiResult={null} />
+
+      {/* FORMAT 05 — Chancen-Risiken-Quadrant */}
+      <ChancenRisikoQuadrant klauseln={sorted} kiResult={null} />
+    </div>
+  );
+}
+
 function VisualisierungsPanel({ result, scenario }) {
   const [activeTab, setActiveTab] = useState("heatmap");
   const [selectedKlauselIdx, setSelectedKlauselIdx] = useState(0);
@@ -897,10 +956,13 @@ WICHTIGE ANFORDERUNGEN:
             </AppleCard>
           )}
 
-          {/* ── VISUALISIERUNGSSYSTEM (6 Formate aus Konzeptpapier) ── */}
+          {/* ── VISUALISIERUNGSSYSTEM — 5 MUSS-Formate (automatisch, immer sichtbar) ── */}
+          <AutoVisualisierungen result={result} />
+
+          {/* ── OPTIONALE TIEFENANALYSE (KI-gestützt, auf Anfrage) ── */}
           <VisualisierungsPanel result={result} scenario={scenario} />
 
-          {/* ── 3D-VISUALISIERUNGSSYSTEM (aus Konzeptpapier Q2/2026) ── */}
+          {/* ── 3D-VISUALISIERUNGSSYSTEM ── */}
           <Viz3DPanel result={result} scenario={scenario} />
         </>
       )}
