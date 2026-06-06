@@ -262,15 +262,7 @@ export default function VisualisierungsPanel({ result, scenario }) {
     setKiLoading(prev => ({ ...prev, [tabId]: false }));
   };
 
-  // Auto-Analyse beim ersten Laden für ALLE Formate
-  useEffect(() => {
-    if (sorted?.length > 0 && Object.keys(kiResults).length === 0) {
-      // Starte Analyse für alle 6 Formate nacheinander
-      VIZ_TABS.forEach((t, idx) => {
-        setTimeout(() => runVizAnalysis(t.id), idx * 300);
-      });
-    }
-  }, [sorted?.length]);
+  // KEINE Auto-Analyse - Benutzer muss KI-Buttons manuell klicken
 
   if (!result?.klauseln?.length) return null;
 
