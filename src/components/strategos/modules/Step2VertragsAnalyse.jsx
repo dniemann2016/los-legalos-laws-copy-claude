@@ -618,13 +618,11 @@ function Section({ title, accentColor = "#5856D6", defaultOpen = false, badge, c
   return (
     <div style={{ border: `1px solid ${accentColor}25`, borderRadius: 14, overflow: "hidden", background: "#fff" }}>
       <div onClick={() => setOpen(o => !o)}
-        style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: open ? `${accentColor}12` : `${accentColor}06`, cursor: "pointer", userSelect: "none", transition: "background 0.15s", borderBottom: open ? `1px solid ${accentColor}20` : "none" }}>
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: open ? `${accentColor}08` : "#fff", cursor: "pointer", userSelect: "none", transition: "background 0.15s" }}>
         <div style={{ width: 4, height: 18, borderRadius: 2, background: accentColor, flexShrink: 0 }} />
         <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{title}</span>
-        {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: `${accentColor}20`, color: accentColor }}>{badge}</span>}
-        <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 8, background: open ? accentColor : `${accentColor}20`, color: open ? "#fff" : accentColor, transition: "all 0.15s", flexShrink: 0 }}>
-          {open ? "▲ Einklappen" : "▼ Anzeigen"}
-        </span>
+        {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: `${accentColor}15`, color: accentColor }}>{badge}</span>}
+        <span style={{ fontSize: 13, color: "#aaa", display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>▼</span>
       </div>
       {open && <div style={{ borderTop: `1px solid ${accentColor}15`, padding: "14px 16px" }}>{children}</div>}
     </div>
@@ -962,63 +960,62 @@ WICHTIGE ANFORDERUNGEN:
         <p style={{ fontSize: 12, color: "#888", marginTop: 3 }}>Klausel-Risikoklassifikation · Szenarioprojektion · Verhandlungsposition</p>
       </div>
 
-      {/* Dokument-Upload */}
-      <AppleCard title="A · Dokument hochladen" accentColor="#0A84FF" action={
-        <label style={{ cursor: "pointer" }}>
-          <input type="file" multiple accept=".pdf,.docx,.doc,.txt" onChange={handleUpload} style={{ display: "none" }} />
-          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", fontSize: 12, fontWeight: 600, background: "#0A84FF", color: "#fff", borderRadius: 10, boxShadow: "0 2px 8px rgba(10,132,255,0.3)", cursor: "pointer" }}>
-            <Upload style={{ width: 12, height: 12 }} /> {uploading ? "Lädt…" : "Hochladen"}
-          </span>
-        </label>
-      }>
-        {docs.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "20px 16px", color: "#bbb" }}>
-            <FileSearch style={{ width: 28, height: 28, margin: "0 auto 8px", opacity: 0.4 }} />
-            <p style={{ fontSize: 12 }}>Vertrag, Term Sheet, Kooperationsvereinbarung, Patent, Behördenschreiben hochladen</p>
-            <p style={{ fontSize: 11, marginTop: 4, color: "#ccc" }}>PDF / DOCX / TXT — oder Sachverhalt manuell beschreiben</p>
-          </div>
-        ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+      {/* Eingabe: Upload + Text + KI-Button in einer Karte */}
+      <div style={{ background: "#fff", border: "1px solid rgba(10,132,255,0.2)", borderRadius: 16, overflow: "hidden" }}>
+        {/* Upload-Zeile */}
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 12 }}>
+          <Upload style={{ width: 14, height: 14, color: "#0A84FF", flexShrink: 0 }} />
+          <p style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "#1a1a1a" }}>Dokument hochladen</p>
+          <label style={{ cursor: "pointer" }}>
+            <input type="file" multiple accept=".pdf,.docx,.doc,.txt" onChange={handleUpload} style={{ display: "none" }} />
+            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 600, background: "#0A84FF", color: "#fff", borderRadius: 8, cursor: "pointer" }}>
+              {uploading ? "Lädt…" : "Datei wählen"}
+            </span>
+          </label>
+        </div>
+
+        {/* Hochgeladene Dateien */}
+        {docs.length > 0 && (
+          <div style={{ padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 5 }}>
             {docs.map((d, i) => (
-              <div key={i} onClick={() => setSelectedDoc(d)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: selectedDoc?.url === d.url ? "rgba(10,132,255,0.1)" : "rgba(0,0,0,0.03)", border: `1px solid ${selectedDoc?.url === d.url ? "rgba(10,132,255,0.35)" : "rgba(0,0,0,0.07)"}`, borderRadius: 10, cursor: "pointer" }}>
-                <FileUp style={{ width: 13, height: 13, color: "#0A84FF", flexShrink: 0 }} />
-                <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
-                {selectedDoc?.url === d.url && <span style={{ fontSize: 10, color: "#0A84FF", fontWeight: 700 }}>Ausgewählt</span>}
-                <button onClick={e => { e.stopPropagation(); const n = docs.filter((_, j) => j !== i); setDocs(n); onSave({ unternehmenskontext: { ...ctx, dokumente: n } }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc" }}><Trash2 style={{ width: 12, height: 12 }} /></button>
+              <div key={i} onClick={() => setSelectedDoc(d)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: selectedDoc?.url === d.url ? "rgba(10,132,255,0.1)" : "rgba(0,0,0,0.03)", border: `1px solid ${selectedDoc?.url === d.url ? "rgba(10,132,255,0.35)" : "rgba(0,0,0,0.07)"}`, borderRadius: 9, cursor: "pointer" }}>
+                <FileUp style={{ width: 12, height: 12, color: "#0A84FF", flexShrink: 0 }} />
+                <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
+                {selectedDoc?.url === d.url && <span style={{ fontSize: 9, color: "#0A84FF", fontWeight: 700 }}>✓ Ausgewählt</span>}
+                <button className="no-override" onClick={e => { e.stopPropagation(); const n = docs.filter((_, j) => j !== i); setDocs(n); onSave({ unternehmenskontext: { ...ctx, dokumente: n } }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2 }}><Trash2 style={{ width: 11, height: 11 }} /></button>
               </div>
             ))}
           </div>
         )}
-      </AppleCard>
 
-      {/* Manuelle Beschreibung */}
-      <AppleCard title="B · Manuelle Beschreibung / Klauseln" accentColor="#636366">
-        <AppleField label="Beschreibung der Klauseln oder des Vertragsinhalts (optional, ergänzt Dokument)">
+        {/* Textarea */}
+        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <p style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>Oder Vertragsinhalt / Klauseln manuell beschreiben</p>
           <AppleTextarea rows={4} value={manuelleNotiz} onChange={e => setManuelleNotiz(e.target.value)}
             onBlur={() => onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_notiz: manuelleNotiz } })}
-            placeholder="z.B. Vertrag enthält eine Change-of-Control-Klausel mit 30-Tage-Kündigungsrecht. Earn-out über 3 Jahre an EBITDA gekoppelt. Wettbewerbsverbot 3 Jahre nach Beendigung ohne Karenzentschädigung..." />
-        </AppleField>
-      </AppleCard>
+            placeholder="z.B. Change-of-Control-Klausel mit 30-Tage-Kündigungsrecht. Earn-out über 3 Jahre an EBITDA gekoppelt. Wettbewerbsverbot 3 Jahre nach Beendigung ohne Karenzentschädigung..." />
+        </div>
 
-      {/* Analyse starten */}
-      <AppleCard accentColor="#0A84FF">
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+        {/* KI-Analyse Button */}
+        <div style={{ padding: "12px 16px", background: "rgba(10,132,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>KI-Vertragsanalyse</p>
-            <p style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+            <p style={{ fontSize: 11, color: "#888" }}>
               {docs.length > 0
-                ? `${docs.length} Dokument(e) · `
-                : (scenario.ki_kontext?.docs || []).filter(d => d.status === "done").length > 0
-                  ? `${(scenario.ki_kontext.docs).filter(d => d.status === "done").length} Dok. aus Schritt 0 · `
-                  : "Kein Dokument — "}
-              Klausel-Risikoklassifikation · Szenarioprojektion · Verhandlungsposition
+                ? `${docs.length} Dokument(e) bereit`
+                : manuelleNotiz.trim().length > 0
+                  ? "Manueller Text bereit"
+                  : (scenario.ki_kontext?.docs || []).filter(d => d.status === "done").length > 0
+                    ? `${(scenario.ki_kontext.docs).filter(d => d.status === "done").length} Dok. aus Schritt 0`
+                    : "Dokument hochladen oder Text eingeben"}
             </p>
           </div>
-          <AppleButton onClick={analyseVertrag} disabled={analysing} variant="primary" icon={Sparkles}>
-            {analysing ? "Analysiert…" : result ? "Neu analysieren" : "Jetzt analysieren"}
-          </AppleButton>
+          <button className="no-override" onClick={analyseVertrag} disabled={analysing}
+            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 22px", fontSize: 13, fontWeight: 700, background: analysing ? "rgba(10,132,255,0.5)" : "#0A84FF", color: "#fff", border: "none", borderRadius: 10, cursor: analysing ? "not-allowed" : "pointer", boxShadow: analysing ? "none" : "0 3px 12px rgba(10,132,255,0.4)", transition: "all 0.15s" }}>
+            <Sparkles style={{ width: 15, height: 15 }} />
+            {analysing ? "KI analysiert…" : result ? "Erneut analysieren" : "KI-Analyse starten"}
+          </button>
         </div>
-      </AppleCard>
+      </div>
 
       {/* Ergebnis */}
       {result && (
