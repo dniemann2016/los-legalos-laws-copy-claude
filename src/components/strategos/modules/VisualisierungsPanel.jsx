@@ -51,7 +51,7 @@ function VizKIPanel({ tabId, kiResult, status, onAnalyse }) {
     vergleich: { title: "KI-Vorher/Nachher-Analyse", color: "#FF2D55" },
   };
   const { title, color } = labels[tabId] || { title: "KI-Analyse", color: "#5856D6" };
-  const { loading, hasError, error } = status || {};
+  const { loading = false, hasError = false, error = null } = status || {};
 
   return (
     <div style={{ background: "#fff", border: `1px solid ${color}25`, borderRadius: 13, overflow: "hidden", marginBottom: 14 }}>
