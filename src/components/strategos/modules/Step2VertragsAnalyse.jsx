@@ -618,11 +618,13 @@ function Section({ title, accentColor = "#5856D6", defaultOpen = false, badge, c
   return (
     <div style={{ border: `1px solid ${accentColor}25`, borderRadius: 14, overflow: "hidden", background: "#fff" }}>
       <div onClick={() => setOpen(o => !o)}
-        style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: open ? `${accentColor}08` : "#fff", cursor: "pointer", userSelect: "none", transition: "background 0.15s" }}>
+        style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: open ? `${accentColor}12` : `${accentColor}06`, cursor: "pointer", userSelect: "none", transition: "background 0.15s", borderBottom: open ? `1px solid ${accentColor}20` : "none" }}>
         <div style={{ width: 4, height: 18, borderRadius: 2, background: accentColor, flexShrink: 0 }} />
         <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{title}</span>
-        {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: `${accentColor}15`, color: accentColor }}>{badge}</span>}
-        <span style={{ fontSize: 13, color: "#aaa", display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>▼</span>
+        {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: `${accentColor}20`, color: accentColor }}>{badge}</span>}
+        <span style={{ fontSize: 11, fontWeight: 700, padding: "4px 12px", borderRadius: 8, background: open ? accentColor : `${accentColor}20`, color: open ? "#fff" : accentColor, transition: "all 0.15s", flexShrink: 0 }}>
+          {open ? "▲ Einklappen" : "▼ Anzeigen"}
+        </span>
       </div>
       {open && <div style={{ borderTop: `1px solid ${accentColor}15`, padding: "14px 16px" }}>{children}</div>}
     </div>
