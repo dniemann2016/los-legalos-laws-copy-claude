@@ -4,7 +4,56 @@
  */
 const RISIKO_COLOR = { kritisch: "#B81C3A", hoch: "#FF9500", mittel: "#0A84FF", niedrig: "#1DB954", positiv: "#1DB954" };
 
-export default function KlauselVergleich({ klausel }) {
+export default function KlauselVergleich({ klausel, kiResult }) {
+  // KI-Ergebnis priorisieren
+  if (kiResult?.soll_formulierung) {
+    return (
+      <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#FF2D55", textTransform: "uppercase", letterSpacing: "0.1em" }}>KI-VERGLEICH · Vorher/Nachher</p>
+          <p style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>KI-generierte optimierte Formulierung</p>
+        </div>
+        <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          {/* IST */}
+          <div style={{ border: "2px solid rgba(184,28,58,0.35)", borderRadius: 11, overflow: "hidden" }}>
+            <div style={{ background: "#B81C3A", padding: "8px 12px" }}>
+              <p style={{ fontSize: 10, fontWeight: 800, color: "#fff", textTransform: "uppercase" }}>IST-FORMULIERUNG</p>
+            </div>
+            <div style={{ padding: "10px 12px" }}>
+              <p style={{ fontSize: 11, color: "#333", fontStyle: "italic", lineHeight: 1.5, marginBottom: 10 }}>„{kiResult.ist_formulierung || klausel.kurzbeschreibung}"</p>
+              {kiResult.ist_probleme?.map((p, i) => (
+                <p key={i} style={{ fontSize: 10, color: "#B81C3A", marginTop: 4 }}>■ {p}</p>
+              ))}
+            </div>
+          </div>
+          {/* SOLL */}
+          <div style={{ border: "2px solid rgba(29,185,84,0.35)", borderRadius: 11, overflow: "hidden" }}>
+            <div style={{ background: "#1DB954", padding: "8px 12px" }}>
+              <p style={{ fontSize: 10, fontWeight: 800, color: "#fff", textTransform: "uppercase" }}>SOLL-FORMULIERUNG</p>
+            </div>
+            <div style={{ padding: "10px 12px" }}>
+              <p style={{ fontSize: 11, color: "#333", fontStyle: "italic", lineHeight: 1.5, marginBottom: 10 }}>„{kiResult.soll_formulierung}"</p>
+              {kiResult.soll_vorteile?.map((v, i) => (
+                <p key={i} style={{ fontSize: 10, color: "#1DB954", marginTop: 4 }}>■ {v}</p>
+              ))}
+            </div>
+          </div>
+        </div>
+        {kiResult.risiko_reduktion_pct && (
+          <div style={{ padding: "9px 14px", background: "#1DB95407", borderTop: "1px solid #1DB95420" }}>
+            <p style={{ fontSize: 11, fontWeight: 800, color: "#1DB954" }}>✓ Risikoreduktion: -{kiResult.risiko_reduktion_pct}%</p>
+          </div>
+        )}
+        {kiResult.kompromiss_formulierung && (
+          <div style={{ padding: "9px 14px", background: "#0A84FF07", borderTop: "1px solid #0A84FF20" }}>
+            <p style={{ fontSize: 9, fontWeight: 700, color: "#0A84FF", textTransform: "uppercase", marginBottom: 3 }}>Kompromissformulierung</p>
+            <p style={{ fontSize: 11, color: "#333", fontStyle: "italic" }}>„{kiResult.kompromiss_formulierung}"</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
   if (!klausel?.alternativ_formulierung && !klausel?.verhandlungsempfehlung) return null;
 
   const istRisikoColor = RISIKO_COLOR[klausel.risiko_stufe] || "#B81C3A";

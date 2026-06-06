@@ -292,31 +292,31 @@ export default function VisualisierungsPanel({ result, scenario }) {
                 )}
                 {t.id === "wirkung" && (
                   <>
-                    <WirkungsBaum klausel={selectedKlausel} />
+                    <WirkungsBaum klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "zeitachse" && (
                   <>
-                    <ZeitachseSzenarien klausel={selectedKlausel} />
+                    <ZeitachseSzenarien klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "optionen" && (
                   <>
-                    <OptionenCards klausel={selectedKlausel} />
+                    <OptionenCards klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "quadrant" && (
                   <>
-                    <ChancenRisikoQuadrant klauseln={sorted} />
+                    <ChancenRisikoQuadrant klauseln={sorted} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}
                 {t.id === "vergleich" && (
                   <>
-                    <KlauselVergleich klausel={selectedKlausel} />
+                    <KlauselVergleich klausel={selectedKlausel} kiResult={kiResults[t.id]} />
                     <VizKIPanel tabId={t.id} kiResult={kiResults[t.id]} loading={!!kiLoading[t.id]} onAnalyse={() => runVizAnalysis(t.id)} />
                   </>
                 )}

@@ -14,8 +14,52 @@ function WertBadge({ value }) {
   return <span style={{ fontSize: 14, fontWeight: 800, color }}>{value}</span>;
 }
 
-export default function OptionenCards({ klausel }) {
-  if (!klausel) return null;
+export default function OptionenCards({ klausel, kiResult }) {
+  if (!klausel && !kiResult) return null;
+
+  // KI-Ergebnis priorisieren wenn vorhanden
+  if (kiResult?.optionen?.length > 0) {
+    return (
+      <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#1DB954", textTransform: "uppercase", letterSpacing: "0.1em" }}>KI-OPTIONEN · Analyse</p>
+          <p style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>KI-generierte Handlungsoptionen mit Erfolgsbewertung</p>
+        </div>
+        <div style={{ padding: "12px 14px", display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: 10 }}>
+          {kiResult.optionen.map((opt, i) => (
+            <div key={i} style={{
+              border: `2px solid ${opt.empfohlen ? "#1DB954" : "#1DB95440"}`,
+              borderRadius: 12, overflow: "hidden",
+              background: opt.empfohlen ? "#1DB9540a" : "#fafafa", position: "relative",
+            }}>
+              {opt.empfohlen && (
+                <div style={{ position: "absolute", top: 0, right: 0, background: "#1DB954", padding: "2px 7px", borderBottomLeftRadius: 8 }}>
+                  <p style={{ fontSize: 8, fontWeight: 800, color: "#fff", textTransform: "uppercase" }}>Empfohlen</p>
+                </div>
+              )}
+              <div style={{ background: opt.empfohlen ? "#1DB954" : "#1DB95420", padding: "10px 12px" }}>
+                <span style={{ fontSize: 16, fontWeight: 900, color: opt.empfohlen ? "#fff" : "#1DB954" }}>{opt.id}</span>
+                <p style={{ fontSize: 11, fontWeight: 700, color: opt.empfohlen ? "#fff" : "#1DB954", marginTop: 2 }}>{opt.titel}</p>
+              </div>
+              <div style={{ padding: "10px 12px", display: "flex", flexDirection: "column", gap: 6 }}>
+                <p style={{ fontSize: 10, color: "#555", lineHeight: 1.3 }}>{opt.beschreibung}</p>
+                <div style={{ display: "flex", justifyContent: "space-between" }}>
+                  <div><p style={{ fontSize: 9, color: "#aaa" }}>Erfolg</p><p style={{ fontSize: 14, fontWeight: 800, color: "#1a1a1a" }}>{opt.wahrscheinlichkeit_pct}%</p></div>
+                  <div><p style={{ fontSize: 9, color: "#aaa" }}>Kosten</p><p style={{ fontSize: 11, fontWeight: 700, color: "#555" }}>{opt.kosten_label || "—"}</p></div>
+                  <div><p style={{ fontSize: 9, color: "#aaa" }}>Wert</p><p style={{ fontSize: 10, fontWeight: 700, color: opt.strategischer_wert === "hoch" ? "#1DB954" : "#0A84FF" }}>{opt.strategischer_wert}</p></div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        {kiResult.verhandlungsstrategie && (
+          <div style={{ padding: "9px 12px", background: "#1DB95407", borderTop: "1px solid #1DB95420" }}>
+            <p style={{ fontSize: 10, color: "#1DB954", fontWeight: 700 }}>📊 {kiResult.verhandlungsstrategie}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
 
   // Optionen aus Verhandlungsempfehlung + Szenarien ableiten, oder Standardoptionen
   const optionen = [];

@@ -2,7 +2,47 @@
  * FORMAT 03 — Zeitachse mit Eintrittsszenarien
  * Zeigt wann mit welcher Wahrscheinlichkeit welche Wirkung eintreten kann.
  */
-export default function ZeitachseSzenarien({ klausel }) {
+export default function ZeitachseSzenarien({ klausel, kiResult }) {
+  // KI-Ergebnis priorisieren
+  if (kiResult?.meilensteine?.length > 0) {
+    return (
+      <div style={{ background: "#fff", border: "1px solid rgba(0,0,0,0.09)", borderRadius: 14, overflow: "hidden" }}>
+        <div style={{ padding: "10px 14px 8px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#FF9500", textTransform: "uppercase", letterSpacing: "0.1em" }}>KI-ZEITACHSE · Analyse</p>
+          <p style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>KI-generierte Meilensteine und Trigger-Ereignisse</p>
+        </div>
+        <div style={{ padding: "16px 14px" }}>
+          {kiResult.kritischer_zeitpunkt && (
+            <div style={{ padding: "8px 12px", background: "#FF950008", border: "1px solid #FF950020", borderRadius: 9, marginBottom: 12 }}>
+              <p style={{ fontSize: 10, fontWeight: 700, color: "#FF9500" }}>⏰ Kritisch: {kiResult.kritischer_zeitpunkt}</p>
+            </div>
+          )}
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            {kiResult.meilensteine.map((m, i) => (
+              <div key={i} style={{ display: "flex", gap: 10, padding: "9px 12px", background: m.kritisch ? "#B81C3A08" : "rgba(0,0,0,0.025)", border: `1px solid ${m.kritisch ? "#B81C3A20" : "rgba(0,0,0,0.06)"}`, borderRadius: 9 }}>
+                <div style={{ textAlign: "center", minWidth: 56, flexShrink: 0 }}>
+                  <p style={{ fontSize: 11, fontWeight: 800, color: m.kritisch ? "#B81C3A" : "#555" }}>{m.zeitpunkt}</p>
+                  <p style={{ fontSize: 9, color: "#888" }}>{m.wahrscheinlichkeit_pct}%</p>
+                </div>
+                <div style={{ flex: 1 }}>
+                  <p style={{ fontSize: 11, fontWeight: 700, color: "#1a1a1a" }}>{m.ereignis}</p>
+                  {m.trigger && <p style={{ fontSize: 10, color: "#666" }}>Trigger: {m.trigger}</p>}
+                  {m.handlungsfenster_tage && <p style={{ fontSize: 9, color: "#0A84FF" }}>Fenster: {m.handlungsfenster_tage} Tage</p>}
+                </div>
+              </div>
+            ))}
+          </div>
+          {kiResult.fruehwarnsignale?.length > 0 && (
+            <div style={{ marginTop: 12, padding: "8px 12px", background: "#FF950008", borderRadius: 9 }}>
+              <p style={{ fontSize: 9, fontWeight: 700, color: "#FF9500", textTransform: "uppercase", marginBottom: 4 }}>Frühwarnsignale</p>
+              {kiResult.fruehwarnsignale.map((s, i) => <p key={i} style={{ fontSize: 10, color: "#555" }}>⚠ {s}</p>)}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!klausel?.szenarien?.length) return null;
 
   const HORIZONT_POS = { kurzfristig: 20, mittelfristig: 50, langfristig: 80 };
