@@ -61,8 +61,6 @@ function EvidenceCard({ ev, onDelete, onSave }) {
   const [kiWeighting, setKiWeighting] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState(null);
-  const [erschuetterung, setErschuetterung] = useState(null);
-  const [erschLoading, setErschLoading] = useState(false);
 
   const discrepancy = ev.ki_weight !== undefined && ev.ki_weight !== null
     ? Math.abs((ev.weight || 5) - ev.ki_weight)
@@ -122,37 +120,6 @@ function EvidenceCard({ ev, onDelete, onSave }) {
     });
     setAnalysis(res);
     setAnalyzing(false);
-  };
-
-  const analyzeErschuetterung = async () => {
-    setErschLoading(true);
-    const res = await base44.integrations.Core.InvokeLLM({
-      prompt: `Du bist ein erfahrener Prozessrechtler. Analysiere, wie leicht die Gegenseite diesen Beweis erschüttern kann.
-
-Beweis: "${ev.title}"
-Typ: "${ev.type || ""}"
-Beschreibung: "${ev.description || ""}"
-Beweiskraft: ${ev.weight || 5}/10
-
-Analysiere:
-1. ERSCHÜTTERBARKEIT: Wie leicht ist dieser Beweis angreifbar? (gering/mittel/hoch/sehr hoch)
-2. MITTEL DER GEGENSEITE: Mit welchen konkreten juristischen Mitteln kann der Gegner diesen Beweis erschüttern? (3–4 Punkte)
-3. AUFWAND FÜR GEGNER: Wie viel Ressourcen muss die Gegenseite investieren? (gering/mittel/erheblich)
-4. ERFOLGSAUSSICHT DES ANGRIFFS: Wie hoch ist die Chance, dass der Angriff gelingt? (0–100%)
-5. GEGENMASSNAHMEN: Was können wir tun, um diesen Beweis widerstandsfähiger zu machen? (3 Punkte)`,
-      response_json_schema: {
-        type: "object",
-        properties: {
-          erschuetterbarkeit: { type: "string" },
-          mittel_der_gegenseite: { type: "array", items: { type: "string" } },
-          aufwand_gegner: { type: "string" },
-          erfolgsaussicht_angriff_pct: { type: "number" },
-          gegenmassnahmen: { type: "array", items: { type: "string" } }
-        }
-      }
-    });
-    setErschuetterung(res);
-    setErschLoading(false);
   };
 
   return (
@@ -259,47 +226,7 @@ Analysiere:
                       Diskrepanz analysieren
                     </button>
                   )}
-                  <button onClick={analyzeErschuetterung} disabled={erschLoading}
-                    className="flex items-center gap-1 text-[10px] text-red-600 hover:text-red-800 border border-red-200 rounded px-1.5 py-0.5 disabled:opacity-40">
-                    {erschLoading ? <RefreshCw className="w-2.5 h-2.5 animate-spin" /> : <span>⚡</span>}
-                    Erschütterungsanalyse
-                  </button>
                 </div>
-                {erschuetterung && (
-                  <div className="mt-3 bg-red-50 border border-red-100 rounded-xl p-3 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-[10px] font-bold text-red-800 uppercase tracking-wide">Erschütterungsanalyse</p>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded ${erschuetterung.erschuetterbarkeit === "sehr hoch" ? "bg-red-200 text-red-800" : erschuetterung.erschuetterbarkeit === "hoch" ? "bg-orange-200 text-orange-800" : erschuetterung.erschuetterbarkeit === "mittel" ? "bg-amber-200 text-amber-800" : "bg-green-200 text-green-800"}`}>
-                          {erschuetterung.erschuetterbarkeit}
-                        </span>
-                        {erschuetterung.erfolgsaussicht_angriff_pct !== undefined && (
-                          <span className="text-[10px] text-red-700 font-bold">{erschuetterung.erfolgsaussicht_angriff_pct}% Angriffserfolg</span>
-                        )}
-                      </div>
-                    </div>
-                    {erschuetterung.mittel_der_gegenseite?.length > 0 && (
-                      <div>
-                        <p className="text-[9px] font-semibold text-red-700 uppercase mb-1">Angriffsmittel der Gegenseite</p>
-                        {erschuetterung.mittel_der_gegenseite.map((m, i) => (
-                          <p key={i} className="text-[10px] text-red-700 mb-0.5">⚡ {m}</p>
-                        ))}
-                      </div>
-                    )}
-                    {erschuetterung.gegenmassnahmen?.length > 0 && (
-                      <div>
-                        <p className="text-[9px] font-semibold text-green-700 uppercase mb-1">Unsere Gegenmassnahmen</p>
-                        {erschuetterung.gegenmassnahmen.map((m, i) => (
-                          <p key={i} className="text-[10px] text-green-700 mb-0.5">✓ {m}</p>
-                        ))}
-                      </div>
-                    )}
-                    {erschuetterung.aufwand_gegner && (
-                      <p className="text-[9px] text-gray-500">Aufwand Gegner: <strong>{erschuetterung.aufwand_gegner}</strong></p>
-                    )}
-                    <button onClick={() => setErschuetterung(null)} className="text-[9px] text-red-400 hover:text-red-600">Schließen</button>
-                  </div>
-                )}
                 {analysis && (
                   <div className="mt-3 bg-amber-50 border border-amber-100 rounded-xl p-3 space-y-2">
                     <p className="text-xs text-amber-800">{analysis.erklaerung}</p>

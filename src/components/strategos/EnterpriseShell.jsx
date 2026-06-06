@@ -8,10 +8,7 @@ import Step3PatentAnalyse from "./modules/Step3PatentAnalyse";
 import Step4HandlungsOptionen from "./modules/Step4HandlungsOptionen";
 import Step5QuantitativeAnalyse from "./modules/Step5QuantitativeAnalyse";
 import Step6UmsetzungsPlan from "./modules/Step6UmsetzungsPlan";
-import Step8TaktikSimulation from "./modules/Step8TaktikSimulation";
-import { Brain, Share2, BookOpen } from "lucide-react";
-import NotionExportTab from "./NotionExportTab";
-import RechtlicheEinschaetzungenTab from "./RechtlicheEinschaetzungenTab";
+import { Brain } from "lucide-react";
 
 const STEPS = [
   { num: 0,  label: "Dokumente & KI-Briefing", sub: "Upload · Extraktion · Automatisch befüllen",    color: "#5856D6" },
@@ -22,7 +19,6 @@ const STEPS = [
   { num: 5,  label: "Handlungsoptionen",        sub: "Von A nach C · Gegner-Antizipation",           color: "#1DB954" },
   { num: 6,  label: "Quantitative Analyse",     sub: "EV · Monte Carlo · Bußgeld-Worst-Case",        color: "#5856D6" },
   { num: 7,  label: "Umsetzungsplan",           sub: "Roadmap · Monitoring · LEXARA-Export",         color: "#AF52DE" },
-  { num: 8,  label: "Taktik-Simulation",        sub: "Reaktionsmuster · Erfolgswahrscheinlichkeit",   color: "#FF2D55" },
 ];
 
 function Stepper({ current, onSelect, scenario }) {
@@ -39,7 +35,6 @@ function Stepper({ current, onSelect, scenario }) {
     5: !!ki.handlungsoptionen,
     6: !!ki.quant_analyse,
     7: !!ki.umsetzungsplan,
-    8: !!ki.taktik_simulation?.ki_result,
   };
 
   return (
@@ -84,8 +79,6 @@ function Stepper({ current, onSelect, scenario }) {
 
 export default function EnterpriseShell({ scenario, onSave }) {
   const [step, setStep] = useState(scenario.enterprise_step ?? 0);
-  const [showExport, setShowExport] = useState(false);
-  const [showEinschaetzungen, setShowEinschaetzungen] = useState(false);
 
   const handleSave = async (patch) => {
     const updated = { ...scenario, ...patch };
@@ -136,34 +129,6 @@ export default function EnterpriseShell({ scenario, onSave }) {
           )}
         </div>
 
-        {/* Rechtliche Einschätzungen Button */}
-        <button onClick={() => { setShowEinschaetzungen(!showEinschaetzungen); if (!showEinschaetzungen) setShowExport(false); }}
-          style={{
-            width: "100%", marginTop: 10, padding: "8px 0",
-            fontSize: 11, fontWeight: 700,
-            background: showEinschaetzungen ? "#5856D6" : "rgba(0,0,0,0.05)",
-            color: showEinschaetzungen ? "#fff" : "#555",
-            border: "none", borderRadius: 9, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            transition: "all 0.15s"
-          }}>
-          <BookOpen size={12} /> {showEinschaetzungen ? "← Zurück zur Analyse" : "Rechtliche Einschätzungen"}
-        </button>
-
-        {/* Notion Export Button */}
-        <button onClick={() => { setShowExport(!showExport); if (!showExport) setShowEinschaetzungen(false); }}
-          style={{
-            width: "100%", marginTop: 10, padding: "8px 0",
-            fontSize: 11, fontWeight: 700,
-            background: showExport ? "#000" : "rgba(0,0,0,0.05)",
-            color: showExport ? "#fff" : "#555",
-            border: "none", borderRadius: 9, cursor: "pointer",
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
-            transition: "all 0.15s"
-          }}>
-          <Share2 size={12} /> {showExport ? "← Zurück zur Analyse" : "Notion-Export / Übersicht"}
-        </button>
-
         {/* Kurzinfo */}
         <div style={{ marginTop: 14, padding: "10px 13px", background: "rgba(0,0,0,0.03)", borderRadius: 10 }}>
           <p style={{ fontSize: 9, fontWeight: 700, color: "#888", textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>Dieser Schritt</p>
@@ -174,23 +139,14 @@ export default function EnterpriseShell({ scenario, onSave }) {
 
       {/* Content */}
       <div style={{ flex: 1, minWidth: 0 }}>
-        {showEinschaetzungen ? (
-          <RechtlicheEinschaetzungenTab scenario={scenario} />
-        ) : showExport ? (
-          <NotionExportTab scenario={scenario} />
-        ) : (
-          <>
-            {step === 0 && <Step0DocIntelligenz scenario={scenario} onSave={handleStepSave} onProceed={() => { setStep(1); handleSave({ enterprise_step: 1 }); }} />}
-            {step === 1 && <Step1Kontext scenario={scenario} onSave={handleStepSave} />}
-            {step === 2 && <Step2Situation scenario={scenario} onSave={handleStepSave} />}
-            {step === 3 && <Step2VertragsAnalyse scenario={scenario} onSave={handleStepSave} />}
-            {step === 4 && <Step3PatentAnalyse scenario={scenario} onSave={handleStepSave} />}
-            {step === 5 && <Step4HandlungsOptionen scenario={scenario} onSave={handleStepSave} />}
-            {step === 6 && <Step5QuantitativeAnalyse scenario={scenario} onSave={handleStepSave} />}
-            {step === 7 && <Step6UmsetzungsPlan scenario={scenario} onSave={handleStepSave} />}
-            {step === 8 && <Step8TaktikSimulation scenario={scenario} onSave={handleStepSave} />}
-          </>
-        )}
+        {step === 0 && <Step0DocIntelligenz scenario={scenario} onSave={handleStepSave} onProceed={() => { setStep(1); handleSave({ enterprise_step: 1 }); }} />}
+        {step === 1 && <Step1Kontext scenario={scenario} onSave={handleStepSave} />}
+        {step === 2 && <Step2Situation scenario={scenario} onSave={handleStepSave} />}
+        {step === 3 && <Step2VertragsAnalyse scenario={scenario} onSave={handleStepSave} />}
+        {step === 4 && <Step3PatentAnalyse scenario={scenario} onSave={handleStepSave} />}
+        {step === 5 && <Step4HandlungsOptionen scenario={scenario} onSave={handleStepSave} />}
+        {step === 6 && <Step5QuantitativeAnalyse scenario={scenario} onSave={handleStepSave} />}
+        {step === 7 && <Step6UmsetzungsPlan scenario={scenario} onSave={handleStepSave} />}
       </div>
     </div>
   );

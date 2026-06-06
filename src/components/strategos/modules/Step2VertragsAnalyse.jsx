@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Upload, FileUp, Sparkles, Trash2, AlertTriangle, CheckCircle, MinusCircle, Scale, Shield, FileSearch, BarChart3 } from "lucide-react";
 import { AppleCard, AppleButton, ApplePill, AppleField, AppleTextarea, SF } from "../AppleCard";
@@ -8,7 +8,6 @@ import ZeitachseSzenarien from "../visualisierung/ZeitachseSzenarien";
 import OptionenCards from "../visualisierung/OptionenCards";
 import ChancenRisikoQuadrant from "../visualisierung/ChancenRisikoQuadrant";
 import KlauselVergleich from "../visualisierung/KlauselVergleich";
-import Viz3DPanel from "../visualisierung/Viz3DPanel";
 
 const RISIKO_FARBEN = {
   kritisch: { bg: "rgba(184,28,58,0.08)", border: "rgba(184,28,58,0.25)", text: "#B81C3A", icon: AlertTriangle },
@@ -498,18 +497,11 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
   );
 }
 
-
 function VisualisierungsPanel({ result, scenario }) {
   const [activeTab, setActiveTab] = useState("heatmap");
   const [selectedKlauselIdx, setSelectedKlauselIdx] = useState(0);
   const [kiResults, setKiResults] = useState({});
   const [kiLoading, setKiLoading] = useState({});
-  const resultRef = useRef(null);
-
-  // Refs für stabile Werte in async Callbacks
-  const sortedRef = useRef([]);
-  const selectedKlauselIdxRef = useRef(0);
-  const ctxRef = useRef({});
 
   if (!result?.klauseln?.length) return null;
 
@@ -520,33 +512,15 @@ function VisualisierungsPanel({ result, scenario }) {
   );
   const selectedKlausel = sorted[selectedKlauselIdx] || sorted[0];
 
-  // Refs aktuell halten
-  sortedRef.current = sorted;
-  selectedKlauselIdxRef.current = selectedKlauselIdx;
-  ctxRef.current = ctx;
-
   const runVizAnalysis = async (tabId) => {
-    // Aktuelle Werte aus Refs lesen — kein Closure-Bug
-    const currentSorted = sortedRef.current;
-    const currentKlausel = currentSorted[selectedKlauselIdxRef.current] || currentSorted[0];
-    const currentCtx = ctxRef.current;
-
-    if (!currentSorted.length) {
-      alert("Keine Klauseln vorhanden. Bitte zuerst Vertragsanalyse durchführen.");
-      return;
-    }
-
     setKiLoading(prev => ({ ...prev, [tabId]: true }));
     try {
-      const promptConfig = VIZ_PROMPTS[tabId](currentSorted, currentKlausel, currentCtx);
+      const promptConfig = VIZ_PROMPTS[tabId](sorted, selectedKlausel, ctx);
       const r = await base44.integrations.Core.InvokeLLM({
         ...promptConfig,
         model: "claude_sonnet_4_6",
       });
       setKiResults(prev => ({ ...prev, [tabId]: r }));
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      }, 100);
     } catch (err) {
       console.error(`KI-Analyse [${tabId}] fehlgeschlagen:`, err?.message);
       alert(`Analyse fehlgeschlagen: ${err?.message || "Netzwerkfehler"}`);
@@ -591,225 +565,22 @@ function VisualisierungsPanel({ result, scenario }) {
         )}
 
         {/* KI-Analyse Panel für aktiven Tab */}
-        <div ref={resultRef}>
-          <VizKIPanel
-            tabId={activeTab}
-            kiResult={kiResults[activeTab]}
-            loading={!!kiLoading[activeTab]}
-            onAnalyse={() => runVizAnalysis(activeTab)}
-          />
-        </div>
+        <VizKIPanel
+          tabId={activeTab}
+          kiResult={kiResults[activeTab]}
+          loading={!!kiLoading[activeTab]}
+          onAnalyse={() => runVizAnalysis(activeTab)}
+        />
 
-        {/* Visualisierung — kiResult wird für KI-angereicherte Darstellung übergeben */}
-        {activeTab === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} kiResult={kiResults["heatmap"]} />}
-        {activeTab === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} kiResult={kiResults["wirkung"]} />}
-        {activeTab === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} kiResult={kiResults["zeitachse"]} />}
-        {activeTab === "optionen"  && <OptionenCards klausel={selectedKlausel} kiResult={kiResults["optionen"]} />}
-        {activeTab === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} kiResult={kiResults["quadrant"]} />}
-        {activeTab === "vergleich" && <KlauselVergleich klausel={selectedKlausel} kiResult={kiResults["vergleich"]} />}
+        {/* Visualisierung */}
+        {activeTab === "heatmap"   && <KlauselHeatmap klauseln={sorted} onSelect={idx => { setSelectedKlauselIdx(idx); setActiveTab("wirkung"); }} selectedIdx={selectedKlauselIdx} />}
+        {activeTab === "wirkung"   && <WirkungsBaum klausel={selectedKlausel} />}
+        {activeTab === "zeitachse" && <ZeitachseSzenarien klausel={selectedKlausel} />}
+        {activeTab === "optionen"  && <OptionenCards klausel={selectedKlausel} />}
+        {activeTab === "quadrant"  && <ChancenRisikoQuadrant klauseln={sorted} />}
+        {activeTab === "vergleich" && <KlauselVergleich klausel={selectedKlausel} />}
       </div>
     </div>
-  );
-}
-
-// ── Collapsible Section ────────────────────────────────────────────────────────
-function Section({ title, accentColor = "#5856D6", defaultOpen = false, badge, children }) {
-  const [open, setOpen] = useState(defaultOpen);
-  return (
-    <div style={{ border: `1px solid ${accentColor}25`, borderRadius: 14, overflow: "hidden", background: "#fff" }}>
-      <div onClick={() => setOpen(o => !o)}
-        style={{ display: "flex", alignItems: "center", gap: 10, padding: "11px 16px", background: open ? `${accentColor}08` : "#fff", cursor: "pointer", userSelect: "none", transition: "background 0.15s" }}>
-        <div style={{ width: 4, height: 18, borderRadius: 2, background: accentColor, flexShrink: 0 }} />
-        <span style={{ flex: 1, fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{title}</span>
-        {badge && <span style={{ fontSize: 10, fontWeight: 700, padding: "2px 8px", borderRadius: 6, background: `${accentColor}15`, color: accentColor }}>{badge}</span>}
-        <span style={{ fontSize: 13, color: "#aaa", display: "inline-block", transform: open ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s", flexShrink: 0 }}>▼</span>
-      </div>
-      {open && <div style={{ borderTop: `1px solid ${accentColor}15`, padding: "14px 16px" }}>{children}</div>}
-    </div>
-  );
-}
-
-// ── Ergebnis-Bereich mit separaten Collapse-Buttons ───────────────────────────
-function ErgebnisBereich({ result, stats, scenario }) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-      {/* Übersicht — immer offen */}
-      <Section title="Analyse-Ergebnis — Übersicht" accentColor={stats?.kritisch > 0 ? "#B81C3A" : "#1DB954"} defaultOpen={true}>
-        <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "start" }}>
-          <div>
-            {result.dokument_typ && <p style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>Dokument: <strong>{result.dokument_typ}</strong>{result.parteien?.length > 0 ? ` · ${result.parteien.join(" vs. ")}` : ""}</p>}
-            <p style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.5 }}>{result.gesamtbewertung}</p>
-          </div>
-          {stats && (
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, minWidth: 160 }}>
-              {[["Kritisch", stats.kritisch, "#B81C3A"], ["Hoch", stats.hoch, "#FF9500"], ["Mittel", stats.mittel, "#0A84FF"], ["Positiv", stats.positiv, "#1DB954"]].map(([l, v, c]) => (
-                <div key={l} style={{ padding: "8px 10px", background: `${c}10`, borderRadius: 10, textAlign: "center" }}>
-                  <p style={{ fontSize: 18, fontWeight: 800, color: c }}>{v}</p>
-                  <p style={{ fontSize: 9, color: c, fontWeight: 700, textTransform: "uppercase" }}>{l}</p>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Section>
-
-      {/* Klausel-Analyse */}
-      {result.klauseln?.length > 0 && (
-        <Section title="Klausel-Analyse" accentColor="#B81C3A" badge={`${result.klauseln.length} Klauseln`} defaultOpen={true}>
-          {result.klauseln
-            .sort((a, b) => ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe))
-            .map((k, i) => <KlauselCard key={i} k={k} idx={i} />)}
-        </Section>
-      )}
-
-      {/* Szenario-Projektion */}
-      {result.szenarien_projektion && (
-        <Section title="Szenario-Projektion" accentColor="#0A84FF">
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {[["Best Case", result.szenarien_projektion.best_case, "#1DB954"], ["Base Case", result.szenarien_projektion.base_case, "#0A84FF"], ["Worst Case", result.szenarien_projektion.worst_case, "#B81C3A"]].map(([l, v, c]) => v && (
-              <div key={l} style={{ padding: "10px 13px", background: `${c}08`, border: `1px solid ${c}20`, borderRadius: 11 }}>
-                <p style={{ fontSize: 10, fontWeight: 700, color: c, textTransform: "uppercase", marginBottom: 4 }}>{l}</p>
-                <p style={{ fontSize: 12, color: "#333" }}>{v}</p>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Verhandlungsprioritäten */}
-      {result.verhandlungs_prioritaeten?.length > 0 && (
-        <Section title="Verhandlungsprioritäten" accentColor="#1DB954" badge="vor Unterzeichnung">
-          <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
-            {result.verhandlungs_prioritaeten.sort((a,b) => a.prioritaet - b.prioritaet).map((p, i) => (
-              <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 11px", background: "rgba(0,0,0,0.025)", borderRadius: 9 }}>
-                <div style={{ width: 22, height: 22, borderRadius: "50%", background: i === 0 ? "#B81C3A" : i === 1 ? "#FF9500" : "#0A84FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
-                  <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{p.prioritaet}</span>
-                </div>
-                <div>
-                  <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{p.klausel}</p>
-                  <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{p.massnahme}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </Section>
-      )}
-
-      {/* Kritische Fristen */}
-      {result.kritische_fristen?.length > 0 && (
-        <Section title="Kritische Fristen" accentColor="#FF9500" badge={`${result.kritische_fristen.length}`}>
-          {result.kritische_fristen.map((f, i) => (
-            <div key={i} style={{ display: "flex", gap: 12, padding: "8px 11px", background: "rgba(255,149,0,0.06)", borderRadius: 9, marginBottom: 6 }}>
-              <Scale style={{ width: 14, height: 14, color: "#FF9500", flexShrink: 0, marginTop: 2 }} />
-              <div>
-                <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{f.beschreibung}</p>
-                {f.datum && <p style={{ fontSize: 11, color: "#FF9500", fontWeight: 700, marginTop: 2 }}>📅 {f.datum}</p>}
-                {f.rechtsfolge && <p style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{f.rechtsfolge}</p>}
-              </div>
-            </div>
-          ))}
-        </Section>
-      )}
-
-      {/* FORMAT 01 — Heatmap */}
-      <Section title="FORMAT 01 · Klausel-Risiko-Heatmap" accentColor="#B81C3A">
-        <HeatmapSection result={result} />
-      </Section>
-
-      {/* FORMAT 02 — Wirkungsbaum */}
-      <Section title="FORMAT 02 · Wirkungsbaum" accentColor="#5856D6">
-        <WirkungsBaumSection result={result} />
-      </Section>
-
-      {/* FORMAT 03 — Zeitachse */}
-      <Section title="FORMAT 03 · Zeitachse mit Eintrittsszenarien" accentColor="#FF9500">
-        <ZeitachseSection result={result} />
-      </Section>
-
-      {/* FORMAT 04 — Optionen-Cards */}
-      <Section title="FORMAT 04 · Optionen-Cards" accentColor="#1DB954">
-        <OptionenSection result={result} />
-      </Section>
-
-      {/* FORMAT 05 — Chancen-Risiken-Quadrant */}
-      <Section title="FORMAT 05 · Chancen-Risiken-Quadrant" accentColor="#0A84FF">
-        <ChancenRisikoQuadrant klauseln={result.klauseln} kiResult={null} />
-      </Section>
-
-      {/* KI-Tiefenanalyse */}
-      <Section title="KI-Tiefenanalyse (6 dedizierte KI-Analysen)" accentColor="#5856D6">
-        <VisualisierungsPanel result={result} scenario={scenario} />
-      </Section>
-
-      {/* 3D-Visualisierung */}
-      <Section title="3D-Visualisierungssystem (Risikoraum · Wirkungslandschaft · Optionsraum · Portfolio)" accentColor="#AF52DE">
-        <Viz3DPanel result={result} scenario={scenario} />
-      </Section>
-    </div>
-  );
-}
-
-// ── Hilfssektionen mit eigenem Klausel-Selektor ───────────────────────────────
-function KlauselSelectorSimple({ sorted, selectedIdx, onChange }) {
-  return (
-    <div style={{ display: "flex", gap: 5, flexWrap: "wrap", marginBottom: 12 }}>
-      {sorted.map((k, i) => {
-        const c = { kritisch: "#B81C3A", hoch: "#FF9500", mittel: "#0A84FF", niedrig: "#1DB954", positiv: "#1DB954" }[k.risiko_stufe] || "#888";
-        return (
-          <button key={i} onClick={() => onChange(i)}
-            style={{ padding: "4px 10px", borderRadius: 7, border: `1px solid ${selectedIdx === i ? c : "rgba(0,0,0,0.1)"}`, background: selectedIdx === i ? `${c}12` : "transparent", fontSize: 10, fontWeight: selectedIdx === i ? 700 : 400, color: selectedIdx === i ? c : "#555", cursor: "pointer" }}>
-            {k.klausel_typ?.slice(0, 22) || `#${i + 1}`}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-function HeatmapSection({ result }) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const sorted = [...(result.klauseln || [])].sort((a, b) =>
-    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
-  );
-  return <KlauselHeatmap klauseln={sorted} onSelect={setSelectedIdx} selectedIdx={selectedIdx} kiResult={null} />;
-}
-
-function WirkungsBaumSection({ result }) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const sorted = [...(result.klauseln || [])].sort((a, b) =>
-    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
-  );
-  return (
-    <>
-      <KlauselSelectorSimple sorted={sorted} selectedIdx={selectedIdx} onChange={setSelectedIdx} />
-      <WirkungsBaum klausel={sorted[selectedIdx] || sorted[0]} kiResult={null} />
-    </>
-  );
-}
-
-function ZeitachseSection({ result }) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const sorted = [...(result.klauseln || [])].sort((a, b) =>
-    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
-  );
-  return (
-    <>
-      <KlauselSelectorSimple sorted={sorted} selectedIdx={selectedIdx} onChange={setSelectedIdx} />
-      <ZeitachseSzenarien klausel={sorted[selectedIdx] || sorted[0]} kiResult={null} />
-    </>
-  );
-}
-
-function OptionenSection({ result }) {
-  const [selectedIdx, setSelectedIdx] = useState(0);
-  const sorted = [...(result.klauseln || [])].sort((a, b) =>
-    ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe)
-  );
-  return (
-    <>
-      <KlauselSelectorSimple sorted={sorted} selectedIdx={selectedIdx} onChange={setSelectedIdx} />
-      <OptionenCards klausel={sorted[selectedIdx] || sorted[0]} kiResult={null} />
-    </>
   );
 }
 
@@ -845,14 +616,9 @@ export default function Step2VertragsAnalyse({ scenario, onSave }) {
   const analyseVertrag = async () => {
     setAnalysing(true);
     const doc = selectedDoc || docs[0];
-    // Dokument-URLs aus Schritt 0 als Fallback nutzen
-    const step0Docs = (scenario.ki_kontext?.docs || []).filter(d => d.url && d.status === "done");
-    const fileUrls = doc ? [doc.url] : step0Docs.map(d => d.url).slice(0, 3);
-    const kiBriefing = scenario.ki_kontext?.ki_briefing;
-    const notiz = manuelleNotiz;
-
+    let r;
     try {
-    const r = await base44.integrations.Core.InvokeLLM({
+    r = await base44.integrations.Core.InvokeLLM({
       prompt: `Du bist ein Senior-Anwalt einer internationalen Großkanzlei spezialisiert auf Vertragsrecht, AGB-Recht und internationale Vertragsgestaltung. Analysiere diesen Vertrag / dieses Dokument auf drei Dimensionen:
 
 UNTERNEHMENSKONTEXT:
@@ -860,8 +626,8 @@ Unternehmen: ${ctx.unternehmen_name || "—"} (${ctx.rechtsform || "—"}, ${ctx
 Umsatz: ${ctx.umsatz ? (ctx.umsatz/1000000).toFixed(1) + "Mio. " + (ctx.waehrung || "EUR") : "—"}
 Gegenpartei: ${ctx.gegner_name || "—"} (${ctx.gegner_rolle || "—"})
 Sachverhalt: ${ctx.sachverhalt_lang || "—"}
-Dokument: ${doc ? doc.name : step0Docs.length > 0 ? step0Docs.map(d => d.name).join(", ") + " (Schritt 0)" : "manuell"}
-${kiBriefing ? `\nKI-BASIS-BRIEFING (Schritt 0):\n${String(kiBriefing).slice(0, 500)}\n` : ""}Zusätzliche Notizen: ${notiz || "—"}
+Dokument: ${doc ? doc.name : "manuell beschrieben"}
+Zusätzliche Notizen: ${manuelleNotiz || "—"}
 
 ANALYSEDIMENSIONEN:
 1. RISIKOKLASSIFIKATION jeder Klausel: Identifiziere 8-15 wichtige Klauseln. Pro Klausel: klausel_typ, kurzbeschreibung, risiko_stufe(kritisch/hoch/mittel/niedrig/positiv), norm (§ BGB / § HGB / AGB-Recht / etc.), rechtliche_mechanik (wie wirkt sie im Vertragsgefüge?), szenarien (3 Zeithorizonte: kurzfristig bis 6M, mittelfristig 2-5J, langfristig), verhandlungsempfehlung, alternativ_formulierung (wenn nicht unterzeichnet), durchsetzbar (boolean), durchsetzbarkeit.
@@ -932,17 +698,16 @@ WICHTIGE ANFORDERUNGEN:
           }}}
         }
       },
-      file_urls: fileUrls.length > 0 ? fileUrls : undefined,
+      file_urls: doc ? [doc.url] : undefined,
       model: "claude_sonnet_4_6"
     });
     setResult(r);
-    onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_analyse: r, vertrags_notiz: manuelleNotiz } });
+    await onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_analyse: r, vertrags_notiz: manuelleNotiz } });
     } catch (err) {
       console.error("Vertragsanalyse fehlgeschlagen:", err?.message || err);
       alert("Analyse fehlgeschlagen: " + (err?.message || "Netzwerkfehler. Bitte erneut versuchen."));
-    } finally {
-      setAnalysing(false);
     }
+    setAnalysing(false);
   };
 
   const stats = result?.klauseln ? {
@@ -960,66 +725,144 @@ WICHTIGE ANFORDERUNGEN:
         <p style={{ fontSize: 12, color: "#888", marginTop: 3 }}>Klausel-Risikoklassifikation · Szenarioprojektion · Verhandlungsposition</p>
       </div>
 
-      {/* Eingabe: Upload + Text + KI-Button in einer Karte */}
-      <div style={{ background: "#fff", border: "1px solid rgba(10,132,255,0.2)", borderRadius: 16, overflow: "hidden" }}>
-        {/* Upload-Zeile */}
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", alignItems: "center", gap: 12 }}>
-          <Upload style={{ width: 14, height: 14, color: "#0A84FF", flexShrink: 0 }} />
-          <p style={{ flex: 1, fontSize: 12, fontWeight: 600, color: "#1a1a1a" }}>Dokument hochladen</p>
-          <label style={{ cursor: "pointer" }}>
-            <input type="file" multiple accept=".pdf,.docx,.doc,.txt" onChange={handleUpload} style={{ display: "none" }} />
-            <span style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "5px 12px", fontSize: 11, fontWeight: 600, background: "#0A84FF", color: "#fff", borderRadius: 8, cursor: "pointer" }}>
-              {uploading ? "Lädt…" : "Datei wählen"}
-            </span>
-          </label>
-        </div>
-
-        {/* Hochgeladene Dateien */}
-        {docs.length > 0 && (
-          <div style={{ padding: "8px 16px", borderBottom: "1px solid rgba(0,0,0,0.06)", display: "flex", flexDirection: "column", gap: 5 }}>
+      {/* Dokument-Upload */}
+      <AppleCard title="A · Dokument hochladen" accentColor="#0A84FF" action={
+        <label style={{ cursor: "pointer" }}>
+          <input type="file" multiple accept=".pdf,.docx,.doc,.txt" onChange={handleUpload} style={{ display: "none" }} />
+          <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "7px 13px", fontSize: 12, fontWeight: 600, background: "#0A84FF", color: "#fff", borderRadius: 10, boxShadow: "0 2px 8px rgba(10,132,255,0.3)", cursor: "pointer" }}>
+            <Upload style={{ width: 12, height: 12 }} /> {uploading ? "Lädt…" : "Hochladen"}
+          </span>
+        </label>
+      }>
+        {docs.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "20px 16px", color: "#bbb" }}>
+            <FileSearch style={{ width: 28, height: 28, margin: "0 auto 8px", opacity: 0.4 }} />
+            <p style={{ fontSize: 12 }}>Vertrag, Term Sheet, Kooperationsvereinbarung, Patent, Behördenschreiben hochladen</p>
+            <p style={{ fontSize: 11, marginTop: 4, color: "#ccc" }}>PDF / DOCX / TXT — oder Sachverhalt manuell beschreiben</p>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             {docs.map((d, i) => (
-              <div key={i} onClick={() => setSelectedDoc(d)} style={{ display: "flex", alignItems: "center", gap: 8, padding: "7px 10px", background: selectedDoc?.url === d.url ? "rgba(10,132,255,0.1)" : "rgba(0,0,0,0.03)", border: `1px solid ${selectedDoc?.url === d.url ? "rgba(10,132,255,0.35)" : "rgba(0,0,0,0.07)"}`, borderRadius: 9, cursor: "pointer" }}>
-                <FileUp style={{ width: 12, height: 12, color: "#0A84FF", flexShrink: 0 }} />
-                <p style={{ fontSize: 11, fontWeight: 600, color: "#1a1a1a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
-                {selectedDoc?.url === d.url && <span style={{ fontSize: 9, color: "#0A84FF", fontWeight: 700 }}>✓ Ausgewählt</span>}
-                <button className="no-override" onClick={e => { e.stopPropagation(); const n = docs.filter((_, j) => j !== i); setDocs(n); onSave({ unternehmenskontext: { ...ctx, dokumente: n } }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc", padding: 2 }}><Trash2 style={{ width: 11, height: 11 }} /></button>
+              <div key={i} onClick={() => setSelectedDoc(d)} style={{ display: "flex", alignItems: "center", gap: 10, padding: "9px 12px", background: selectedDoc?.url === d.url ? "rgba(10,132,255,0.1)" : "rgba(0,0,0,0.03)", border: `1px solid ${selectedDoc?.url === d.url ? "rgba(10,132,255,0.35)" : "rgba(0,0,0,0.07)"}`, borderRadius: 10, cursor: "pointer" }}>
+                <FileUp style={{ width: 13, height: 13, color: "#0A84FF", flexShrink: 0 }} />
+                <p style={{ fontSize: 12, fontWeight: 600, color: "#1a1a1a", flex: 1, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{d.name}</p>
+                {selectedDoc?.url === d.url && <span style={{ fontSize: 10, color: "#0A84FF", fontWeight: 700 }}>Ausgewählt</span>}
+                <button onClick={e => { e.stopPropagation(); const n = docs.filter((_, j) => j !== i); setDocs(n); onSave({ unternehmenskontext: { ...ctx, dokumente: n } }); }} style={{ background: "none", border: "none", cursor: "pointer", color: "#ccc" }}><Trash2 style={{ width: 12, height: 12 }} /></button>
               </div>
             ))}
           </div>
         )}
+      </AppleCard>
 
-        {/* Textarea */}
-        <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(0,0,0,0.06)" }}>
-          <p style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>Oder Vertragsinhalt / Klauseln manuell beschreiben</p>
+      {/* Manuelle Beschreibung */}
+      <AppleCard title="B · Manuelle Beschreibung / Klauseln" accentColor="#636366">
+        <AppleField label="Beschreibung der Klauseln oder des Vertragsinhalts (optional, ergänzt Dokument)">
           <AppleTextarea rows={4} value={manuelleNotiz} onChange={e => setManuelleNotiz(e.target.value)}
             onBlur={() => onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_notiz: manuelleNotiz } })}
-            placeholder="z.B. Change-of-Control-Klausel mit 30-Tage-Kündigungsrecht. Earn-out über 3 Jahre an EBITDA gekoppelt. Wettbewerbsverbot 3 Jahre nach Beendigung ohne Karenzentschädigung..." />
-        </div>
+            placeholder="z.B. Vertrag enthält eine Change-of-Control-Klausel mit 30-Tage-Kündigungsrecht. Earn-out über 3 Jahre an EBITDA gekoppelt. Wettbewerbsverbot 3 Jahre nach Beendigung ohne Karenzentschädigung..." />
+        </AppleField>
+      </AppleCard>
 
-        {/* KI-Analyse Button */}
-        <div style={{ padding: "12px 16px", background: "rgba(10,132,255,0.04)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
+      {/* Analyse starten */}
+      <AppleCard accentColor="#0A84FF">
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, flexWrap: "wrap" }}>
           <div>
-            <p style={{ fontSize: 11, color: "#888" }}>
-              {docs.length > 0
-                ? `${docs.length} Dokument(e) bereit`
-                : manuelleNotiz.trim().length > 0
-                  ? "Manueller Text bereit"
-                  : (scenario.ki_kontext?.docs || []).filter(d => d.status === "done").length > 0
-                    ? `${(scenario.ki_kontext.docs).filter(d => d.status === "done").length} Dok. aus Schritt 0`
-                    : "Dokument hochladen oder Text eingeben"}
+            <p style={{ fontSize: 13, fontWeight: 700, color: "#1a1a1a" }}>KI-Vertragsanalyse</p>
+            <p style={{ fontSize: 11, color: "#888", marginTop: 2 }}>
+              {docs.length > 0 ? `${docs.length} Dokument(e) · ` : "Kein Dokument — "}
+              Klausel-Risikoklassifikation · Szenarioprojektion · Verhandlungsposition
             </p>
           </div>
-          <button className="no-override" onClick={analyseVertrag} disabled={analysing}
-            style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "10px 22px", fontSize: 13, fontWeight: 700, background: analysing ? "rgba(10,132,255,0.5)" : "#0A84FF", color: "#fff", border: "none", borderRadius: 10, cursor: analysing ? "not-allowed" : "pointer", boxShadow: analysing ? "none" : "0 3px 12px rgba(10,132,255,0.4)", transition: "all 0.15s" }}>
-            <Sparkles style={{ width: 15, height: 15 }} />
-            {analysing ? "KI analysiert…" : result ? "Erneut analysieren" : "KI-Analyse starten"}
-          </button>
+          <AppleButton onClick={analyseVertrag} disabled={analysing} variant="primary" icon={Sparkles}>
+            {analysing ? "Analysiert…" : result ? "Neu analysieren" : "Jetzt analysieren"}
+          </AppleButton>
         </div>
-      </div>
+      </AppleCard>
 
       {/* Ergebnis */}
       {result && (
-        <ErgebnisBereich result={result} stats={stats} scenario={scenario} />
+        <>
+          {/* Gesamtübersicht */}
+          <AppleCard title="Analyse-Ergebnis" accentColor={stats?.kritisch > 0 ? "#B81C3A" : "#1DB954"}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr auto", gap: 16, alignItems: "start" }}>
+              <div>
+                {result.dokument_typ && <p style={{ fontSize: 11, color: "#888", marginBottom: 6 }}>Dokument: <strong>{result.dokument_typ}</strong>{result.parteien?.length > 0 ? ` · ${result.parteien.join(" vs. ")}` : ""}</p>}
+                <p style={{ fontSize: 13, color: "#1a1a1a", lineHeight: 1.5 }}>{result.gesamtbewertung}</p>
+              </div>
+              {stats && (
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6, minWidth: 160 }}>
+                  {[["Kritisch", stats.kritisch, "#B81C3A"], ["Hoch", stats.hoch, "#FF9500"], ["Mittel", stats.mittel, "#0A84FF"], ["Positiv", stats.positiv, "#1DB954"]].map(([l, v, c]) => (
+                    <div key={l} style={{ padding: "8px 10px", background: `${c}10`, borderRadius: 10, textAlign: "center" }}>
+                      <p style={{ fontSize: 18, fontWeight: 800, color: c }}>{v}</p>
+                      <p style={{ fontSize: 9, color: c, fontWeight: 700, textTransform: "uppercase" }}>{l}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </AppleCard>
+
+          {/* Klauseln */}
+          {result.klauseln?.length > 0 && (
+            <AppleCard title={`Klausel-Analyse (${result.klauseln.length})`} accentColor="#B81C3A">
+              {result.klauseln
+                .sort((a, b) => ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(a.risiko_stufe) - ["kritisch","hoch","mittel","niedrig","positiv"].indexOf(b.risiko_stufe))
+                .map((k, i) => <KlauselCard key={i} k={k} idx={i} />)}
+            </AppleCard>
+          )}
+
+          {/* Szenario-Projektion */}
+          {result.szenarien_projektion && (
+            <AppleCard title="Szenario-Projektion" accentColor="#0A84FF">
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {[["Best Case", result.szenarien_projektion.best_case, "#1DB954"], ["Base Case", result.szenarien_projektion.base_case, "#0A84FF"], ["Worst Case", result.szenarien_projektion.worst_case, "#B81C3A"]].map(([l, v, c]) => v && (
+                  <div key={l} style={{ padding: "10px 13px", background: `${c}08`, border: `1px solid ${c}20`, borderRadius: 11 }}>
+                    <p style={{ fontSize: 10, fontWeight: 700, color: c, textTransform: "uppercase", marginBottom: 4 }}>{l}</p>
+                    <p style={{ fontSize: 12, color: "#333" }}>{v}</p>
+                  </div>
+                ))}
+              </div>
+            </AppleCard>
+          )}
+
+          {/* Verhandlungsprioritäten */}
+          {result.verhandlungs_prioritaeten?.length > 0 && (
+            <AppleCard title="Verhandlungsprioritäten (vor Unterzeichnung)" accentColor="#1DB954">
+              <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                {result.verhandlungs_prioritaeten.sort((a,b) => a.prioritaet - b.prioritaet).map((p, i) => (
+                  <div key={i} style={{ display: "flex", gap: 12, alignItems: "flex-start", padding: "8px 11px", background: "rgba(0,0,0,0.025)", borderRadius: 9 }}>
+                    <div style={{ width: 22, height: 22, borderRadius: "50%", background: i === 0 ? "#B81C3A" : i === 1 ? "#FF9500" : "#0A84FF", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                      <span style={{ fontSize: 10, fontWeight: 800, color: "#fff" }}>{p.prioritaet}</span>
+                    </div>
+                    <div>
+                      <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{p.klausel}</p>
+                      <p style={{ fontSize: 11, color: "#555", marginTop: 2 }}>{p.massnahme}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </AppleCard>
+          )}
+
+          {/* Kritische Fristen */}
+          {result.kritische_fristen?.length > 0 && (
+            <AppleCard title="Kritische Fristen" accentColor="#FF9500">
+              {result.kritische_fristen.map((f, i) => (
+                <div key={i} style={{ display: "flex", gap: 12, padding: "8px 11px", background: "rgba(255,149,0,0.06)", borderRadius: 9, marginBottom: 6 }}>
+                  <Scale style={{ width: 14, height: 14, color: "#FF9500", flexShrink: 0, marginTop: 2 }} />
+                  <div>
+                    <p style={{ fontSize: 12, fontWeight: 700, color: "#1a1a1a" }}>{f.beschreibung}</p>
+                    {f.datum && <p style={{ fontSize: 11, color: "#FF9500", fontWeight: 700, marginTop: 2 }}>📅 {f.datum}</p>}
+                    {f.rechtsfolge && <p style={{ fontSize: 11, color: "#666", marginTop: 2 }}>{f.rechtsfolge}</p>}
+                  </div>
+                </div>
+              ))}
+            </AppleCard>
+          )}
+
+          {/* ── VISUALISIERUNGSSYSTEM (6 Formate aus Konzeptpapier) ── */}
+          <VisualisierungsPanel result={result} scenario={scenario} />
+        </>
       )}
     </div>
   );

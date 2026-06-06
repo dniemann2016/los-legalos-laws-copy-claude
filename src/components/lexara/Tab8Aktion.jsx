@@ -1,10 +1,9 @@
 import { useState } from "react";
 import TabVerhandlung from "./TabVerhandlung";
 import TabSchriftsatz from "./TabSchriftsatz";
-import ArgumentationskettenVisualisierung from "./ArgumentationskettenVisualisierung";
 import SubTabBar from "./SubTabBar";
 
-const SUB_TABS = ["🤝 Verhandlungsführung", "📝 Schriftsatz-Generator", "🔗 Argumentketten & Lücken"];
+const SUB_TABS = ["🤝 Verhandlungsführung", "📝 Schriftsatz-Generator"];
 
 export default function Tab8Aktion({ caseId, caseData, kiMode }) {
   const [sub, setSub] = useState(0);
@@ -13,7 +12,6 @@ export default function Tab8Aktion({ caseId, caseData, kiMode }) {
       <SubTabBar tabs={SUB_TABS} active={sub} onChange={setSub} level="primary" />
       <div className={sub === 0 ? "" : "hidden"}><TabVerhandlung caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
       <div className={sub === 1 ? "" : "hidden"}><TabSchriftsatz caseId={caseId} caseData={caseData} kiMode={kiMode} /></div>
-      {sub === 2 && <ArgumentationskettenVisualisierung caseId={caseId} />}
     </div>
   );
 }

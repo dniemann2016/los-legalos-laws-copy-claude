@@ -130,7 +130,7 @@ export function AppleButton({ children, onClick, variant = "primary", disabled, 
   };
   const c = colors[variant] || colors.primary;
   return (
-    <button className="no-override" onClick={onClick} disabled={disabled} style={{
+    <button onClick={onClick} disabled={disabled} style={{
       display: "inline-flex",
       alignItems: "center",
       gap: 6,
