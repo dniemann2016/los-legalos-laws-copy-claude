@@ -1,19 +1,7 @@
-/**
- * Step2VertragsAnalyse.jsx
- * 
- * Vertrags- und Dokumentenanalyse mit KI.
- */
-
 import { useState } from "react";
 import { base44 } from "@/api/base44Client";
 import { Upload, FileUp, Sparkles, Trash2, Scale, Shield, FileSearch } from "lucide-react";
-import { AppleCard, AppleButton, ApplePill, AppleField, AppleTextarea, SF } from "../AppleCard";
-import KlauselHeatmap from "../visualisierung/KlauselHeatmap";
-import WirkungsBaum from "../visualisierung/WirkungsBaum";
-import ZeitachseSzenarien from "../visualisierung/ZeitachseSzenarien";
-import OptionenCards from "../visualisierung/OptionenCards";
-import ChancenRisikoQuadrant from "../visualisierung/ChancenRisikoQuadrant";
-import KlauselVergleich from "../visualisierung/KlauselVergleich";
+import { AppleCard, AppleButton, AppleField, AppleTextarea, SF } from "../AppleCard";
 import VisualisierungsPanel from "./VisualisierungsPanel";
 import KlauselCard from "./KlauselCard";
 
@@ -51,8 +39,8 @@ export default function Step2VertragsAnalyse({ scenario, onSave }) {
     const doc = selectedDoc || docs[0];
     let r;
     try {
-      r = await base44.integrations.Core.InvokeLLM({
-        prompt: `Du bist ein Senior-Anwalt einer internationalen Großkanzlei spezialisiert auf Vertragsrecht, AGB-Recht und internationale Vertragsgestaltung. Analysiere diesen Vertrag / dieses Dokument auf drei Dimensionen:
+    r = await base44.integrations.Core.InvokeLLM({
+      prompt: `Du bist ein Senior-Anwalt einer internationalen Großkanzlei spezialisiert auf Vertragsrecht, AGB-Recht und internationale Vertragsgestaltung. Analysiere diesen Vertrag / dieses Dokument auf drei Dimensionen:
 
 UNTERNEHMENSKONTEXT:
 Unternehmen: ${ctx.unternehmen_name || "—"} (${ctx.rechtsform || "—"}, ${ctx.branche || "—"})
@@ -85,57 +73,57 @@ WICHTIGE ANFORDERUNGEN:
 - Earn-out: Treuepflicht Käufer, Manipulationsrisiko
 - Schiedsklauseln: §§ 1029 ff. ZPO, NYK 1958
 - Geheimhaltung: § 2 GeschGehG, angemessene Schutzmaßnahmen`,
-        response_json_schema: {
-          type: "object",
-          properties: {
-            dokument_typ: { type: "string" },
-            parteien: { type: "array", items: { type: "string" } },
-            gesamtbewertung: { type: "string" },
-            gesamtrisiko: { type: "string" },
-            klauseln: { type: "array", items: { type: "object", properties: {
-              klausel_typ: { type: "string" },
-              kurzbeschreibung: { type: "string" },
-              risiko_stufe: { type: "string" },
-              norm: { type: "string" },
-              rechtliche_mechanik: { type: "string" },
-              szenarien: { type: "array", items: { type: "object", properties: {
-                horizont: { type: "string" },
-                beschreibung: { type: "string" },
-                eintrittsbedingung: { type: "string" },
-                empfohlene_reaktion: { type: "string" },
-                chancen: { type: "string" },
-                risiken: { type: "string" }
-              }}},
-              juristische_vorteile: { type: "array", items: { type: "string" } },
-              juristische_nachteile: { type: "array", items: { type: "string" } },
-              illegale_umgehung: { type: "string" },
-              verhandlungsempfehlung: { type: "string" },
-              alternativ_formulierung: { type: "string" },
-              durchsetzbar: { type: "boolean" },
-              durchsetzbarkeit: { type: "string" }
-            }}},
-            szenarien_projektion: { type: "object", properties: {
-              best_case: { type: "string" },
-              base_case: { type: "string" },
-              worst_case: { type: "string" }
-            }},
-            verhandlungs_prioritaeten: { type: "array", items: { type: "object", properties: {
-              prioritaet: { type: "number" },
-              klausel: { type: "string" },
-              massnahme: { type: "string" }
-            }}},
-            kritische_fristen: { type: "array", items: { type: "object", properties: {
+      response_json_schema: {
+        type: "object",
+        properties: {
+          dokument_typ: { type: "string" },
+          parteien: { type: "array", items: { type: "string" } },
+          gesamtbewertung: { type: "string" },
+          gesamtrisiko: { type: "string" },
+          klauseln: { type: "array", items: { type: "object", properties: {
+            klausel_typ: { type: "string" },
+            kurzbeschreibung: { type: "string" },
+            risiko_stufe: { type: "string" },
+            norm: { type: "string" },
+            rechtliche_mechanik: { type: "string" },
+            szenarien: { type: "array", items: { type: "object", properties: {
+              horizont: { type: "string" },
               beschreibung: { type: "string" },
-              datum: { type: "string" },
-              rechtsfolge: { type: "string" }
-            }}}
-          }
-        },
-        file_urls: doc ? [doc.url] : undefined,
-        model: "claude_sonnet_4_6"
-      });
-      setResult(r);
-      await onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_analyse: r, vertrags_notiz: manuelleNotiz } });
+              eintrittsbedingung: { type: "string" },
+              empfohlene_reaktion: { type: "string" },
+              chancen: { type: "string" },
+              risiken: { type: "string" }
+            }}},
+            juristische_vorteile: { type: "array", items: { type: "string" } },
+            juristische_nachteile: { type: "array", items: { type: "string" } },
+            illegale_umgehung: { type: "string" },
+            verhandlungsempfehlung: { type: "string" },
+            alternativ_formulierung: { type: "string" },
+            durchsetzbar: { type: "boolean" },
+            durchsetzbarkeit: { type: "string" }
+          }}},
+          szenarien_projektion: { type: "object", properties: {
+            best_case: { type: "string" },
+            base_case: { type: "string" },
+            worst_case: { type: "string" }
+          }},
+          verhandlungs_prioritaeten: { type: "array", items: { type: "object", properties: {
+            prioritaet: { type: "number" },
+            klausel: { type: "string" },
+            massnahme: { type: "string" }
+          }}},
+          kritische_fristen: { type: "array", items: { type: "object", properties: {
+            beschreibung: { type: "string" },
+            datum: { type: "string" },
+            rechtsfolge: { type: "string" }
+          }}}
+        }
+      },
+      file_urls: doc ? [doc.url] : undefined,
+      model: "claude_sonnet_4_6"
+    });
+    setResult(r);
+    await onSave({ ki_analyse: { ...(scenario.ki_analyse || {}), vertrags_analyse: r, vertrags_notiz: manuelleNotiz } });
     } catch (err) {
       console.error("Vertragsanalyse fehlgeschlagen:", err?.message || err);
       alert("Analyse fehlgeschlagen: " + (err?.message || "Netzwerkfehler. Bitte erneut versuchen."));
