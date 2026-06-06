@@ -66,6 +66,7 @@ function VizKIPanel({ tabId, kiResult, loading, onAnalyse }) {
         </div>
       </div>
 
+      {/* KI-Ergebnis anzeigen (wenn vorhanden) */}
       {kiResult && (
         <div style={{ padding: "12px 14px" }}>
           {/* Heatmap result */}
